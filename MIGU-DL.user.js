@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         咪咕音乐下载
 // @namespace    cinvin
-// @version      0.1
+// @version      0.1.1
 // @description  在咪咕音乐专辑页面添加下载链接,可下载最高音质,支持VIP/付费专辑
 // @author       cinvin
 // @license MIT
@@ -49,33 +49,35 @@
             if (jsonObj.resource[0] && jsonObj.resource[0].songItems) {
                 var dllist= {};
                 for (var item of jsonObj.resource[0].songItems) {
-                    var songcid = item.copyrightId;
+                    var songid = item.songId;
                     var songdllist=item.newRateFormats.map((detail) => ({
                         formatType: QualityDesc[detail.formatType] || detail.formatType,
                         url: encodeURI(detail.androidUrl || detail.url),
                         size: fileSizeDesc(Number(detail.androidSize || detail.size)),
                         fileType: detail.androidFileType || detail.fileType,
                     }));
-                    dllist[songcid]=songdllist;
+                    dllist[songid]=songdllist;
                 }
                 console.log(dllist);
                 var songselectorList = document.querySelectorAll('.J_CopySong');
                 if (songselectorList && songselectorList.length != -1) {
                     songselectorList.forEach(function (node) {
-                        var songcid=node.getAttribute("data-cid");
+                        var songid=node.getAttribute("data-mid");
                         var appendtag=node.querySelector('.J_SongName')
-                        dllist[songcid].forEach(function (item){
-                            var urlObj = new URL(item.url);
-                            urlObj.protocol = 'https';
-                            urlObj.hostname = 'freetyst.nf.migu.cn';
-                            var dl = document.createElement('a');
-                            dl.href = urlObj.href;
-                            dl.text = item.formatType;
-                            dl.title = item.size;
-                            dl.download=true;
-                            dl.style.margin='5px';
-                            appendtag.appendChild(dl);
-                        });
+                        if (dllist[songid] && dllist[songid].length != -1){
+                            dllist[songid].forEach(function (item){
+                                var urlObj = new URL(item.url);
+                                urlObj.protocol = 'https';
+                                urlObj.hostname = 'freetyst.nf.migu.cn';
+                                var dl = document.createElement('a');
+                                dl.href = urlObj.href;
+                                dl.text = item.formatType;
+                                dl.title = item.size;
+                                dl.download=true;
+                                dl.style.margin='5px';
+                                appendtag.appendChild(dl);
+                            });
+                        }
                     })
                 }
             }
