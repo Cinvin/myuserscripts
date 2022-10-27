@@ -4,6 +4,7 @@
 // @version      0.1
 // @description  在咪咕音乐专辑页面添加下载链接
 // @author       cinvin
+// @license MIT
 // @match        https://music.migu.cn/v3/music/album/*
 // @match        https://music.migu.cn/v3/music/digital_album/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=migu.cn
