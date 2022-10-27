@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         MIGU-DL
+// @name         咪咕音乐下载
 // @namespace    cinvin
 // @version      0.1
-// @description  在咪咕音乐专辑页面添加下载链接
+// @description  在咪咕音乐专辑页面添加下载链接,可下载最高音质,支持VIP/付费专辑
 // @author       cinvin
 // @license MIT
 // @match        https://music.migu.cn/v3/music/album/*
