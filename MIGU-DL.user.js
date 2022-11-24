@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         咪咕音乐下载
 // @namespace    https://github.com/Cinvin
-// @version      0.2.0
+// @version      0.2.1
 // @description  在咪咕音乐专辑页面添加下载链接,可下载最高音质,支持VIP/付费专辑
 // @author       cinvin
 // @license MIT
@@ -10,6 +10,7 @@
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=migu.cn
 // @grant       GM_xmlhttpRequest
 // @grant       GM_download
+// @grant       GM_notification
 // ==/UserScript==
 
 (function() {
