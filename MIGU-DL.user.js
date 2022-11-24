@@ -1,14 +1,15 @@
 // ==UserScript==
 // @name         咪咕音乐下载
-// @namespace    cinvin
-// @version      0.1.1
+// @namespace    https://github.com/Cinvin
+// @version      0.2.0
 // @description  在咪咕音乐专辑页面添加下载链接,可下载最高音质,支持VIP/付费专辑
 // @author       cinvin
 // @license MIT
 // @match        https://music.migu.cn/v3/music/album/*
 // @match        https://music.migu.cn/v3/music/digital_album/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=migu.cn
-// @grant        GM_xmlhttpRequest
+// @grant       GM_xmlhttpRequest
+// @grant       GM_download
 // ==/UserScript==
 
 (function() {
@@ -43,14 +44,14 @@
             'Content-Type': 'application/json;charset=utf-8',
         },
         onload: function(responses) {
-            console.log(responses);
-            var jsonObj=JSON.parse(responses.response);
-            console.log(jsonObj);
+            //console.log(responses);
+            let jsonObj=JSON.parse(responses.response);
+            //console.log(jsonObj);
             if (jsonObj.resource[0] && jsonObj.resource[0].songItems) {
-                var dllist= {};
-                for (var item of jsonObj.resource[0].songItems) {
-                    var songid = item.songId;
-                    var songdllist=item.newRateFormats.map((detail) => ({
+                let dllist= {};
+                for (let item of jsonObj.resource[0].songItems) {
+                    let songid = item.songId;
+                    let songdllist=item.newRateFormats.map((detail) => ({
                         formatType: QualityDesc[detail.formatType] || detail.formatType,
                         url: encodeURI(detail.androidUrl || detail.url),
                         size: fileSizeDesc(Number(detail.androidSize || detail.size)),
@@ -58,27 +59,44 @@
                     }));
                     dllist[songid]=songdllist;
                 }
-                console.log(dllist);
-                var songselectorList = document.querySelectorAll('.J_CopySong');
+                let songselectorList = document.querySelector('.songlist-body').children;
+                console.log(songselectorList);
                 if (songselectorList && songselectorList.length != -1) {
-                    songselectorList.forEach(function (node) {
-                        var songid=node.getAttribute("data-mid");
-                        var appendtag=node.querySelector('.J_SongName')
+                    for(let i=0;i<songselectorList.length;i++){
+                        let node=songselectorList[i];
+                        let songid=node.getAttribute("data-mid");
+                        let appendtag=node.querySelector('.J_SongName')
+                        let songname=appendtag.querySelector('.song-name-txt').text
                         if (dllist[songid] && dllist[songid].length != -1){
                             dllist[songid].forEach(function (item){
-                                var urlObj = new URL(item.url);
+                                let urlObj = new URL(item.url);
                                 urlObj.protocol = 'https';
                                 urlObj.hostname = 'freetyst.nf.migu.cn';
-                                var dl = document.createElement('a');
-                                dl.href = urlObj.href;
+                                let dl = document.createElement('a');
                                 dl.text = item.formatType;
                                 dl.title = item.size;
-                                dl.download=true;
                                 dl.style.margin='5px';
+                                dl.addEventListener('click', () => {
+                                    let filename=songname+'.'+item.fileType;
+                                    GM_download({
+                                        url: urlObj.href,
+                                        name: filename,
+                                        onprogress:function(e){
+                                           // console.log(e);
+                                            dl.text=`${item.formatType} (${Math.round(e.loaded/e.totalSize*10000)/100}%)`
+                                        },
+                                        onload: function () {
+                                            dl.text=item.formatType
+                                        },
+                                        onerror :function(){
+                                            GM_notification({ text: filename, title: "下载失败", timeout: 5000 })
+                                        }
+                                    });
+                                })
                                 appendtag.appendChild(dl);
                             });
                         }
-                    })
+                    }
                 }
             }
         }
