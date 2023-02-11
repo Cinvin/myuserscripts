@@ -2,7 +2,7 @@
 // @name             网易云:音乐/歌词下载,云盘快速上传周杰伦
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           0.3.1
+// @version           0.3.2
 // @description     在歌曲页面歌曲和歌词下载,在个人主页一键云盘上传解锁周杰伦
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -15,6 +15,7 @@
 (function() {
     'use strict';
 
+    const weapiRequest=unsafeWindow.NEJ.P("nej.j").be0x
     if (location.href.match('song')){
         //song
         let cvrwrap=document.querySelector(".cvrwrap")
@@ -35,7 +36,7 @@
                 cvrwrap.appendChild(newItem)
             }
             //lyric
-            unsafeWindow.NEJ.P("nej.j").be0x("/api/song/lyric", {
+            weapiRequest("/api/song/lyric", {
                 type: "json",
                 query: {
                     id: songId,
@@ -132,7 +133,7 @@
         }
     }
     function dwonloadSong(songId,songTitle,dlbtn){
-        unsafeWindow.NEJ.P("nej.j").be0x("/api/song/enhance/player/url/v1", {
+        weapiRequest("/api/song/enhance/player/url/v1", {
             type: "json",
             query: {
                 ids: JSON.stringify([songId]),
@@ -246,9 +247,9 @@
         })
     }
     if(location.href.match('user')){
-        const weapiRequest=unsafeWindow.NEJ.P("nej.j").be0x
+        let urlUserId=Number(location.href.match(/\d+$/g));
         let editArea=document.querySelector('#head-box > dd > div.name.f-cb > div > div.edit')
-        if(editArea){
+        if(editArea && urlUserId==unsafeWindow.GUser.userId){
             //个人主页
             let btn=document.createElement('a')
             btn.id='cloudBtn'
@@ -271,8 +272,8 @@
                 cloudBtn.setAttribute("disabled","true");
                 cloudDesc.innerHTML='正在获取配置...'
                 //https://raw.githubusercontent.com/Cinvin/cdn/main/ncmJay.json
-                //https://cdn.jsdelivr.net/gh/Cinvin/cdn@1.0.2/ncmJay.json
-                fetch('https://cdn.jsdelivr.net/gh/Cinvin/cdn@1.0.2/ncmJay.json')
+                //https://cdn.jsdelivr.net/gh/Cinvin/cdn@1.0.1/ncmJay.json
+                fetch('https://cdn.jsdelivr.net/gh/Cinvin/cdn@1.0.1/ncmJay.json')
                     .then(r => r.json())
                     .then(r=>{
                     let songList=r.data
@@ -422,9 +423,10 @@
                                                 console.log(song.name,'3.提交文件',res3)
                                                 //step4 发布
                                                 weapiRequest("/api/cloud/pub/v2", {
+                                                    cookie:true,
                                                     method: "POST",
                                                     type: "json",
-                                                    query: {
+                                                    data: {
                                                         songid: res3.songId,
                                                     },
                                                     onload: (res4)=>{
