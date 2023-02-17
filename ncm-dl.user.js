@@ -1,40 +1,117 @@
 // ==UserScript==
-// @name             网易云:音乐/歌词下载,云盘快速上传周杰伦
+// @name             网易云:音乐、歌词下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           0.3.2
-// @description     在歌曲页面歌曲和歌词下载,在个人主页一键云盘上传解锁周杰伦
+// @version           1.0.0
+// @description     在歌曲页面歌曲和歌词下载,在个人主页云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
+// @grant             GM_getResourceText
 // @grant             GM_download
 // @grant             GM_getValue
 // @grant             GM_setValue
 // @grant             unsafeWindow
+// @resource top https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
 // ==/UserScript==
 
 (function() {
     'use strict';
 
     const weapiRequest=unsafeWindow.NEJ.P("nej.j").be0x
+    //歌曲页
     if (location.href.match('song')){
-        //song
         let cvrwrap=document.querySelector(".cvrwrap")
         if(cvrwrap){
             let songId=Number(location.href.match(/\d+$/g));
             let songTitle=document.head.querySelector("[property~='og:title'][content]").content;
-            if(!document.querySelector(".u-btni-play-dis")){
-                let newItem = document.createElement('div');
-                newItem.className="out s-fc3"
-                let dl = document.createElement('a');
-                dl.text = '歌曲下载';
-                dl.className="des s-fc7"
-                dl.addEventListener('click', () => {
-                    dwonloadSong(songId,songTitle,dl)
-                })
-                newItem.appendChild(dl)
-                cvrwrap.appendChild(document.createElement('br'))
-                cvrwrap.appendChild(newItem)
+            let songArtist=document.head.querySelector("[property~='og:music:artist'][content]").content;//split by /
+            let songAlbum=document.head.querySelector("[property~='og:music:album'][content]").content;
+            //songdownload
+            let dlDiv = document.createElement('div');
+            dlDiv.className="out s-fc3"
+            let dlp = document.createElement('p');
+            dlp.innerHTML = '歌曲下载;';
+            dlp.style.display="none"
+            dlDiv.appendChild(dlp)
+            cvrwrap.appendChild(document.createElement('br'))
+            cvrwrap.appendChild(dlDiv)
+
+
+
+            //songDownload
+            class SongFetch{
+                kuwotoken=''
+                get kuwoToken(){
+                    if(this.kuwotoken.length==0){
+                        fetch('http://www.kuwo.cn/favicon.ico')
+                    }
+                    return this.kuwotoken
+                }
+                constructor(songId,title,artists,album,parentdom) {
+                    this.songId=songId;
+                    this.title=title;
+                    this.artists=artists
+                    this.album=album
+                    this.parentdom=parentdom
+                };
+                ncmLevelDesc(level) {
+                    switch (level) {
+                        case 'standard':
+                            return '标准'
+                        case 'higher':
+                            return '较高'
+                        case 'exhigh':
+                            return '极高'
+                        case 'lossless':
+                            return '无损'
+                        case 'hires':
+                            return 'Hi-Res'
+                        default:
+                            return level
+                    }
+                };
+                getNCMSource(){
+                    weapiRequest("/api/song/enhance/player/url/v1", {
+                        type: "json",
+                        query: {
+                            ids: JSON.stringify([songId]),
+                            level: 'hires',
+                            encodeType: 'flac'
+                        },
+                        onload: (content)=> {
+                            if(content.data[0].url!=null){
+                                console.log(content)
+                                let config={
+                                    filename:songTitle+'.'+content.data[0].type.toLowerCase(),
+                                    url:content.data[0].url,
+                                    size:content.data[0].size,
+                                    desc:`网易云试听版本(${this.ncmLevelDesc(content.data[0].level)})`
+                            }
+                                this.createButton(config)
+                            }
+                        }
+                    })
+                };
+
+                createButton(config){
+                    let btn = document.createElement('a');
+                    btn.text = config.desc;
+                    btn.className="des s-fc7"
+                    btn.addEventListener('click', () => {
+                        dwonloadSong(config.url,config.filename,btn)
+                    })
+                    this.parentdom.appendChild(btn)
+                    this.parentdom.style.display="inline"
+                };
             }
+
+            let songFetch=new SongFetch(songId,songTitle,songArtist,songAlbum,dlp)
+
+            //wyy可播放
+            if(!document.querySelector(".u-btni-play-dis")){
+                songFetch.getNCMSource()
+            }
+
             //lyric
             weapiRequest("/api/song/lyric", {
                 type: "json",
@@ -115,58 +192,23 @@
                 },
             });
         }
+
     }
-    function levelDesc(level) {
-        switch (level) {
-            case 'standard':
-                return '标准'
-            case 'higher':
-                return '较高'
-            case 'exhigh':
-                return '极高'
-            case 'lossless':
-                return '无损'
-            case 'hires':
-                return 'Hi-Res'
-            default:
-                return level
-        }
-    }
-    function dwonloadSong(songId,songTitle,dlbtn){
-        weapiRequest("/api/song/enhance/player/url/v1", {
-            type: "json",
-            query: {
-                ids: JSON.stringify([songId]),
-                level: 'hires',
-                encodeType: 'flac'
-            },
-            onload: function(content) {
-                // console.log(content)
-                if(content.data[0].code==200){
-                    var filename=songTitle+'.'+content.data[0].type.toLowerCase();
-                    var dlurl=content.data[0].url
-                    var size=content.data[0].size
-                    var level=levelDesc(content.data[0].level)
-                    GM_download({
-                        url: dlurl,
-                        name: filename,
-                        onprogress:function(e){
-                            dlbtn.text=`正在下载${level}品质音乐... (${Math.round(e.loaded/e.totalSize*10000)/100}%)`
+
+
+    function dwonloadSong(url,fileName,dlbtn) {
+        let btntext=dlbtn.text
+        GM_download({
+            url: url,
+            name: fileName,
+            onprogress:function(e){
+                dlbtn.text=btntext+` 正在下载(${Math.round(e.loaded/e.totalSize*10000)/100}%)`
                                         },
-                        onload: function () {
-                            dlbtn.text='下载'
-                        },
-                        onerror :function(){
-                            dlbtn.text='下载失败'
-                        }
-                    });
-                }
-                else{
-                    dlbtn.text='获取下载链接失败 可能无下载权限';
-                }
+            onload: function () {
+                dlbtn.text=btntext
             },
-            onerror: function(content) {
-                console.log(content)
+            onerror :function(){
+                dlbtn.text=btntext+' 下载失败'
             }
         });
     }
@@ -236,9 +278,10 @@
         })
         return content.trim()
     }
-    function showPopUp(msg){
+    function showConfirmBox(msg){
         unsafeWindow.NEJ.P("nm.x").iQ3x(msg);
     }
+
     function showTips(tip,type){
         //type:1 √ 2:!
         unsafeWindow.NEJ.P("nm.l").bb0x.I0x({
@@ -255,32 +298,48 @@
             btn.id='cloudBtn'
             btn.className='u-btn2 u-btn2-1'
             let btni=document.createElement('i')
-            btni.innerHTML='上传周杰伦'
+            btni.innerHTML='云盘按歌手快传'
             btn.appendChild(btni)
             btn.setAttribute("hidefocus","true");
             btn.style.marginRight='10px';
-            btn.addEventListener('click',startUpload)
+            btn.addEventListener('click',ShowCloudUploadPopUp)
             editArea.insertBefore(btn,editArea.lastChild)
-            let cloudDesc=document.createElement('b')
-            cloudDesc.id='cloudDesc'
-            cloudDesc.style.marginRight='10px';
-            editArea.insertBefore(cloudDesc,btn)
 
-            function startUpload(){
-                let cloudDesc=document.getElementById('cloudDesc')
-                let cloudBtn=document.getElementById('cloudBtn')
-                cloudBtn.setAttribute("disabled","true");
-                cloudDesc.innerHTML='正在获取配置...'
+            function ShowCloudUploadPopUp(){
+                let option = {
+                    title:'云盘快速上传 点击歌手开始上传',
+                    clazz: "m-layer-w4",
+                    message:''
+                };
+                let popupdom=unsafeWindow.NEJ.P("nm.x").or4v(option).o0x;
+                let artists=JSON.parse(GM_getResourceText('top'))
+                let btns=[]
+                artists.forEach(artist=>{
+                    let btn = document.createElement('a');
+                    btn.text = `${artist.name}(${artist.count}首/${artist.sizeDesc})`;
+                    btn.className="des s-fc7"
+                    btn.style.margin='10px';
+                    btn.addEventListener('click', () => {
+                        startUpload(artist.name,artist.id)
+                    })
+                    btns.push(btn)
+                    btns.forEach(btn=>{popupdom.childNodes[0].appendChild(btn)})
+                })
+                popupdom.childNodes[1].innerHTML='<p class="inf s-fc3">上传不用文件是因为有人上传过,可以跳过这个步骤</p><p class="inf s-fc3">内容都有所缺少。同一首歌若在不同专辑出现，可能就上传一份。</p><p class="inf s-fc3">选取规则为网易云是无版权、VIP或音源是无损以上音质</p><span class="inf s-fc3">在拼夕夕上传一个歌手要1.88，这里秒传，<a target="_blank" href="https://github.com/Cinvin/myuserscripts" class="des s-fc7">可以点个免费的⭐️吗</a></span>'
+            }
+
+            function startUpload(cfgname,artistid){
+                showTips(`正在获取${cfgname}配置...`,1)
                 //https://raw.githubusercontent.com/Cinvin/cdn/main/ncmJay.json
                 //https://cdn.jsdelivr.net/gh/Cinvin/cdn@1.0.1/ncmJay.json
-                fetch('https://cdn.jsdelivr.net/gh/Cinvin/cdn@1.0.1/ncmJay.json')
+                fetch(`https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json`)
                     .then(r => r.json())
                     .then(r=>{
                     let songList=r.data
                     //console.log(songList)
                     let ids=songList.map(item=>{ return {'id':item.id} })
                     //获取需上传的song
-                    cloudDesc.innerHTML='获取需要上传的歌曲...'
+                    showTips(`正在获取${cfgname}需要上传的歌曲..`,1)
                     weapiRequest("/api/v3/song/detail", {
                         type: "json",
                         method: "post",
@@ -307,27 +366,26 @@
                             }
 
                             if ( songs.length == 0 ){
-                                cloudDesc.innerHTML=''
-                                showPopUp('没有需要上传的文件')
+                                showConfirmBox(cfgname+' 没有需要上传的文件')
                                 return
                             }
-                            let md5UploadObj=new Md5Upload(songs,cloudDesc,onMD5Finnish)
+                            let md5UploadObj=new Md5Upload(songs,cfgname,onMD5Finnish)
                             md5UploadObj.start()
                         }
                     })
                 })
+                    .catch('获取md5配置失败')
             }
             function onMD5Finnish(md5UploadObj){
-                let cloudBtn=document.getElementById('cloudBtn')
-                let cloudDesc=document.getElementById('cloudDesc')
-                cloudDesc.innerHTML=''
-                cloudBtn.setAttribute("disabled","true");
-                let text=`成功上传${md5UploadObj.sucessCount}首歌曲\n`
+                let text=`${md5UploadObj.name}成功上传${md5UploadObj.sucessCount}首歌曲\n`
+                if(md5UploadObj.existCount>0){
+                    text+='有文件在云盘已存在,跳过了上传(疑似网页版有很大(几个小时以上)延迟,删除马上重传会判断已存在)\n'
+                }
                 if(md5UploadObj.failCount>0){
                     text+='以下歌曲上传失败:'
                     md5UploadObj.forEach(idx=>{text+=`${md5UploadObj.failList[idx].name} `})
                 }
-                showPopUp(text)
+                showConfirmBox(text)
             }
             class Md5Upload {
                 idx=0
@@ -335,22 +393,18 @@
                 set currentIndex(currentIndex){
                     if(this.idx==currentIndex) return
                     this.idx=currentIndex
-                    if(currentIndex<this.count){
-                        if(this.textDOM){
-                            this.textDOM.innerHTML=`上传${this.songs[currentIndex].name}中 总计:${this.count} 成功${this.sucessCount} 失败${this.failCount}`
-                        }
-                    }
-                    else{
+                    if(currentIndex>=this.count){
                         this.finnishCallback(this)
                     }
                 }
-                constructor(songs,textDOM,finnishCallback) {
+                constructor(songs,name,finnishCallback) {
                     this.songs=songs;
-                    this.textDOM=textDOM;
                     this.count=songs.length
+                    this.name=name
                     this.failCount=0
                     this.failList=Array()
                     this.sucessCount=0
+                    this.existCount=0
                     this.finnishCallback=finnishCallback
                 };
                 start(){
@@ -362,6 +416,7 @@
                     let song=this.songs[this.currentIndex]
                     try{
                         weapiRequest("/api/cloud/upload/check", {
+                            cookie:true,
                             method: "POST",
                             type: "json",
                             data:{
@@ -430,6 +485,11 @@
                                                         songid: res3.songId,
                                                     },
                                                     onload: (res4)=>{
+                                                        if(res4.code==523){
+                                                            console.error(song.name,'4.发布资源',res4)
+                                                            this.onUploadExist()
+                                                            return
+                                                        }
                                                         if(res4.code!=200 && res4.code!=201){
                                                             console.error(song.name,'4.发布资源',res4)
                                                             this.onUploadFail()
@@ -503,7 +563,7 @@
                     this.failCount+=1
                     this.failList.push(this.currentIndex)
                     let song=this.songs[this.currentIndex]
-                    showTips(`上传${song.name} - ${song.artists} - ${song.album}失败`,2)
+                    showTips(`${song.name} - ${song.artists} - ${song.album} 上传失败`,2)
                     this.currentIndex+=1
                     this.uploadSong()
 
@@ -511,11 +571,17 @@
                 onUploadSucess(){
                     this.sucessCount+=1
                     let song=this.songs[this.currentIndex]
-                    showTips(`上传${song.name} - ${song.artists} - ${song.album}成功`,1)
+                    showTips(`${song.name} - ${song.artists} - ${song.album} 上传成功`,2)
                     this.currentIndex+=1
                     this.uploadSong()
                 }
-
+                onUploadExist(){
+                    this.existCount+=1
+                    let song=this.songs[this.currentIndex]
+                    showTips(`${song.name} - ${song.artists} - ${song.album} 云盘已存在,跳过上传`,2)
+                    this.currentIndex+=1
+                    this.uploadSong()
+                }
             }
         }
     }
