@@ -2,15 +2,17 @@
 // @name             网易云:音乐、歌词下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.0.0
+// @version           1.0.2
 // @description     在歌曲页面歌曲和歌词下载,在个人主页云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
+// @grant             GM_xmlhttpRequest
 // @grant             GM_getResourceText
 // @grant             GM_download
 // @grant             GM_getValue
 // @grant             GM_setValue
 // @grant             unsafeWindow
+// @require https://unpkg.com/ajax-hook@2.1.3/dist/ajaxhook.min.js
 // @resource top https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
 // ==/UserScript==
 
@@ -18,6 +20,7 @@
     'use strict';
 
     const weapiRequest=unsafeWindow.NEJ.P("nej.j").be0x
+
     //歌曲页
     if (location.href.match('song')){
         let cvrwrap=document.querySelector(".cvrwrap")
@@ -378,12 +381,9 @@
             }
             function onMD5Finnish(md5UploadObj){
                 let text=`${md5UploadObj.name}成功上传${md5UploadObj.sucessCount}首歌曲\n`
-                if(md5UploadObj.existCount>0){
-                    text+='有文件在云盘已存在,跳过了上传(疑似网页版有很大(几个小时以上)延迟,删除马上重传会判断已存在)\n'
-                }
                 if(md5UploadObj.failCount>0){
                     text+='以下歌曲上传失败:'
-                    md5UploadObj.forEach(idx=>{text+=`${md5UploadObj.failList[idx].name} `})
+                    md5UploadObj.failList.forEach(idx=>{text+=`${md5UploadObj.songs[idx].name} `})
                 }
                 showConfirmBox(text)
             }
@@ -394,6 +394,7 @@
                     if(this.idx==currentIndex) return
                     this.idx=currentIndex
                     if(currentIndex>=this.count){
+                        this.destructor()
                         this.finnishCallback(this)
                     }
                 }
@@ -406,7 +407,31 @@
                     this.sucessCount=0
                     this.existCount=0
                     this.finnishCallback=finnishCallback
+                    window.Proxy({
+                        onRequest: (config, handler) => {
+                            if (config.url.indexOf('weapi')>0) {
+                                GM_xmlhttpRequest({
+                                    async:config.async,
+                                    method: config.method,
+                                    url: config.url,
+                                    headers: {
+                                        "content-type": config.headers['content-type'],
+                                        "cookie":unsafeWindow.document.cookie+';os=pc;appver=2.9.7',
+                                    },
+                                    data:config.body,
+                                    onload: function(response) {
+                                         handler.resolve(response)
+                                    }
+                                });
+                            } else {
+                                handler.next(config);
+                            }
+                        },
+                    },unsafeWindow)
                 };
+                destructor(){
+                    window.unProxy(unsafeWindow)
+                }
                 start(){
                     this.currentIndex=0
                     this.uploadSong()
@@ -416,7 +441,6 @@
                     let song=this.songs[this.currentIndex]
                     try{
                         weapiRequest("/api/cloud/upload/check", {
-                            cookie:true,
                             method: "POST",
                             type: "json",
                             data:{
@@ -478,18 +502,12 @@
                                                 console.log(song.name,'3.提交文件',res3)
                                                 //step4 发布
                                                 weapiRequest("/api/cloud/pub/v2", {
-                                                    cookie:true,
                                                     method: "POST",
                                                     type: "json",
                                                     data: {
                                                         songid: res3.songId,
                                                     },
                                                     onload: (res4)=>{
-                                                        if(res4.code==523){
-                                                            console.error(song.name,'4.发布资源',res4)
-                                                            this.onUploadExist()
-                                                            return
-                                                        }
                                                         if(res4.code!=200 && res4.code!=201){
                                                             console.error(song.name,'4.发布资源',res4)
                                                             this.onUploadFail()
@@ -566,19 +584,11 @@
                     showTips(`${song.name} - ${song.artists} - ${song.album} 上传失败`,2)
                     this.currentIndex+=1
                     this.uploadSong()
-
                 }
                 onUploadSucess(){
                     this.sucessCount+=1
                     let song=this.songs[this.currentIndex]
-                    showTips(`${song.name} - ${song.artists} - ${song.album} 上传成功`,2)
-                    this.currentIndex+=1
-                    this.uploadSong()
-                }
-                onUploadExist(){
-                    this.existCount+=1
-                    let song=this.songs[this.currentIndex]
-                    showTips(`${song.name} - ${song.artists} - ${song.album} 云盘已存在,跳过上传`,2)
+                    showTips(`${song.name} - ${song.artists} - ${song.album} 上传成功`,1)
                     this.currentIndex+=1
                     this.uploadSong()
                 }
