@@ -2,18 +2,16 @@
 // @name             网易云:音乐、歌词下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.0.2
+// @version           1.0.3
 // @description     在歌曲页面歌曲和歌词下载,在个人主页云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
 // @grant             GM_xmlhttpRequest
-// @grant             GM_getResourceText
 // @grant             GM_download
 // @grant             GM_getValue
 // @grant             GM_setValue
 // @grant             unsafeWindow
 // @require https://unpkg.com/ajax-hook@2.1.3/dist/ajaxhook.min.js
-// @resource top https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
 // ==/UserScript==
 
 (function() {
@@ -307,6 +305,14 @@
             btn.style.marginRight='10px';
             btn.addEventListener('click',ShowCloudUploadPopUp)
             editArea.insertBefore(btn,editArea.lastChild)
+            var toplist=[]
+            fetch('https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/top.json')
+                .then(r => r.json())
+                .then(r=>{
+                toplist=r;
+                editArea.insertBefore(btn,editArea.lastChild)
+            })
+
 
             function ShowCloudUploadPopUp(){
                 let option = {
@@ -315,7 +321,7 @@
                     message:''
                 };
                 let popupdom=unsafeWindow.NEJ.P("nm.x").or4v(option).o0x;
-                let artists=JSON.parse(GM_getResourceText('top'))
+                let artists=toplist
                 let btns=[]
                 artists.forEach(artist=>{
                     let btn = document.createElement('a');
@@ -420,7 +426,7 @@
                                     },
                                     data:config.body,
                                     onload: function(response) {
-                                         handler.resolve(response)
+                                        handler.resolve(response)
                                     }
                                 });
                             } else {
