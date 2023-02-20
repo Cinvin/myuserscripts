@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.0.3
+// @version           1.0.4
 // @description     在歌曲页面歌曲和歌词下载,在个人主页云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -413,7 +413,7 @@
                     this.sucessCount=0
                     this.existCount=0
                     this.finnishCallback=finnishCallback
-                    window.Proxy({
+                    ah.proxy({
                         onRequest: (config, handler) => {
                             if (config.url.indexOf('weapi')>0) {
                                 GM_xmlhttpRequest({
@@ -436,7 +436,7 @@
                     },unsafeWindow)
                 };
                 destructor(){
-                    window.unProxy(unsafeWindow)
+                    ah.unProxy(unsafeWindow)
                 }
                 start(){
                     this.currentIndex=0
