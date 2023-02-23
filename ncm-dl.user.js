@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.0.5
+// @version           1.1.0
 // @description     在歌曲页面歌曲和歌词下载,在个人主页云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -31,7 +31,7 @@
             let dlDiv = document.createElement('div');
             dlDiv.className="out s-fc3"
             let dlp = document.createElement('p');
-            dlp.innerHTML = '歌曲下载;';
+            dlp.innerHTML = '歌曲下载:';
             dlp.style.display="none"
             dlDiv.appendChild(dlp)
             cvrwrap.appendChild(document.createElement('br'))
@@ -72,23 +72,62 @@
                     }
                 };
                 getNCMSource(){
-                    weapiRequest("/api/song/enhance/player/url/v1", {
+                    weapiRequest("/api/v3/song/detail", {
                         type: "json",
                         query: {
-                            ids: JSON.stringify([songId]),
-                            level: 'hires',
-                            encodeType: 'flac'
+                            c: JSON.stringify([{'id':songId}]),
                         },
-                        onload: (content)=> {
-                            if(content.data[0].url!=null){
-                                console.log(content)
-                                let config={
-                                    filename:songTitle+'.'+content.data[0].type.toLowerCase(),
-                                    url:content.data[0].url,
-                                    size:content.data[0].size,
-                                    desc:`网易云试听版本(${this.ncmLevelDesc(content.data[0].level)})`
+                        onload: (songdetail)=> {
+                            console.log(songdetail)
+                            if (songdetail.privileges[0].cs){
+                                this.parentdom.innerHTML='歌曲下载(云盘版本):'
                             }
-                                this.createButton(config)
+                            if (songdetail.privileges[0].plLevel!="none"){
+                                weapiRequest("/api/song/enhance/player/url/v1", {
+                                    type: "json",
+                                    query: {
+                                        ids: JSON.stringify([songId]),
+                                        level: songdetail.privileges[0].plLevel,
+                                        encodeType: 'mp3'
+                                    },
+                                    onload: (content)=> {
+                                        if(content.data[0].url!=null){
+                                            console.log(content)
+                                            let config={
+                                                filename:songTitle+'.'+content.data[0].type.toLowerCase(),
+                                                url:content.data[0].url,
+                                                size:content.data[0].size,
+                                                desc:this.ncmLevelDesc(songdetail.privileges[0].plLevel)
+                                            }
+                                            if (songdetail.privileges[0].dlLevel!="none" && songdetail.privileges[0].plLevel!=songdetail.privileges[0].dlLevel){
+                                                config.desc=`试听版本(${config.desc})`
+                                            }
+                                            this.createButton(config)
+                                        }
+                                    }
+                                })
+                            }
+                            if (songdetail.privileges[0].dlLevel!="none" && songdetail.privileges[0].plLevel!=songdetail.privileges[0].dlLevel){
+                                weapiRequest("/api/song/enhance/download/url/v1", {
+                                    type: "json",
+                                    query: {
+                                        id: songId,
+                                        level: songdetail.privileges[0].dlLevel,
+                                        encodeType: 'mp3'
+                                    },
+                                    onload: (content)=> {
+                                        if(content.data.url!=null){
+                                            console.log(content)
+                                            let config={
+                                                filename:songTitle+'.'+content.data.type.toLowerCase(),
+                                                url:content.data.url,
+                                                size:content.data.size,
+                                                desc:`下载版本(${this.ncmLevelDesc(songdetail.privileges[0].dlLevel)})`
+                                            }
+                                            this.createButton(config)
+                                        }
+                                    }
+                                })
                             }
                         }
                     })
@@ -98,6 +137,7 @@
                     let btn = document.createElement('a');
                     btn.text = config.desc;
                     btn.className="des s-fc7"
+                    btn.style.margin='2px';
                     btn.addEventListener('click', () => {
                         dwonloadSong(config.url,config.filename,btn)
                     })
@@ -134,16 +174,15 @@
                         let tl = document.createElement('a');
                         tl.text = '翻译';
                         tl.className="des s-fc7"
+                        tl.style.margin='2px';
                         tl.addEventListener('click', () => {
                             switchLyric('tlyric');
                         })
                         p.appendChild(tl)
-                        let span=document.createElement('span')
-                        span.innerHTML = ' / ';
-                        p.appendChild(span)
                         let rl = document.createElement('a');
                         rl.text = '罗马音';
                         rl.className="des s-fc7"
+                        rl.style.margin='2px';
                         rl.addEventListener('click', () => {
                             switchLyric('romalrc');
                         })
@@ -159,29 +198,26 @@
                     let lrc = document.createElement('a');
                     lrc.text = '原词';
                     lrc.className="des s-fc7"
+                    lrc.style.margin='2px';
                     lrc.addEventListener('click',() =>{
                         downloadLyric('lrc',songTitle)
                     })
                     p.appendChild(lrc)
                     if(content.tlyric.lyric.length>0){
-                        let span=document.createElement('span')
-                        span.innerHTML = ' / ';
-                        p.appendChild(span)
                         let tlyric = document.createElement('a');
-                        tlyric.text = '原词+翻译';
+                        tlyric.text = '原词x翻译';
                         tlyric.className="des s-fc7"
+                        tlyric.style.margin='2px';
                         tlyric.addEventListener('click',() =>{
                             downloadLyric('lrc-tlyric',songTitle)
                         })
                         p.appendChild(tlyric)
                     }
                     if(content.romalrc.lyric.length>0){
-                        let span=document.createElement('span')
-                        span.innerHTML = ' / ';
-                        p.appendChild(span)
                         let romalrc = document.createElement('a');
-                        romalrc.text = '原词+罗马音';
+                        romalrc.text = '原词x罗马音';
                         romalrc.className="des s-fc7"
+                        romalrc.style.margin='2px';
                         romalrc.addEventListener('click',() =>{
                             downloadLyric('lrc-romalrc',songTitle)
                         })
@@ -326,7 +362,7 @@
                     let btn = document.createElement('a');
                     btn.text = `${artist.name}(${artist.count}首/${artist.sizeDesc})`;
                     btn.className="des s-fc7"
-                    btn.style.margin='10px';
+                    btn.style.margin='2px';
                     btn.addEventListener('click', () => {
                         startUpload(artist.name,artist.id)
                     })
