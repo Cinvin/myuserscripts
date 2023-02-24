@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name             网易云:音乐、歌词下载,云盘快速上传周杰伦等歌手
+// @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.1.0
-// @description     在歌曲页面歌曲和歌词下载,在个人主页云盘快速上传歌手歌曲
+// @version           1.2.0
+// @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
 // @grant             GM_xmlhttpRequest
@@ -28,15 +28,49 @@
             let songArtist=document.head.querySelector("[property~='og:music:artist'][content]").content;//split by /
             let songAlbum=document.head.querySelector("[property~='og:music:album'][content]").content;
             //songdownload
-            let dlDiv = document.createElement('div');
-            dlDiv.className="out s-fc3"
-            let dlp = document.createElement('p');
-            dlp.innerHTML = '歌曲下载:';
-            dlp.style.display="none"
-            dlDiv.appendChild(dlp)
-            cvrwrap.appendChild(document.createElement('br'))
-            cvrwrap.appendChild(dlDiv)
+            let songDownloadDiv = document.createElement('div');
+            songDownloadDiv.className="out s-fc3"
+            let songDownloadP = document.createElement('p');
+            songDownloadP.innerHTML = '歌曲下载:';
+            songDownloadDiv.style.display="none"
+            songDownloadDiv.appendChild(songDownloadP)
+            cvrwrap.appendChild(songDownloadDiv)
 
+            //lyricShow
+            let lrcShowDiv = document.createElement('div');
+            lrcShowDiv.className="out s-fc3"
+            let lrcShowP = document.createElement('p');
+            lrcShowP.innerHTML = '歌词显示:';
+            lrcShowDiv.style.display="none"
+            lrcShowDiv.appendChild(lrcShowP)
+            cvrwrap.appendChild(lrcShowDiv)
+
+            //lyricDownload
+            let lrcDownloadDiv = document.createElement('div');
+            lrcDownloadDiv.className="out s-fc3"
+            let lrcDownloadP = document.createElement('p');
+            lrcDownloadP.innerHTML = '歌词下载:';
+            lrcDownloadDiv.style.display="none"
+            lrcDownloadDiv.appendChild(lrcDownloadP)
+            cvrwrap.appendChild(lrcDownloadDiv)
+
+            //sheetDownload
+            let sheetDownloadDiv = document.createElement('div');
+            sheetDownloadDiv.className="out s-fc3"
+            let sheetDownloadP = document.createElement('p');
+            sheetDownloadP.innerHTML = '乐谱下载:';
+            sheetDownloadDiv.style.display="none"
+            sheetDownloadDiv.appendChild(sheetDownloadP)
+            cvrwrap.appendChild(sheetDownloadDiv)
+
+            //wikiMemory
+            let wikiMemoryDiv = document.createElement('div');
+            wikiMemoryDiv.className="out s-fc3"
+            let wikiMemoryP = document.createElement('p');
+            wikiMemoryP.innerHTML = '回忆坐标:';
+            wikiMemoryDiv.style.display="none"
+            wikiMemoryDiv.appendChild(wikiMemoryP)
+            cvrwrap.appendChild(wikiMemoryDiv)
 
 
             //songDownload
@@ -48,12 +82,11 @@
                     }
                     return this.kuwotoken
                 }
-                constructor(songId,title,artists,album,parentdom) {
+                constructor(songId,title,artists,album) {
                     this.songId=songId;
                     this.title=title;
                     this.artists=artists
                     this.album=album
-                    this.parentdom=parentdom
                 };
                 ncmLevelDesc(level) {
                     switch (level) {
@@ -80,7 +113,7 @@
                         onload: (songdetail)=> {
                             console.log(songdetail)
                             if (songdetail.privileges[0].cs){
-                                this.parentdom.innerHTML='歌曲下载(云盘版本):'
+                                songDownloadP.innerHTML='歌曲下载(云盘版本):'
                             }
                             if (songdetail.privileges[0].plLevel!="none"){
                                 weapiRequest("/api/song/enhance/player/url/v1", {
@@ -141,12 +174,12 @@
                     btn.addEventListener('click', () => {
                         dwonloadSong(config.url,config.filename,btn)
                     })
-                    this.parentdom.appendChild(btn)
-                    this.parentdom.style.display="inline"
+                    songDownloadP.appendChild(btn)
+                    songDownloadDiv.style.display="inline"
                 };
             }
 
-            let songFetch=new SongFetch(songId,songTitle,songArtist,songAlbum,dlp)
+            let songFetch=new SongFetch(songId,songTitle,songArtist,songAlbum)
 
             //wyy可播放
             if(!document.querySelector(".u-btni-play-dis")){
@@ -167,18 +200,14 @@
                     let lyricObj=content
                     GM_setValue('lyric',content)
                     if(content.romalrc.lyric.length>0){
-                        let lrcShowItem = document.createElement('div');
-                        lrcShowItem.className="out s-fc3"
-                        let p = document.createElement('p');
-                        p.innerHTML = '歌词显示:';
                         let tl = document.createElement('a');
-                        tl.text = '翻译';
+                        tl.text = '正常';
                         tl.className="des s-fc7"
                         tl.style.margin='2px';
                         tl.addEventListener('click', () => {
                             switchLyric('tlyric');
                         })
-                        p.appendChild(tl)
+                        lrcShowP.appendChild(tl)
                         let rl = document.createElement('a');
                         rl.text = '罗马音';
                         rl.className="des s-fc7"
@@ -186,15 +215,9 @@
                         rl.addEventListener('click', () => {
                             switchLyric('romalrc');
                         })
-                        p.appendChild(rl)
-                        lrcShowItem.appendChild(p)
-                        cvrwrap.appendChild(document.createElement('br'))
-                        cvrwrap.appendChild(lrcShowItem)
+                        lrcShowP.appendChild(rl)
+                        lrcShowDiv.style.display="inline"
                     }
-                    let lrcDownloadItem = document.createElement('div');
-                    lrcDownloadItem.className="out s-fc3"
-                    let p = document.createElement('p');
-                    p.innerHTML = '歌词下载:';
                     let lrc = document.createElement('a');
                     lrc.text = '原词';
                     lrc.className="des s-fc7"
@@ -202,7 +225,7 @@
                     lrc.addEventListener('click',() =>{
                         downloadLyric('lrc',songTitle)
                     })
-                    p.appendChild(lrc)
+                    lrcDownloadP.appendChild(lrc)
                     if(content.tlyric.lyric.length>0){
                         let tlyric = document.createElement('a');
                         tlyric.text = '原词x翻译';
@@ -211,7 +234,7 @@
                         tlyric.addEventListener('click',() =>{
                             downloadLyric('lrc-tlyric',songTitle)
                         })
-                        p.appendChild(tlyric)
+                        lrcDownloadP.appendChild(tlyric)
                     }
                     if(content.romalrc.lyric.length>0){
                         let romalrc = document.createElement('a');
@@ -221,100 +244,184 @@
                         romalrc.addEventListener('click',() =>{
                             downloadLyric('lrc-romalrc',songTitle)
                         })
-                        p.appendChild(romalrc)
+                        lrcDownloadP.appendChild(romalrc)
                     }
-                    lrcDownloadItem.appendChild(p)
-                    cvrwrap.appendChild(document.createElement('br'))
-                    cvrwrap.appendChild(lrcDownloadItem)
+                    lrcDownloadDiv.style.display="inline"
+                },
+            });
+
+            //sheet
+            weapiRequest("/api/music/sheet/list/v1", {
+                type: "json",
+                query: {
+                    id: songId,
+                    abTest:  'b',
+                },
+                onload: (content)=> {
+                    console.log(content)
+                    if (content.data.errorCode==null){
+                        content.data.musicSheetSimpleInfoVOS.forEach(item=>{
+                            let texts=[item.name,item.playVersion,item.musicKey+"调"]
+                            if (item.difficulty.length>0){
+                                texts.push("难度"+item.difficulty)
+                            }
+                            if (item.chordName.length>0){
+                                texts.push(item.chordName+"和弦")
+                            }
+                            if (item.bpm>0){
+                                texts.push(item.bpm+"bpm")
+                            }
+                            texts.push(item.totalPageSize+"页")
+
+                            let btn = document.createElement('a');
+                            btn.text = texts.join("-");
+                            btn.className="des s-fc7"
+                            btn.style.margin='5px';
+                            btn.addEventListener('click', () => {
+                                dwonloadSheet(item.id,`${songTitle}-${item.name}-${item.playVersion}`)
+                            })
+                            sheetDownloadP.appendChild(btn)
+                            sheetDownloadDiv.style.display="inline"
+                        })
+                    }
+                }
+            })
+
+            //wiki
+            weapiRequest("/api/song/play/about/block/page", {
+                type: "json",
+                data: {
+                    songId: songId,
+                },
+                onload: function(content) {
+                    console.log(content)
+                    if(content.data.blocks[0].creatives.length>0){
+                        content.data.blocks.forEach(block=>{
+                            if(block.code=='SONG_PLAY_ABOUT_MUSIC_MEMORY' && block.creatives.length>0){
+                                let info=block.creatives[0].resources
+                                let firstTimeP = document.createElement('p');
+                                firstTimeP.innerHTML = `第一次听:${info[0].resourceExt.musicFirstListenDto.date}`;
+                                firstTimeP.className="des s-fc3"
+                                firstTimeP.style.margin='5px';
+                                wikiMemoryP.appendChild(firstTimeP)
+                                let recordP = document.createElement('p');
+                                recordP.innerHTML = `累计播放:${info[1].resourceExt.musicTotalPlayDto.playCount}次 ${info[1].resourceExt.musicTotalPlayDto.duration}分钟 ${info[1].resourceExt.musicTotalPlayDto.text}`;
+                                recordP.className="des s-fc3"
+                                recordP.style.margin='5px';
+                                wikiMemoryP.appendChild(recordP)
+                                wikiMemoryDiv.style.display="inline"
+                            }
+                        })
+                    }
                 },
             });
         }
 
-    }
-
-
-    function dwonloadSong(url,fileName,dlbtn) {
-        let btntext=dlbtn.text
-        GM_download({
-            url: url,
-            name: fileName,
-            onprogress:function(e){
-                dlbtn.text=btntext+` 正在下载(${Math.round(e.loaded/e.totalSize*10000)/100}%)`
+        function dwonloadSong(url,fileName,dlbtn) {
+            let btntext=dlbtn.text
+            GM_download({
+                url: url,
+                name: fileName,
+                onprogress:function(e){
+                    dlbtn.text=btntext+` 正在下载(${Math.round(e.loaded/e.totalSize*10000)/100}%)`
                                         },
-            onload: function () {
-                dlbtn.text=btntext
-            },
-            onerror :function(){
-                dlbtn.text=btntext+' 下载失败'
+                onload: function () {
+                    dlbtn.text=btntext
+                },
+                onerror :function(){
+                    dlbtn.text=btntext+' 下载失败'
+                }
+            });
+        }
+
+        function switchLyric(type) {
+            let lyric=GM_getValue('lyric')
+            let lyric1=lyric.lrc.lyric
+            let lyric2=null
+            switch (type) {
+                case 'tlyric':
+                    lyric2=lyric.tlyric.lyric
+                    break
+                case 'romalrc':
+                    lyric2=lyric.romalrc.lyric
+                    break
             }
-        });
-    }
-    function switchLyric(type) {
-        let lyric=GM_getValue('lyric')
-        let lyric1=lyric.lrc.lyric
-        let lyric2=null
-        switch (type) {
-            case 'tlyric':
-                lyric2=lyric.tlyric.lyric
-                break
-            case 'romalrc':
-                lyric2=lyric.romalrc.lyric
-                break
+            let lyric_content=document.querySelector("#lyric-content")
+            let songId=Number(location.href.match(/\d+$/g));
+            let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK0x(lyric1, lyric2);
+            let a9j = unsafeWindow.NEJ.P("nej.e")
+            a9j.dm1x(lyric_content, "m-lyric-content", {
+                id: songId,
+                nolyric: lyric.nolyric,
+                limit: lyric2 ? 6 : 13,
+                lines: lyrictimelines.lines,
+                scrollable: lyrictimelines.scrollable,
+                thirdCopy: a9j.v0x(lyric_content, "thirdCopy") == "true",
+                copyFrom: a9j.v0x(lyric_content, "copyFrom")
+            });
+            lyric.scrollable = lyrictimelines.scrollable;
+            lyric.songId = songId;
+            //a9j.dm1x("user-operation", "m-user-operation", lyric);
+            unsafeWindow.NEJ.P("nej.v").s0x("flag_ctrl", "click", () => {
+                var bBc9T = a9j.A0x("flag_more");
+                if (a9j.bE0x(bBc9T, "f-hide")) {
+                    a9j.x0x(bBc9T, "f-hide");
+                    a9j.A0x("flag_ctrl").innerHTML = '收起<i class="u-icn u-icn-70"></i>'
+                } else {
+                    a9j.w0x(bBc9T, "f-hide");
+                    a9j.A0x("flag_ctrl").innerHTML = '展开<i class="u-icn u-icn-69"></i>'
+                }
+            })
         }
-        let lyric_content=document.querySelector("#lyric-content")
-        let songId=Number(location.href.match(/\d+$/g));
-        let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK0x(lyric1, lyric2);
-        let a9j = unsafeWindow.NEJ.P("nej.e")
-        a9j.dm1x(lyric_content, "m-lyric-content", {
-            id: songId,
-            nolyric: lyric.nolyric,
-            limit: lyric2 ? 6 : 13,
-            lines: lyrictimelines.lines,
-            scrollable: lyrictimelines.scrollable,
-            thirdCopy: a9j.v0x(lyric_content, "thirdCopy") == "true",
-            copyFrom: a9j.v0x(lyric_content, "copyFrom")
-        });
-        lyric.scrollable = lyrictimelines.scrollable;
-        lyric.songId = songId;
-        //a9j.dm1x("user-operation", "m-user-operation", lyric);
-        unsafeWindow.NEJ.P("nej.v").s0x("flag_ctrl", "click", () => {
-            var bBc9T = a9j.A0x("flag_more");
-            if (a9j.bE0x(bBc9T, "f-hide")) {
-                a9j.x0x(bBc9T, "f-hide");
-                a9j.A0x("flag_ctrl").innerHTML = '收起<i class="u-icn u-icn-70"></i>'
-            } else {
-                a9j.w0x(bBc9T, "f-hide");
-                a9j.A0x("flag_ctrl").innerHTML = '展开<i class="u-icn u-icn-69"></i>'
+        function downloadLyric(type,songTitle){
+            let lyric=GM_getValue('lyric')
+            let content=lyric.lrc.lyric
+            if (type=='lrc-tlyric'){
+                content=combineLyric(lyric.lrc.lyric,lyric.tlyric.lyric)
             }
-        })
-    }
-    function downloadLyric(type,songTitle){
-        let lyric=GM_getValue('lyric')
-        let content=lyric.lrc.lyric
-        if (type=='lrc-tlyric'){
-            content=combineLyric(lyric.lrc.lyric,lyric.tlyric.lyric)
+            else if (type=='lrc-romalrc'){
+                content=combineLyric(lyric.lrc.lyric,lyric.romalrc.lyric)
+            }
+            let lrc = document.createElement('a');
+            let data=new Blob([content], {type:'type/plain'})
+            let fileurl = URL.createObjectURL(data)
+            lrc.href=fileurl
+            lrc.download=songTitle+'.lrc'
+            lrc.click()
+            URL.revokeObjectURL(data);
         }
-        else if (type=='lrc-romalrc'){
-            content=combineLyric(lyric.lrc.lyric,lyric.romalrc.lyric)
-        }
-        let lrc = document.createElement('a');
-        let data=new Blob([content], {type:'type/plain'})
-        let fileurl = URL.createObjectURL(data)
-        lrc.href=fileurl
-        lrc.download=songTitle+'.lrc'
-        lrc.click()
-        URL.revokeObjectURL(data);
-    }
-    function combineLyric(lyric1,lyric2){
-        let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK0x(lyric1, lyric2);
-        let content=''
-        lyrictimelines.lines.forEach(line=>{
-            let linecontent=`[${line.tag}] ${line.lyric}`
+        function combineLyric(lyric1,lyric2){
+            let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK0x(lyric1, lyric2);
+            let content=''
+            lyrictimelines.lines.forEach(line=>{
+                let linecontent=`[${line.tag}] ${line.lyric}`
             linecontent=linecontent.replace('<br>','\n').trim()+'\n'
-            content=content+linecontent
-        })
-        return content.trim()
+                content=content+linecontent
+            })
+            return content.trim()
+        }
+
+        function dwonloadSheet(sheetId,desc) {
+            console.log(sheetId,desc)
+            weapiRequest("/api//music/sheet/preview/info", {
+                type: "json",
+                query: {
+                    id: sheetId,
+                },
+                onload: (content)=> {
+                    console.log(content)
+                    content.data.forEach(sheetPage=>{
+                        let fileName=`${desc}-${sheetPage.pageNumber}.jpg`
+                        GM_download({
+                            url: sheetPage.url,
+                            name: fileName,
+                        });
+                    })
+                }
+            })
+        }
     }
+
     function showConfirmBox(msg){
         unsafeWindow.NEJ.P("nm.x").iQ3x(msg);
     }
@@ -341,6 +448,8 @@
             btn.style.marginRight='10px';
             btn.addEventListener('click',ShowCloudUploadPopUp)
             var toplist=[]
+            //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/top.json
+            //https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
             fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/top.json')
                 .then(r => r.json())
                 .then(r=>{
@@ -374,8 +483,8 @@
 
             function startUpload(cfgname,artistid){
                 showTips(`正在获取${cfgname}配置...`,1)
-                //https://raw.githubusercontent.com/Cinvin/cdn/main/ncmJay.json
-                //https://fastly.jsdelivr.net/gh/Cinvin/cdn@1.0.1/ncmJay.json
+                //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/${artistid}.json
+                //https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
                 fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json`)
                     .then(r => r.json())
                     .then(r=>{
@@ -396,7 +505,7 @@
                             for(let i =0;i<len;i++){
                                 if(!content.privileges[i].cs){
                                     let config=songList.find(item=>{return item.id==content.songs[i].id})
-                                    songs.push({
+                                    let item={
                                         id:content.songs[i].id,
                                         name:content.songs[i].name,
                                         album:content.songs[i].al.name,
@@ -405,7 +514,15 @@
                                         ext:config.ext,
                                         md5:config.md5,
                                         size:config.size,
-                                    })
+                                    }
+                                    if (config.name){
+                                        item.id=0
+                                        item.name=config.name
+                                        item.album=config.al
+                                        item.artists=config.ar
+                                        item.filename=config.name+'.'+config.ext
+                                    }
+                                    songs.push(item)
                                 }
                             }
 
@@ -556,7 +673,7 @@
                                                         }
                                                         console.log(song.name,'4.发布资源',res4)
                                                         //step5 关联
-                                                        if(res4.privateCloud.songId!=song.id){
+                                                        if(res4.privateCloud.songId!=song.id && song.id>0){
                                                             weapiRequest("/api/cloud/user/song/match", {
                                                                 method: "POST",
                                                                 type: "json",
