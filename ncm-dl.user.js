@@ -2,14 +2,12 @@
 // @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.2
+// @version           1.2.3
 // @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
 // @grant             GM_xmlhttpRequest
 // @grant             GM_download
-// @grant             GM_getValue
-// @grant             GM_setValue
 // @grant             unsafeWindow
 // ==/UserScript==
 
@@ -52,6 +50,7 @@
             lrcDownloadDiv.style.display="none"
             lrcDownloadDiv.appendChild(lrcDownloadP)
             cvrwrap.appendChild(lrcDownloadDiv)
+            let lyricObj={}
 
             //sheetDownload
             let sheetDownloadDiv = document.createElement('div');
@@ -196,8 +195,7 @@
                     kv: -1,
                 },
                 onload: function(content) {
-                    let lyricObj=content
-                    GM_setValue('lyric',content)
+                    lyricObj=content
                     if(content.romalrc.lyric.length>0){
                         let tl = document.createElement('a');
                         tl.text = '正常';
@@ -314,35 +312,16 @@
                     }
                 },
             });
-        }
 
-        function dwonloadSong(url,fileName,dlbtn) {
-            let btntext=dlbtn.text
-            GM_download({
-                url: url,
-                name: fileName,
-                onprogress:function(e){
-                    dlbtn.text=btntext+` 正在下载(${Math.round(e.loaded/e.totalSize*10000)/100}%)`
-                                        },
-                onload: function () {
-                    dlbtn.text=btntext
-                },
-                onerror :function(){
-                    dlbtn.text=btntext+' 下载失败'
-                }
-            });
-        }
-
-        function switchLyric(type) {
-            let lyric=GM_getValue('lyric')
-            let lyric1=lyric.lrc.lyric
+            function switchLyric(type) {
+            let lyric1=lyricObj.lrc.lyric
             let lyric2=null
             switch (type) {
                 case 'tlyric':
-                    lyric2=lyric.tlyric.lyric
+                    lyric2=lyricObj.tlyric.lyric
                     break
                 case 'romalrc':
-                    lyric2=lyric.romalrc.lyric
+                    lyric2=lyricObj.romalrc.lyric
                     break
             }
             let lyric_content=document.querySelector("#lyric-content")
@@ -351,15 +330,15 @@
             let a9j = unsafeWindow.NEJ.P("nej.e")
             a9j.dm1x(lyric_content, "m-lyric-content", {
                 id: songId,
-                nolyric: lyric.nolyric,
+                nolyric: lyricObj.nolyric,
                 limit: lyric2 ? 6 : 13,
                 lines: lyrictimelines.lines,
                 scrollable: lyrictimelines.scrollable,
                 thirdCopy: a9j.v0x(lyric_content, "thirdCopy") == "true",
                 copyFrom: a9j.v0x(lyric_content, "copyFrom")
             });
-            lyric.scrollable = lyrictimelines.scrollable;
-            lyric.songId = songId;
+            lyricObj.scrollable = lyrictimelines.scrollable;
+            lyricObj.songId = songId;
             //a9j.dm1x("user-operation", "m-user-operation", lyric);
             unsafeWindow.NEJ.P("nej.v").s0x("flag_ctrl", "click", () => {
                 var bBc9T = a9j.A0x("flag_more");
@@ -373,13 +352,12 @@
             })
         }
         function downloadLyric(type,songTitle){
-            let lyric=GM_getValue('lyric')
-            let content=lyric.lrc.lyric
+            let content=lyricObj.lrc.lyric
             if (type=='lrc-tlyric'){
-                content=combineLyric(lyric.lrc.lyric,lyric.tlyric.lyric)
+                content=combineLyric(lyricObj.lrc.lyric,lyricObj.tlyric.lyric)
             }
             else if (type=='lrc-romalrc'){
-                content=combineLyric(lyric.lrc.lyric,lyric.romalrc.lyric)
+                content=combineLyric(lyricObj.lrc.lyric,lyricObj.romalrc.lyric)
             }
             let lrc = document.createElement('a');
             let data=new Blob([content], {type:'type/plain'})
@@ -399,6 +377,26 @@
             })
             return content.trim()
         }
+        }
+
+        function dwonloadSong(url,fileName,dlbtn) {
+            let btntext=dlbtn.text
+            GM_download({
+                url: url,
+                name: fileName,
+                onprogress:function(e){
+                    dlbtn.text=btntext+` 正在下载(${Math.round(e.loaded/e.totalSize*10000)/100}%)`
+                                        },
+                onload: function () {
+                    dlbtn.text=btntext
+                },
+                onerror :function(){
+                    dlbtn.text=btntext+' 下载失败'
+                }
+            });
+        }
+
+        
 
         function dwonloadSheet(sheetId,desc) {
             console.log(sheetId,desc)
