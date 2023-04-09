@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.1
+// @version           1.2.2
 // @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -11,7 +11,6 @@
 // @grant             GM_getValue
 // @grant             GM_setValue
 // @grant             unsafeWindow
-// @require https://unpkg.com/ajax-hook@2.1.3/dist/ajaxhook.min.js
 // ==/UserScript==
 
 (function() {
@@ -552,7 +551,7 @@
                     if(this.idx==currentIndex) return
                     this.idx=currentIndex
                     if(currentIndex>=this.count){
-                        this.destructor()
+                        //this.destructor()
                         this.finnishCallback(this)
                     }
                 }
@@ -565,31 +564,47 @@
                     this.sucessCount=0
                     this.existCount=0
                     this.finnishCallback=finnishCallback
-                    ah.proxy({
-                        onRequest: (config, handler) => {
-                            if (config.url.indexOf('weapi')>0) {
-                                GM_xmlhttpRequest({
-                                    async:config.async,
-                                    method: config.method,
-                                    url: config.url,
-                                    headers: {
-                                        "content-type": config.headers['content-type'],
-                                        "cookie":unsafeWindow.document.cookie+';os=pc;appver=2.9.7',
-                                    },
-                                    data:config.body,
-                                    onload: function(response) {
-                                        handler.resolve(response)
-                                    }
-                                });
-                            } else {
-                                handler.next(config);
-                            }
-                        },
-                    },unsafeWindow)
+                    // ah.proxy({
+                    //     onRequest: (config, handler) => {
+                    //         if (config.url.indexOf('upload/check')>0||config.url.indexOf('cloud/pub/v2')>0) {
+                    //             let headers=config.headers
+                    //             headers.cookie=unsafeWindow.document.cookie+';os=pc;appver=2.9.7'
+                    //             let tagetUrl=config.url
+                    //             if (tagetUrl.startsWith('/')){
+                    //                 tagetUrl = 'https://interface.music.163.com'+tagetUrl
+                    //             }
+                    //             console.log(config)
+                    //             GM_xmlhttpRequest({
+                    //                 async:config.async,
+                    //                 method: config.method,
+                    //                 url: tagetUrl,
+                    //                 headers: headers,
+                    //                 cookie:headers.cookie,
+                    //                 data:config.body,
+                    //                 onload: function(response) {
+                    //                     console.log(response)
+                    //                     handler.resolve({
+                    //                         config: config,
+                    //                         status: response.status,
+                    //                         headers: response.responseHeaders,
+                    //                         response: response.response,
+                    //                     })
+                    //                 }
+                    //             });
+                    //         }
+                    //         else {
+                    //             handler.next(config);
+                    //         }
+                    //     },
+                    //     onResponse: (response, handler) => {
+                    //         console.log(response)
+                    //         handler.next(response)
+                    //     },
+                    // },unsafeWindow)
                 };
-                destructor(){
-                    ah.unProxy(unsafeWindow)
-                }
+                // destructor(){
+                //     ah.unProxy(unsafeWindow)
+                // }
                 start(){
                     this.currentIndex=0
                     this.uploadSong()
