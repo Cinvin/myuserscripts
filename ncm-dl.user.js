@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.3
+// @version           1.2.4
 // @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -446,8 +446,8 @@
             btn.addEventListener('click',ShowCloudUploadPopUp)
             var toplist=[]
             //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/top.json
-            //https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
-            fetch('https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/top.json')
+            //https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
+            fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/top.json')
                 .then(r => r.json())
                 .then(r=>{
                 toplist=r;
@@ -481,8 +481,8 @@
             function startUpload(cfgname,artistid){
                 showTips(`正在获取${cfgname}配置...`,1)
                 //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/${artistid}.json
-                //https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
-                fetch(`https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json`)
+                //https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
+                fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json`)
                     .then(r => r.json())
                     .then(r=>{
                     let songList=r.data
