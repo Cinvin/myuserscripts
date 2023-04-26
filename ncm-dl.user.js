@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.4
+// @version           1.2.5
 // @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -14,7 +14,7 @@
 (function() {
     'use strict';
 
-    const weapiRequest=unsafeWindow.NEJ.P("nej.j").be0x
+    const weapiRequest=unsafeWindow.NEJ.P("nej.j").be5j
 
     //歌曲页
     if (location.href.match('song')){
@@ -314,64 +314,66 @@
             });
 
             function switchLyric(type) {
-            let lyric1=lyricObj.lrc.lyric
-            let lyric2=null
-            switch (type) {
-                case 'tlyric':
-                    lyric2=lyricObj.tlyric.lyric
-                    break
-                case 'romalrc':
-                    lyric2=lyricObj.romalrc.lyric
-                    break
-            }
-            let lyric_content=document.querySelector("#lyric-content")
-            let songId=Number(location.href.match(/\d+$/g));
-            let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK0x(lyric1, lyric2);
-            let a9j = unsafeWindow.NEJ.P("nej.e")
-            a9j.dm1x(lyric_content, "m-lyric-content", {
-                id: songId,
-                nolyric: lyricObj.nolyric,
-                limit: lyric2 ? 6 : 13,
-                lines: lyrictimelines.lines,
-                scrollable: lyrictimelines.scrollable,
-                thirdCopy: a9j.v0x(lyric_content, "thirdCopy") == "true",
-                copyFrom: a9j.v0x(lyric_content, "copyFrom")
-            });
-            lyricObj.scrollable = lyrictimelines.scrollable;
-            lyricObj.songId = songId;
-            //a9j.dm1x("user-operation", "m-user-operation", lyric);
-            unsafeWindow.NEJ.P("nej.v").s0x("flag_ctrl", "click", () => {
-                var bBc9T = a9j.A0x("flag_more");
-                if (a9j.bE0x(bBc9T, "f-hide")) {
-                    a9j.x0x(bBc9T, "f-hide");
-                    a9j.A0x("flag_ctrl").innerHTML = '收起<i class="u-icn u-icn-70"></i>'
-                } else {
-                    a9j.w0x(bBc9T, "f-hide");
-                    a9j.A0x("flag_ctrl").innerHTML = '展开<i class="u-icn u-icn-69"></i>'
+                let lyric1=lyricObj.lrc.lyric
+                let lyric2=null
+                switch (type) {
+                    case 'tlyric':
+                        lyric2=lyricObj.tlyric.lyric
+                        break
+                    case 'romalrc':
+                        lyric2=lyricObj.romalrc.lyric
+                        break
                 }
-            })
-        }
-        function downloadLyric(type,songTitle){
-            let content=lyricObj.lrc.lyric
-            if (type=='lrc-tlyric'){
-                content=combineLyric(lyricObj.lrc.lyric,lyricObj.tlyric.lyric)
+                let lyric_content=document.querySelector("#lyric-content")
+                let songId=Number(location.href.match(/\d+$/g));
+                let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK6E(lyric1, lyric2);
+                let a9j = unsafeWindow.NEJ.P("nej.e")
+                a9j.dm6g(lyric_content, "m-lyric-content", {
+                    id: songId,
+                    nolyric: lyricObj.nolyric,
+                    limit: lyric2 ? 6 : 13,
+                    lines: lyrictimelines.lines,
+                    scrollable: lyrictimelines.scrollable,
+                    thirdCopy: a9j.v5A(lyric_content, "thirdCopy") == "true",
+                    copyFrom: a9j.v5A(lyric_content, "copyFrom")
+                });
+                lyricObj.scrollable = lyrictimelines.scrollable;
+                lyricObj.songId = songId;
+                //a9j.dm1x("user-operation", "m-user-operation", lyric);
+                unsafeWindow.NEJ.P("nej.v").s5x("flag_ctrl", "click", () => {
+                    var bBc9T = a9j.A0x("flag_more");
+                    if (a9j.bE0x(bBc9T, "f-hide")) {
+                        a9j.x5C("album-desc-dot", "f-hide");
+                        a9j.A5F("album-desc-spread").innerHTML = '展开<i class="u-icn u-icn-69"></i>';
+                        a9j.w5B("album-desc-more", "f-hide")
+                    } else {
+                        a9j.w5B("album-desc-dot", "f-hide");
+                        a9j.A5F("album-desc-spread").innerHTML = '收起<i class="u-icn u-icn-70"></i>';
+                        a9j.x5C("album-desc-more", "f-hide")
+                    }
+                })
             }
-            else if (type=='lrc-romalrc'){
-                content=combineLyric(lyricObj.lrc.lyric,lyricObj.romalrc.lyric)
+            function downloadLyric(type,songTitle){
+                let content=lyricObj.lrc.lyric
+                if (type=='lrc-tlyric'){
+                    content=combineLyric(lyricObj.lrc.lyric,lyricObj.tlyric.lyric)
+                }
+                else if (type=='lrc-romalrc'){
+                    content=combineLyric(lyricObj.lrc.lyric,lyricObj.romalrc.lyric)
+                }
+                let lrc = document.createElement('a');
+                let data=new Blob([content], {type:'type/plain'})
+                let fileurl = URL.createObjectURL(data)
+                lrc.href=fileurl
+                lrc.download=songTitle+'.lrc'
+                lrc.click()
+                URL.revokeObjectURL(data);
             }
-            let lrc = document.createElement('a');
-            let data=new Blob([content], {type:'type/plain'})
-            let fileurl = URL.createObjectURL(data)
-            lrc.href=fileurl
-            lrc.download=songTitle+'.lrc'
-            lrc.click()
-            URL.revokeObjectURL(data);
-        }
-        function combineLyric(lyric1,lyric2){
-            let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK0x(lyric1, lyric2);
-            let content=''
-            lyrictimelines.lines.forEach(line=>{
-                let linecontent=`[${line.tag}] ${line.lyric}`
+            function combineLyric(lyric1,lyric2){
+                let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK6E(lyric1, lyric2);
+                let content=''
+                lyrictimelines.lines.forEach(line=>{
+                    let linecontent=`[${line.tag}] ${line.lyric}`
             linecontent=linecontent.replace('<br>','\n').trim()+'\n'
                 content=content+linecontent
             })
@@ -396,7 +398,7 @@
             });
         }
 
-        
+
 
         function dwonloadSheet(sheetId,desc) {
             console.log(sheetId,desc)
@@ -420,12 +422,12 @@
     }
 
     function showConfirmBox(msg){
-        unsafeWindow.NEJ.P("nm.x").iQ3x(msg);
+        unsafeWindow.NEJ.P("nm.x").iQ8I(msg);
     }
 
     function showTips(tip,type){
         //type:1 √ 2:!
-        unsafeWindow.NEJ.P("nm.l").bb0x.I0x({
+        unsafeWindow.g_showTipCard({
             tip: tip,
             type: type
         })
@@ -461,7 +463,7 @@
                     clazz: "m-layer-w4",
                     message:''
                 };
-                let popupdom=unsafeWindow.NEJ.P("nm.x").or4v(option).o0x;
+                let popupdom=unsafeWindow.NEJ.P("nm.x").or0x(option).o5t;
                 let artists=toplist
                 let btns=[]
                 artists.forEach(artist=>{
@@ -481,7 +483,7 @@
             function startUpload(cfgname,artistid){
                 showTips(`正在获取${cfgname}配置...`,1)
                 //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/${artistid}.json
-                //https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
+                //https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
                 fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json`)
                     .then(r => r.json())
                     .then(r=>{
