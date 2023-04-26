@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.6
+// @version           1.2.7
 // @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -346,15 +346,13 @@
                 lyricObj.songId = songId;
                 //a9j.dm1x("user-operation", "m-user-operation", lyric);
                 unsafeWindow.NEJ.P("nej.v").s5x("flag_ctrl", "click", () => {
-                    var bBc9T = a9j.A0x("flag_more");
-                    if (a9j.bE0x(bBc9T, "f-hide")) {
-                        a9j.x5C("album-desc-dot", "f-hide");
-                        a9j.A5F("album-desc-spread").innerHTML = '展开<i class="u-icn u-icn-69"></i>';
-                        a9j.w5B("album-desc-more", "f-hide")
+                    var bBc5h = a9j.A5F("flag_more");
+                    if (a9j.bE5J(bBc5h, "f-hide")) {
+                        a9j.x5C(bBc5h, "f-hide");
+                        a9j.A5F("flag_ctrl").innerHTML = '收起<i class="u-icn u-icn-70"></i>'
                     } else {
-                        a9j.w5B("album-desc-dot", "f-hide");
-                        a9j.A5F("album-desc-spread").innerHTML = '收起<i class="u-icn u-icn-70"></i>';
-                        a9j.x5C("album-desc-more", "f-hide")
+                        a9j.w5B(bBc5h, "f-hide");
+                        a9j.A5F("flag_ctrl").innerHTML = '展开<i class="u-icn u-icn-69"></i>'
                     }
                 })
             }
