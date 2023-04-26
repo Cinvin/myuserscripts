@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.5
+// @version           1.2.6
 // @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -98,6 +98,10 @@
                             return '无损'
                         case 'hires':
                             return 'Hi-Res'
+                        case 'jyeffect':
+                            return '鲸云臻音'
+                        case 'jymaster':
+                            return '鲸云母带'
                         default:
                             return level
                     }
@@ -138,7 +142,8 @@
                                     }
                                 })
                             }
-                            if (songdetail.privileges[0].dlLevel!="none" && songdetail.privileges[0].plLevel!=songdetail.privileges[0].dlLevel){
+                            //example songid:1914447186
+                            if (songdetail.privileges[0].dlLevel!="none" && songdetail.privileges[0].plLevel!=songdetail.privileges[0].dlLevel && unsafeWindow.GUser.userType==0){
                                 weapiRequest("/api/song/enhance/download/url/v1", {
                                     type: "json",
                                     query: {
@@ -375,10 +380,10 @@
                 lyrictimelines.lines.forEach(line=>{
                     let linecontent=`[${line.tag}] ${line.lyric}`
             linecontent=linecontent.replace('<br>','\n').trim()+'\n'
-                content=content+linecontent
-            })
-            return content.trim()
-        }
+                    content=content+linecontent
+                })
+                return content.trim()
+            }
         }
 
         function dwonloadSong(url,fileName,dlbtn) {
