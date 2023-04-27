@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.7
+// @version           1.2.8
 // @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -14,7 +14,7 @@
 (function() {
     'use strict';
 
-    const weapiRequest=unsafeWindow.NEJ.P("nej.j").be5j
+    const weapiRequest=unsafeWindow.NEJ.P("nej.j").be6Y
 
     //歌曲页
     if (location.href.match('song')){
@@ -425,7 +425,7 @@
     }
 
     function showConfirmBox(msg){
-        unsafeWindow.NEJ.P("nm.x").iQ8I(msg);
+        unsafeWindow.NEJ.P("nm.x").iM9D(msg);
     }
 
     function showTips(tip,type){
@@ -466,7 +466,7 @@
                     clazz: "m-layer-w4",
                     message:''
                 };
-                let popupdom=unsafeWindow.NEJ.P("nm.x").or0x(option).o5t;
+                let popupdom=unsafeWindow.NEJ.P("nm.x").os1x(option).o6i;
                 let artists=toplist
                 let btns=[]
                 artists.forEach(artist=>{
