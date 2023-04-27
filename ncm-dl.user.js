@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.8
+// @version           1.2.9
 // @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -331,28 +331,28 @@
                 }
                 let lyric_content=document.querySelector("#lyric-content")
                 let songId=Number(location.href.match(/\d+$/g));
-                let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK6E(lyric1, lyric2);
+                let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFL7E(lyric1, lyric2);
                 let a9j = unsafeWindow.NEJ.P("nej.e")
-                a9j.dm6g(lyric_content, "m-lyric-content", {
+                a9j.dn7g(lyric_content, "m-lyric-content", {
                     id: songId,
                     nolyric: lyricObj.nolyric,
                     limit: lyric2 ? 6 : 13,
                     lines: lyrictimelines.lines,
                     scrollable: lyrictimelines.scrollable,
-                    thirdCopy: a9j.v5A(lyric_content, "thirdCopy") == "true",
-                    copyFrom: a9j.v5A(lyric_content, "copyFrom")
+                    thirdCopy: a9j.v6p(lyric_content, "thirdCopy") == "true",
+                    copyFrom: a9j.v6p(lyric_content, "copyFrom")
                 });
                 lyricObj.scrollable = lyrictimelines.scrollable;
                 lyricObj.songId = songId;
                 //a9j.dm1x("user-operation", "m-user-operation", lyric);
-                unsafeWindow.NEJ.P("nej.v").s5x("flag_ctrl", "click", () => {
-                    var bBc5h = a9j.A5F("flag_more");
-                    if (a9j.bE5J(bBc5h, "f-hide")) {
-                        a9j.x5C(bBc5h, "f-hide");
-                        a9j.A5F("flag_ctrl").innerHTML = '收起<i class="u-icn u-icn-70"></i>'
+                unsafeWindow.NEJ.P("nej.v").s6m("flag_ctrl", "click", () => {
+                    var bBh7a = a9j.A6u("flag_more");
+                    if (a9j.bE6y(bBh7a, "f-hide")) {
+                        a9j.x6r(bBh7a, "f-hide");
+                        a9j.A6u("flag_ctrl").innerHTML = '收起<i class="u-icn u-icn-70"></i>'
                     } else {
-                        a9j.w5B(bBc5h, "f-hide");
-                        a9j.A5F("flag_ctrl").innerHTML = '展开<i class="u-icn u-icn-69"></i>'
+                        a9j.w6q(bBh7a, "f-hide");
+                        a9j.A6u("flag_ctrl").innerHTML = '展开<i class="u-icn u-icn-69"></i>'
                     }
                 })
             }
@@ -401,8 +401,6 @@
             });
         }
 
-
-
         function dwonloadSheet(sheetId,desc) {
             console.log(sheetId,desc)
             weapiRequest("/api//music/sheet/preview/info", {
@@ -440,6 +438,14 @@
         let editArea=document.querySelector('#head-box > dd > div.name.f-cb > div > div.edit')
         if(editArea && urlUserId==unsafeWindow.GUser.userId){
             //个人主页
+            if(!weapiRequest){
+                let btnissue=document.createElement('a')
+                btnissue.text ='因网站更新导致脚本失效,欢迎进行反馈';
+                btnissue.className="des s-fc7"
+                btnissue.style.margin='2px';
+                btnissue.href='https://github.com/Cinvin/myuserscripts/issues'
+                editArea.insertBefore(btnissue,editArea.lastChild)
+            }
             let btn=document.createElement('a')
             btn.id='cloudBtn'
             btn.className='u-btn2 u-btn2-1'
