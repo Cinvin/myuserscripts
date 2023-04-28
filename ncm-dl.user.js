@@ -373,7 +373,7 @@
                 URL.revokeObjectURL(data);
             }
             function combineLyric(lyric1,lyric2){
-                let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFK6E(lyric1, lyric2);
+                let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFL9C(lyric1, lyric2);
                 let content=''
                 lyrictimelines.lines.forEach(line=>{
                     let linecontent=`[${line.tag}] ${line.lyric}`
