@@ -2,7 +2,7 @@
 // @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.10
+// @version           1.2.11
 // @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -14,7 +14,7 @@
 (function() {
     'use strict';
 
-    const weapiRequest=unsafeWindow.NEJ.P("nej.j").be3x
+    const weapiRequest=unsafeWindow.NEJ.P("nej.j").be2x
 
     //歌曲页
     if (location.href.match('song')){
@@ -333,26 +333,26 @@
                 let songId=Number(location.href.match(/\d+$/g));
                 let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFL9C(lyric1, lyric2);
                 let a9j = unsafeWindow.NEJ.P("nej.e")
-                a9j.dn4r(lyric_content, "m-lyric-content", {
+                a9j.dn3x(lyric_content, "m-lyric-content", {
                     id: songId,
                     nolyric: lyricObj.nolyric,
                     limit: lyric2 ? 6 : 13,
                     lines: lyrictimelines.lines,
                     scrollable: lyrictimelines.scrollable,
-                    thirdCopy: a9j.v3x(lyric_content, "thirdCopy") == "true",
-                    copyFrom: a9j.v3x(lyric_content, "copyFrom")
+                    thirdCopy: a9j.v2x(lyric_content, "thirdCopy") == "true",
+                    copyFrom: a9j.v2x(lyric_content, "copyFrom")
                 });
                 lyricObj.scrollable = lyrictimelines.scrollable;
                 lyricObj.songId = songId;
                 //a9j.dm1x("user-operation", "m-user-operation", lyric);
-                unsafeWindow.NEJ.P("nej.v").s3x("flag_ctrl", "click", () => {
-                    var bBh8Z = a9j.A3x("flag_more");
-                    if (a9j.bE4I(bBh8Z, "f-hide")) {
-                        a9j.x3x(bBh8Z, "f-hide");
-                        a9j.A3x("flag_ctrl").innerHTML = '收起<i class="u-icn u-icn-70"></i>'
+                unsafeWindow.NEJ.P("nej.v").s2x("flag_ctrl", "click", () => {
+                    var bBh8Z = a9j.A2x("flag_more");
+                    if (a9j.bE2x(bBh8Z, "f-hide")) {
+                        a9j.x2x(bBh8Z, "f-hide");
+                        a9j.A2x("flag_ctrl").innerHTML = '收起<i class="u-icn u-icn-70"></i>'
                     } else {
-                        a9j.w3x(bBh8Z, "f-hide");
-                        a9j.A3x("flag_ctrl").innerHTML = '展开<i class="u-icn u-icn-69"></i>'
+                        a9j.x2x(bBh8Z, "f-hide");
+                        a9j.A2x("flag_ctrl").innerHTML = '展开<i class="u-icn u-icn-69"></i>'
                     }
                 })
             }
@@ -423,7 +423,7 @@
     }
 
     function showConfirmBox(msg){
-        unsafeWindow.NEJ.P("nm.x").iM6G(msg);
+        unsafeWindow.NEJ.P("nm.x").iM5R(msg);
     }
 
     function showTips(tip,type){
@@ -472,7 +472,7 @@
                     clazz: "m-layer-w4",
                     message:''
                 };
-                let popupdom=unsafeWindow.NEJ.P("nm.x").os8k(option).o3x;
+                let popupdom=unsafeWindow.NEJ.P("nm.x").os7l(option).o2x
                 //console.log(popupdom)
                 let artists=toplist
                 let btns=[]
