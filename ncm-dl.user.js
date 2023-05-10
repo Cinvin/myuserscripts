@@ -1,20 +1,68 @@
 // ==UserScript==
-// @name             网易云:音乐、歌词、乐谱下载,云盘快速上传周杰伦等歌手
+// @name             网易云:云盘上传周杰伦等歌手歌曲,音乐、歌词、乐谱下载
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.2.11
-// @description     歌曲页:歌曲、歌词、乐谱下载,个人主页:云盘快速上传歌手歌曲
+// @version           1.3.0
+// @description     个人主页:云盘快速上传并关联歌手歌曲，歌曲页:音乐、歌词、乐谱下载
 // @author            cinvin
 // @match            https://music.163.com/*
 // @grant             GM_xmlhttpRequest
 // @grant             GM_download
 // @grant             unsafeWindow
+// @require           https://lf3-cdn-tos.bytecdntp.com/cdn/expire-1-M/limonte-sweetalert2/11.4.4/sweetalert2.all.min.js
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    const weapiRequest=unsafeWindow.NEJ.P("nej.j").be2x
+    function getcookie(key) {
+        var cookies = document.cookie
+        , text = "\\b" + key + "="
+        , find = cookies.search(text);
+        if (find < 0)
+        {
+            return ""
+        }
+        find += text.length - 2;
+        var index = cookies.indexOf(";", find);
+        if (index < 0){
+            index = cookies.length
+        }
+        return cookies.substring(find, index) || ""
+    };
+    function weapiRequest(url,config){
+        let data=config.data
+        data.csrf_token = getcookie("__csrf");
+        url = url.replace("api", "weapi");
+        config.method = "post";
+        config.cookie = true
+        delete config.query
+        config.headers={ "content-type": "application/x-www-form-urlencoded",}
+        var encRes = unsafeWindow.asrsea(
+            JSON.stringify(data),
+            "010001",
+            "00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7",
+            "0CoJUm6Qyw8W8jud");
+        config.data = `params=${ encodeURIComponent(encRes.encText) }&encSecKey=${ encodeURIComponent(encRes.encSecKey) }`
+            config.url=url+`?csrf_token=${data.csrf_token}`
+        //console.log(config)
+        GM_xmlhttpRequest(config)
+    }
+
+    function showConfirmBox(msg){
+        Swal.fire({
+            title: '提示',
+            text: msg,
+            confirmButtonText: '确定',
+        })
+    }
+    function showTips(tip,type){
+        //type:1 √ 2:!
+        unsafeWindow.g_showTipCard({
+            tip: tip,
+            type: type
+        })
+    }
 
     //歌曲页
     if (location.href.match('song')){
@@ -32,15 +80,6 @@
             songDownloadDiv.style.display="none"
             songDownloadDiv.appendChild(songDownloadP)
             cvrwrap.appendChild(songDownloadDiv)
-
-            //lyricShow
-            let lrcShowDiv = document.createElement('div');
-            lrcShowDiv.className="out s-fc3"
-            let lrcShowP = document.createElement('p');
-            lrcShowP.innerHTML = '歌词显示:';
-            lrcShowDiv.style.display="none"
-            lrcShowDiv.appendChild(lrcShowP)
-            cvrwrap.appendChild(lrcShowDiv)
 
             //lyricDownload
             let lrcDownloadDiv = document.createElement('div');
@@ -73,13 +112,6 @@
 
             //songDownload
             class SongFetch{
-                kuwotoken=''
-                get kuwoToken(){
-                    if(this.kuwotoken.length==0){
-                        fetch('http://www.kuwo.cn/favicon.ico')
-                    }
-                    return this.kuwotoken
-                }
                 constructor(songId,title,artists,album) {
                     this.songId=songId;
                     this.title=title;
@@ -109,25 +141,27 @@
                 getNCMSource(){
                     weapiRequest("/api/v3/song/detail", {
                         type: "json",
-                        query: {
+                        data: {
                             c: JSON.stringify([{'id':songId}]),
                         },
-                        onload: (songdetail)=> {
-                            console.log(songdetail)
+                        onload: (responses)=> {
+                            let songdetail=JSON.parse(responses.response);
+                            //console.log(songdetail)
                             if (songdetail.privileges[0].cs){
                                 songDownloadP.innerHTML='歌曲下载(云盘版本):'
                             }
                             if (songdetail.privileges[0].plLevel!="none"){
                                 weapiRequest("/api/song/enhance/player/url/v1", {
                                     type: "json",
-                                    query: {
+                                    data: {
                                         ids: JSON.stringify([songId]),
                                         level: songdetail.privileges[0].plLevel,
                                         encodeType: 'mp3'
                                     },
-                                    onload: (content)=> {
+                                    onload: (responses)=> {
+                                        let content=JSON.parse(responses.response);
                                         if(content.data[0].url!=null){
-                                            console.log(content)
+                                            //console.log(content)
                                             let config={
                                                 filename:songTitle+'.'+content.data[0].type.toLowerCase(),
                                                 url:content.data[0].url,
@@ -146,14 +180,15 @@
                             if (songdetail.privileges[0].dlLevel!="none" && songdetail.privileges[0].plLevel!=songdetail.privileges[0].dlLevel && unsafeWindow.GUser.userType==0){
                                 weapiRequest("/api/song/enhance/download/url/v1", {
                                     type: "json",
-                                    query: {
+                                    data: {
                                         id: songId,
                                         level: songdetail.privileges[0].dlLevel,
                                         encodeType: 'mp3'
                                     },
-                                    onload: (content)=> {
+                                    onload: (responses)=> {
+                                        let content=JSON.parse(responses.response)
                                         if(content.data.url!=null){
-                                            console.log(content)
+                                            //console.log(content)
                                             let config={
                                                 filename:songTitle+'.'+content.data.type.toLowerCase(),
                                                 url:content.data.url,
@@ -192,62 +227,24 @@
             //lyric
             weapiRequest("/api/song/lyric", {
                 type: "json",
-                query: {
+                data: {
                     id: songId,
                     tv: -1,
                     lv: -1,
                     rv: -1,
                     kv: -1,
                 },
-                onload: function(content) {
+                onload: function(responses) {
+                    let content=JSON.parse(responses.response)
                     lyricObj=content
-                    if(content.romalrc.lyric.length>0){
-                        let tl = document.createElement('a');
-                        tl.text = '正常';
-                        tl.className="des s-fc7"
-                        tl.style.margin='2px';
-                        tl.addEventListener('click', () => {
-                            switchLyric('tlyric');
-                        })
-                        lrcShowP.appendChild(tl)
-                        let rl = document.createElement('a');
-                        rl.text = '罗马音';
-                        rl.className="des s-fc7"
-                        rl.style.margin='2px';
-                        rl.addEventListener('click', () => {
-                            switchLyric('romalrc');
-                        })
-                        lrcShowP.appendChild(rl)
-                        lrcShowDiv.style.display="inline"
-                    }
                     let lrc = document.createElement('a');
-                    lrc.text = '原词';
+                    lrc.text = '下载';
                     lrc.className="des s-fc7"
                     lrc.style.margin='2px';
                     lrc.addEventListener('click',() =>{
                         downloadLyric('lrc',songTitle)
                     })
                     lrcDownloadP.appendChild(lrc)
-                    if(content.tlyric.lyric.length>0){
-                        let tlyric = document.createElement('a');
-                        tlyric.text = '原词x翻译';
-                        tlyric.className="des s-fc7"
-                        tlyric.style.margin='2px';
-                        tlyric.addEventListener('click',() =>{
-                            downloadLyric('lrc-tlyric',songTitle)
-                        })
-                        lrcDownloadP.appendChild(tlyric)
-                    }
-                    if(content.romalrc.lyric.length>0){
-                        let romalrc = document.createElement('a');
-                        romalrc.text = '原词x罗马音';
-                        romalrc.className="des s-fc7"
-                        romalrc.style.margin='2px';
-                        romalrc.addEventListener('click',() =>{
-                            downloadLyric('lrc-romalrc',songTitle)
-                        })
-                        lrcDownloadP.appendChild(romalrc)
-                    }
                     lrcDownloadDiv.style.display="inline"
                 },
             });
@@ -255,12 +252,13 @@
             //sheet
             weapiRequest("/api/music/sheet/list/v1", {
                 type: "json",
-                query: {
+                data: {
                     id: songId,
                     abTest:  'b',
                 },
-                onload: (content)=> {
-                    console.log(content)
+                onload: (responses)=> {
+                    //console.log(content)
+                    let content=JSON.parse(responses.response)
                     if (content.data.errorCode==null){
                         content.data.musicSheetSimpleInfoVOS.forEach(item=>{
                             let texts=[item.name,item.playVersion,item.musicKey+"调"]
@@ -295,8 +293,9 @@
                 data: {
                     songId: songId,
                 },
-                onload: function(content) {
-                    console.log(content)
+                onload: function(responses) {
+                    //console.log(content)
+                    let content=JSON.parse(responses.response)
                     if(content.data.blocks[0].creatives.length>0){
                         content.data.blocks.forEach(block=>{
                             if(block.code=='SONG_PLAY_ABOUT_MUSIC_MEMORY' && block.creatives.length>0){
@@ -318,44 +317,6 @@
                 },
             });
 
-            function switchLyric(type) {
-                let lyric1=lyricObj.lrc.lyric
-                let lyric2=null
-                switch (type) {
-                    case 'tlyric':
-                        lyric2=lyricObj.tlyric.lyric
-                        break
-                    case 'romalrc':
-                        lyric2=lyricObj.romalrc.lyric
-                        break
-                }
-                let lyric_content=document.querySelector("#lyric-content")
-                let songId=Number(location.href.match(/\d+$/g));
-                let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFL9C(lyric1, lyric2);
-                let a9j = unsafeWindow.NEJ.P("nej.e")
-                a9j.dn3x(lyric_content, "m-lyric-content", {
-                    id: songId,
-                    nolyric: lyricObj.nolyric,
-                    limit: lyric2 ? 6 : 13,
-                    lines: lyrictimelines.lines,
-                    scrollable: lyrictimelines.scrollable,
-                    thirdCopy: a9j.v2x(lyric_content, "thirdCopy") == "true",
-                    copyFrom: a9j.v2x(lyric_content, "copyFrom")
-                });
-                lyricObj.scrollable = lyrictimelines.scrollable;
-                lyricObj.songId = songId;
-                //a9j.dm1x("user-operation", "m-user-operation", lyric);
-                unsafeWindow.NEJ.P("nej.v").s2x("flag_ctrl", "click", () => {
-                    var bBh8Z = a9j.A2x("flag_more");
-                    if (a9j.bE2x(bBh8Z, "f-hide")) {
-                        a9j.x2x(bBh8Z, "f-hide");
-                        a9j.A2x("flag_ctrl").innerHTML = '收起<i class="u-icn u-icn-70"></i>'
-                    } else {
-                        a9j.x2x(bBh8Z, "f-hide");
-                        a9j.A2x("flag_ctrl").innerHTML = '展开<i class="u-icn u-icn-69"></i>'
-                    }
-                })
-            }
             function downloadLyric(type,songTitle){
                 let content=lyricObj.lrc.lyric
                 if (type=='lrc-tlyric'){
@@ -371,16 +332,6 @@
                 lrc.download=songTitle+'.lrc'
                 lrc.click()
                 URL.revokeObjectURL(data);
-            }
-            function combineLyric(lyric1,lyric2){
-                let lyrictimelines=unsafeWindow.NEJ.P("nm.ut").bFL9C(lyric1, lyric2);
-                let content=''
-                lyrictimelines.lines.forEach(line=>{
-                    let linecontent=`[${line.tag}] ${line.lyric}`
-            linecontent=linecontent.replace('<br>','\n').trim()+'\n'
-                    content=content+linecontent
-                })
-                return content.trim()
             }
         }
 
@@ -402,14 +353,15 @@
         }
 
         function dwonloadSheet(sheetId,desc) {
-            console.log(sheetId,desc)
+            //console.log(sheetId,desc)
             weapiRequest("/api//music/sheet/preview/info", {
                 type: "json",
-                query: {
+                data: {
                     id: sheetId,
                 },
-                onload: (content)=> {
-                    console.log(content)
+                onload: (responses)=> {
+                    //console.log(content)
+                    let content=JSON.parse(responses.response)
                     content.data.forEach(sheetPage=>{
                         let fileName=`${desc}-${sheetPage.pageNumber}.jpg`
                         GM_download({
@@ -422,30 +374,11 @@
         }
     }
 
-    function showConfirmBox(msg){
-        unsafeWindow.NEJ.P("nm.x").iM5R(msg);
-    }
-
-    function showTips(tip,type){
-        //type:1 √ 2:!
-        unsafeWindow.g_showTipCard({
-            tip: tip,
-            type: type
-        })
-    }
+    //个人主页
     if(location.href.match('user')){
         let urlUserId=Number(location.href.match(/\d+$/g));
         let editArea=document.querySelector('#head-box > dd > div.name.f-cb > div > div.edit')
         if(editArea && urlUserId==unsafeWindow.GUser.userId){
-            //个人主页
-            if(!weapiRequest){
-                let btnissue=document.createElement('a')
-                btnissue.text ='因网站更新导致脚本失效,欢迎进行反馈';
-                btnissue.className="des s-fc7"
-                btnissue.style.margin='2px';
-                btnissue.href='https://github.com/Cinvin/myuserscripts/issues'
-                editArea.insertBefore(btnissue,editArea.lastChild)
-            }
             let btn=document.createElement('a')
             btn.id='cloudBtn'
             btn.className='u-btn2 u-btn2-1'
@@ -456,59 +389,63 @@
             btn.style.marginRight='10px';
             btn.addEventListener('click',ShowCloudUploadPopUp)
             var toplist=[]
+            var selectOptions={"无版权歌手":{},"华语男歌手":{},"华语女歌手":{},"华语组合":{},"欧美男歌手":{},"欧美女歌手":{},"欧美组合":{},"日本男歌手":{},"日本女歌手":{},"日本组合":{},}
+            var optionMap={0:"无版权歌手",1:"华语男歌手",2:"华语女歌手",3:"华语组合",4:"欧美男歌手",5:"欧美女歌手",6:"欧美组合",7:"日本男歌手",8:"日本女歌手",9:"日本组合"}
+            var artistmap={}
             //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/top.json
             //https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
-            fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/top.json')
+            fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn@1.0.9/artist/top.json')
                 .then(r => r.json())
                 .then(r=>{
                 toplist=r;
+                toplist.forEach(artist=>{
+                    let desc = `${artist.name}(${artist.count}首/${artist.sizeDesc})`;
+                    let id = artist.id
+                    selectOptions[optionMap[artist.categroy]][artist.id]=`${artist.name}(${artist.count}首/${artist.sizeDesc})`
+                    artistmap[artist.id]=artist
+                })
+                //console.log(selectOptions)
                 editArea.insertBefore(btn,editArea.lastChild)
             })
 
 
             function ShowCloudUploadPopUp(){
-                let option = {
-                    title:'云盘快速上传 点击歌手开始上传 请善用Ctrl+F',
-                    clazz: "m-layer-w4",
-                    message:''
-                };
-                let popupdom=unsafeWindow.NEJ.P("nm.x").os7l(option).o2x
-                //console.log(popupdom)
-                let artists=toplist
-                let btns=[]
-                artists.forEach(artist=>{
-                    let btn = document.createElement('a');
-                    btn.text = `${artist.name}(${artist.count}首/${artist.sizeDesc})`;
-                    btn.className="des s-fc7"
-                    btn.style.margin='2px';
-                    btn.addEventListener('click', () => {
-                        startUpload(artist.name,artist.id)
-                    })
-                    btns.push(btn)
-                    btns.forEach(btn=>{popupdom.childNodes[0].appendChild(btn)})
+                Swal.fire({
+                    title: '选择歌手',
+                    input: 'select',
+                    inputOptions: selectOptions,
+                    confirmButtonText: '上传',
+                    showCloseButton: true,
+                    footer:'<p class="des s-fc5">上传并关联歌曲 </p><a target="_blank" href="https://github.com/Cinvin/myuserscripts" class="des s-fc7">by cinvin</a>'
+                }).then(result=>{
+                    //console.log(result)
+                    if(result.isConfirmed){
+                        var artistselected=artistmap[result.value]
+                        startUpload(artistselected.name,artistselected.id)
+                    }
                 })
-                popupdom.childNodes[1].innerHTML='<p class="inf s-fc3">上传不用文件是因为有人上传过,可以跳过这个步骤</p><p class="inf s-fc3">内容都有所缺少。同一首歌若在不同专辑出现，可能就上传一份。</p><p class="inf s-fc3">选取规则为网易云是无版权、VIP或音源是无损以上音质</p><span class="inf s-fc3">在拼夕夕上传一个歌手要1.88，这里秒传，<a target="_blank" href="https://github.com/Cinvin/myuserscripts" class="des s-fc7">可以点个免费的⭐️吗</a></span>'
             }
 
             function startUpload(cfgname,artistid){
-                showTips(`正在获取${cfgname}配置...`,1)
+                //showTips(`正在获取xue'y${cfgname}...`,1)
                 //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/${artistid}.json
                 //https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
-                fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json`)
+                fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn@1.0.9/artist/${artistid}.json`)
                     .then(r => r.json())
                     .then(r=>{
                     let songList=r.data
                     //console.log(songList)
                     let ids=songList.map(item=>{ return {'id':item.id} })
                     //获取需上传的song
-                    showTips(`正在获取${cfgname}需要上传的歌曲..`,1)
+                    showTips(`正在获取${cfgname}需要上传的歌曲...`,1)
                     weapiRequest("/api/v3/song/detail", {
                         type: "json",
                         method: "post",
                         sync: true,
-                        query: {c: JSON.stringify(ids)},
-                        onload: function(content) {
+                        data: {c: JSON.stringify(ids)},
+                        onload: function(responses) {
                             //console.log(content)
+                            let content=JSON.parse(responses.response)
                             let songs=Array()
                             let len=content.songs.length
                             for(let i =0;i<len;i++){
@@ -574,47 +511,7 @@
                     this.sucessCount=0
                     this.existCount=0
                     this.finnishCallback=finnishCallback
-                    // ah.proxy({
-                    //     onRequest: (config, handler) => {
-                    //         if (config.url.indexOf('upload/check')>0||config.url.indexOf('cloud/pub/v2')>0) {
-                    //             let headers=config.headers
-                    //             headers.cookie=unsafeWindow.document.cookie+';os=pc;appver=2.9.7'
-                    //             let tagetUrl=config.url
-                    //             if (tagetUrl.startsWith('/')){
-                    //                 tagetUrl = 'https://interface.music.163.com'+tagetUrl
-                    //             }
-                    //             console.log(config)
-                    //             GM_xmlhttpRequest({
-                    //                 async:config.async,
-                    //                 method: config.method,
-                    //                 url: tagetUrl,
-                    //                 headers: headers,
-                    //                 cookie:headers.cookie,
-                    //                 data:config.body,
-                    //                 onload: function(response) {
-                    //                     console.log(response)
-                    //                     handler.resolve({
-                    //                         config: config,
-                    //                         status: response.status,
-                    //                         headers: response.responseHeaders,
-                    //                         response: response.response,
-                    //                     })
-                    //                 }
-                    //             });
-                    //         }
-                    //         else {
-                    //             handler.next(config);
-                    //         }
-                    //     },
-                    //     onResponse: (response, handler) => {
-                    //         console.log(response)
-                    //         handler.next(response)
-                    //     },
-                    // },unsafeWindow)
                 };
-                // destructor(){
-                //     ah.unProxy(unsafeWindow)
-                // }
                 start(){
                     this.currentIndex=0
                     this.uploadSong()
@@ -634,7 +531,8 @@
                                 version:1,
                                 bitrate:128,
                             },
-                            onload: (res1)=>{
+                            onload: (responses1)=>{
+                                let res1=JSON.parse(responses1.response)
                                 if(res1.code!=200){
                                     console.error(song.name,'1.检查资源',res1)
                                     this.onUploadFail()
@@ -645,7 +543,7 @@
                                 weapiRequest("/api/nos/token/alloc", {
                                     method: "POST",
                                     type: "json",
-                                    query: {
+                                    data: {
                                         filename: song.filename,
                                         length:song.size,
                                         ext: song.ext,
@@ -655,7 +553,8 @@
                                         nos_product: 3,
                                         md5: song.md5
                                     },
-                                    onload: (res2)=>{
+                                    onload: (responses2)=>{
+                                        let res2=JSON.parse(responses2.response)
                                         if(res2.code!=200){
                                             console.error(song.name,'2.获取令牌',res2)
                                             this.onUploadFail()
@@ -676,7 +575,8 @@
                                                 bitrate: '128',
                                                 resourceId: res2.result.resourceId,
                                             },
-                                            onload: (res3)=>{
+                                            onload: (responses3)=>{
+                                                let res3=JSON.parse(responses3.response)
                                                 if(res3.code!=200){
                                                     console.error(song.name,'3.提交文件',res3)
                                                     this.onUploadFail()
@@ -690,7 +590,8 @@
                                                     data: {
                                                         songid: res3.songId,
                                                     },
-                                                    onload: (res4)=>{
+                                                    onload: (responses4)=>{
+                                                        let res4=JSON.parse(responses4.response)
                                                         if(res4.code!=200 && res4.code!=201){
                                                             console.error(song.name,'4.发布资源',res4)
                                                             this.onUploadFail()
@@ -707,7 +608,8 @@
                                                                     songId: res4.privateCloud.songId,
                                                                     adjustSongId: song.id,
                                                                 },
-                                                                onload: (res5)=>{
+                                                                onload: (responses5)=>{
+                                                                    let res5=JSON.parse(responses5.response)
                                                                     if(res5.code!=200){
                                                                         console.error(song.name,'5.匹配歌曲',res5)
                                                                         this.onUploadFail()
@@ -764,14 +666,14 @@
                     this.failCount+=1
                     this.failList.push(this.currentIndex)
                     let song=this.songs[this.currentIndex]
-                    showTips(`${song.name} - ${song.artists} - ${song.album} 上传失败`,2)
+                    showTips(`(${this.currentIndex+1}/${this.count}) ${song.name} - ${song.artists} - ${song.album} 上传失败`,2)
                     this.currentIndex+=1
                     this.uploadSong()
                 }
                 onUploadSucess(){
                     this.sucessCount+=1
                     let song=this.songs[this.currentIndex]
-                    showTips(`${song.name} - ${song.artists} - ${song.album} 上传成功`,1)
+                    showTips(`(${this.currentIndex+1}/${this.count}) ${song.name} - ${song.artists} - ${song.album} 上传成功`,1)
                     this.currentIndex+=1
                     this.uploadSong()
                 }
