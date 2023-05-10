@@ -2,7 +2,7 @@
 // @name             网易云:云盘上传周杰伦等歌手歌曲,音乐、歌词、乐谱下载
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.3.0
+// @version           1.3.1
 // @description     个人主页:云盘快速上传并关联歌手歌曲，歌曲页:音乐、歌词、乐谱下载
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -411,33 +411,59 @@
 
             function ShowCloudUploadPopUp(){
                 Swal.fire({
-                    title: '选择歌手',
+                    title: '云盘上传',
                     input: 'select',
                     inputOptions: selectOptions,
+                    inputPlaceholder: '选择歌手',
+                    html: `<input class="form-check-input" type="checkbox" value="" id="checkbox1" checked>
+                <label class="form-check-label" for="checkbox1">
+                    无版权歌曲
+                </label>
+                <input class="form-check-input" type="checkbox" value="" id="checkbox2" checked>
+                <label class="form-check-label" for="checkbox2">
+                    VIP歌曲
+                </label>
+                <input class="form-check-input" type="checkbox" value="" id="checkbox3">
+                <label class="form-check-label" for="checkbox3">
+                    无损资源,歌曲免费也上传
+                </label>
+    `,
                     confirmButtonText: '上传',
                     showCloseButton: true,
-                    footer:'<p class="des s-fc5">上传并关联歌曲 </p><a target="_blank" href="https://github.com/Cinvin/myuserscripts" class="des s-fc7">by cinvin</a>'
+                    footer:'<p class="des s-fc5">上传并关联歌曲 </p><a target="_blank" href="https://github.com/Cinvin/myuserscripts" class="des s-fc7">by cinvin</a>',
+                    focusConfirm: false,
+                    preConfirm: (artist) => {
+                        return [
+                            artist,
+                            document.getElementById('checkbox1').checked,
+                            document.getElementById('checkbox2').checked,
+                            document.getElementById('checkbox3').checked,
+                        ]
+                    }
                 }).then(result=>{
                     //console.log(result)
                     if(result.isConfirmed){
-                        var artistselected=artistmap[result.value]
-                        startUpload(artistselected.name,artistselected.id)
+                        startUpload(result.value)
                     }
                 })
             }
 
-            function startUpload(cfgname,artistid){
-                //showTips(`正在获取xue'y${cfgname}...`,1)
+            function startUpload(config){
+                var artistobj=artistmap[config[0]]
+                var copyright=config[1]
+                var vip=config[2]
+                var lossless=config[3]
+                showTips(`正在获取${artistobj.name}资源配置...`,1)
                 //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/${artistid}.json
                 //https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
-                fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn@1.0.9/artist/${artistid}.json`)
+                fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn@1.0.9/artist/${artistobj.id}.json`)
                     .then(r => r.json())
                     .then(r=>{
                     let songList=r.data
                     //console.log(songList)
                     let ids=songList.map(item=>{ return {'id':item.id} })
                     //获取需上传的song
-                    showTips(`正在获取${cfgname}需要上传的歌曲...`,1)
+                    showTips(`正在获取${artistobj.name}需要上传的歌曲...`,1)
                     weapiRequest("/api/v3/song/detail", {
                         type: "json",
                         method: "post",
@@ -468,15 +494,31 @@
                                         item.artists=config.ar
                                         item.filename=config.name+'.'+config.ext
                                     }
-                                    songs.push(item)
+
+                                    let needupload=false
+                                    //1.无版权
+                                    if(copyright&&content.privileges[i].st==-200){
+                                        needupload=true
+                                    }
+                                    //2.VIP
+                                    if(vip&&(content.songs[i].fee==1 || content.songs[i].fee==4)){
+                                        needupload=true
+                                    }
+                                    //3.无损
+                                    if(lossless&&config.ext=='flac'){
+                                        needupload=true
+                                    }
+                                    if(needupload||config.name){
+                                        songs.push(item)
+                                    }
                                 }
                             }
 
                             if ( songs.length == 0 ){
-                                showConfirmBox(cfgname+' 没有需要上传的文件')
+                                showConfirmBox(artistobj.name+' 没有需要上传的文件')
                                 return
                             }
-                            let md5UploadObj=new Md5Upload(songs,cfgname,onMD5Finnish)
+                            let md5UploadObj=new Md5Upload(songs,artistobj.name,onMD5Finnish)
                             md5UploadObj.start()
                         }
                     })
