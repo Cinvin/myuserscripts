@@ -394,7 +394,7 @@
             var artistmap={}
             //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/top.json
             //https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
-            fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn@1.0.9/artist/top.json')
+            fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn@@latest/artist/top.json')
                 .then(r => r.json())
                 .then(r=>{
                 toplist=r;
@@ -456,7 +456,7 @@
                 showTips(`正在获取${artistobj.name}资源配置...`,1)
                 //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/${artistid}.json
                 //https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
-                fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn@1.0.9/artist/${artistobj.id}.json`)
+                fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn@latest/artist/${artistobj.id}.json`)
                     .then(r => r.json())
                     .then(r=>{
                     let songList=r.data
