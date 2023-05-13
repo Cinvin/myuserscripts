@@ -2,7 +2,7 @@
 // @name             网易云:云盘上传周杰伦等歌手歌曲,音乐、歌词、乐谱下载
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.3.1
+// @version           1.3.2
 // @description     个人主页:云盘快速上传并关联歌手歌曲，歌曲页:音乐、歌词、乐谱下载
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -394,7 +394,7 @@
             var artistmap={}
             //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/top.json
             //https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
-            fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn@@latest/artist/top.json')
+            fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn@latest/artist/top.json')
                 .then(r => r.json())
                 .then(r=>{
                 toplist=r;
