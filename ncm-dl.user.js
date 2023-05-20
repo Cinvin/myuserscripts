@@ -2,7 +2,7 @@
 // @name             网易云:云盘上传周杰伦等歌手歌曲,音乐、歌词、乐谱下载
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.3.2
+// @version           1.3.3
 // @description     个人主页:云盘快速上传并关联歌手歌曲，歌曲页:音乐、歌词、乐谱下载
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -430,7 +430,7 @@
     `,
                     confirmButtonText: '上传',
                     showCloseButton: true,
-                    footer:'<p class="des s-fc5">上传并关联歌曲 </p><a target="_blank" href="https://github.com/Cinvin/myuserscripts" class="des s-fc7">by cinvin</a>',
+                    footer:'<a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
                     focusConfirm: false,
                     preConfirm: (artist) => {
                         return [
