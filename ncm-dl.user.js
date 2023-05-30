@@ -2,7 +2,7 @@
 // @name             网易云:云盘上传周杰伦等歌手歌曲,音乐、歌词、乐谱下载
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.3.3
+// @version           1.4.0
 // @description     个人主页:云盘快速上传并关联歌手歌曲，歌曲页:音乐、歌词、乐谱下载
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -63,6 +63,15 @@
             type: type
         })
     }
+    function fileSizeDesc(fileSize) {
+        if (fileSize >= Math.pow(1024, 2)) {
+            return (fileSize / Math.pow(1024, 2)).toFixed(2).toString() + 'M';
+        } else if (fileSize >= 1024 && fileSize < Math.pow(1024, 2)) {
+            return (fileSize / 1024).toFixed(2).toString() + 'K'
+        } else if (fileSize < 1024) {
+            return fileSize.toFixed(2) + 'B'
+        }
+    };
 
     //歌曲页
     if (location.href.match('song')){
@@ -319,12 +328,6 @@
 
             function downloadLyric(type,songTitle){
                 let content=lyricObj.lrc.lyric
-                if (type=='lrc-tlyric'){
-                    content=combineLyric(lyricObj.lrc.lyric,lyricObj.tlyric.lyric)
-                }
-                else if (type=='lrc-romalrc'){
-                    content=combineLyric(lyricObj.lrc.lyric,lyricObj.romalrc.lyric)
-                }
                 let lrc = document.createElement('a');
                 let data=new Blob([content], {type:'type/plain'})
                 let fileurl = URL.createObjectURL(data)
@@ -415,44 +418,61 @@
                     input: 'select',
                     inputOptions: selectOptions,
                     inputPlaceholder: '选择歌手',
-                    html: `<input class="form-check-input" type="checkbox" value="" id="checkbox1" checked>
-                <label class="form-check-label" for="checkbox1">
-                    无版权歌曲
-                </label>
-                <input class="form-check-input" type="checkbox" value="" id="checkbox2" checked>
-                <label class="form-check-label" for="checkbox2">
-                    VIP歌曲
-                </label>
-                <input class="form-check-input" type="checkbox" value="" id="checkbox3">
-                <label class="form-check-label" for="checkbox3">
-                    无损资源,歌曲免费也上传
-                </label>
+                    html: `<div>
+  <input type="radio" id="rd-all" name="rd-filter" value="0" ><label for="rd-all">批量上传</label>
+  <input type="radio" id="rd-select" name="rd-filter" value="1" checked><label for="rd-select">单首上传</label>
+</div>
+<div id="my-cbs" style="visibility:hidden">
+<input class="form-check-input" type="checkbox" value="" id="cb-copyright" checked><label class="form-check-label" for="cb-copyright">无版权歌曲</label>
+<input class="form-check-input" type="checkbox" value="" id="cb-vip" checked><label class="form-check-label" for="cb-vip">VIP歌曲</label>
+<input class="form-check-input" type="checkbox" value="" id="cb-lossless"><label class="form-check-label" for="cb-lossless"> 无损资源,歌曲免费也上传</label>
+</div>
     `,
                     confirmButtonText: '上传',
                     showCloseButton: true,
                     footer:'<a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
                     focusConfirm: false,
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return '请选择歌手'
+                        }
+                    },
+                    didOpen: () => {
+                        const container = Swal.getHtmlContainer()
+                        let rdSelect=container.querySelector('#rd-select')
+                        let rdAll=container.querySelector('#rd-all')
+                        let cbs=container.querySelector('#my-cbs')
+                        rdSelect.addEventListener('change', () => {
+                            cbs.style.visibility='hidden'
+                        })
+                        rdAll.addEventListener('change', () => {
+                            cbs.style.visibility='visible'
+                        })
+                    },
                     preConfirm: (artist) => {
                         return [
                             artist,
-                            document.getElementById('checkbox1').checked,
-                            document.getElementById('checkbox2').checked,
-                            document.getElementById('checkbox3').checked,
+                            document.getElementById('cb-copyright').checked,
+                            document.getElementById('cb-vip').checked,
+                            document.getElementById('cb-lossless').checked,
+                            document.getElementById('rd-all').checked,
                         ]
                     }
                 }).then(result=>{
                     //console.log(result)
                     if(result.isConfirmed){
                         startUpload(result.value)
+
                     }
                 })
             }
 
             function startUpload(config){
-                var artistobj=artistmap[config[0]]
-                var copyright=config[1]
-                var vip=config[2]
-                var lossless=config[3]
+                let artistobj=artistmap[config[0]]
+                let copyright=config[1]
+                let vip=config[2]
+                let lossless=config[3]
+                let uploadall=config[4]
                 showTips(`正在获取${artistobj.name}资源配置...`,1)
                 //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/${artistid}.json
                 //https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
@@ -463,7 +483,7 @@
                     //console.log(songList)
                     let ids=songList.map(item=>{ return {'id':item.id} })
                     //获取需上传的song
-                    showTips(`正在获取${artistobj.name}需要上传的歌曲...`,1)
+                    showTips(`正在获取可以上传的${artistobj.name}歌曲...`,1)
                     weapiRequest("/api/v3/song/detail", {
                         type: "json",
                         method: "post",
@@ -481,11 +501,16 @@
                                         id:content.songs[i].id,
                                         name:content.songs[i].name,
                                         album:content.songs[i].al.name,
+                                        albumid:content.songs[i].al.id||0,
                                         artists:content.songs[i].ar.map(ar=>ar.name).join(),
                                         filename:content.songs[i].name+'.'+config.ext,
                                         ext:config.ext,
                                         md5:config.md5,
                                         size:config.size,
+                                        picUrl:content.songs[i].al.picUrl,
+                                        isNoCopyright:content.privileges[i].st==-200||config.name,
+                                        isVIP:content.songs[i].fee==1,
+                                        isPay:content.songs[i].fee==4,
                                     }
                                     if (config.name){
                                         item.id=0
@@ -497,35 +522,45 @@
 
                                     let needupload=false
                                     //1.无版权
-                                    if(copyright&&content.privileges[i].st==-200){
+                                    if(copyright&&item.isNoCopyright){
                                         needupload=true
                                     }
                                     //2.VIP
-                                    if(vip&&(content.songs[i].fee==1 || content.songs[i].fee==4)){
+                                    if(vip&&(item.isVIP || item.isPay)){
                                         needupload=true
                                     }
                                     //3.无损
                                     if(lossless&&config.ext=='flac'){
                                         needupload=true
                                     }
-                                    if(needupload||config.name){
+                                    //自定义上传时不筛选
+                                    if(needupload || !uploadall){
                                         songs.push(item)
                                     }
                                 }
                             }
-
                             if ( songs.length == 0 ){
-                                showConfirmBox(artistobj.name+' 没有需要上传的文件')
+                                showConfirmBox(artistobj.name+' 没有可以上传的歌曲')
                                 return
                             }
-                            let md5UploadObj=new Md5Upload(songs,artistobj.name,onMD5Finnish)
-                            md5UploadObj.start()
+                            //排序
+                            songs.sort((a,b)=>{
+                                if(a.albumid!=b.albumid){return b.albumid-a.albumid}
+                                return a.id-b.id
+                            })
+                            if(uploadall){
+                                let md5UploadObj=new Md5Upload(songs,artistobj.name,onAllUploadFinnish)
+                                md5UploadObj.start()
+                            }
+                            else{
+                                selectUpload(songs)
+                            }
                         }
                     })
                 })
                     .catch('获取md5配置失败')
             }
-            function onMD5Finnish(md5UploadObj){
+            function onAllUploadFinnish(md5UploadObj){
                 let text=`${md5UploadObj.name}成功上传${md5UploadObj.sucessCount}首歌曲\n`
                 if(md5UploadObj.failCount>0){
                     text+='以下歌曲上传失败:'
@@ -718,6 +753,136 @@
                     showTips(`(${this.currentIndex+1}/${this.count}) ${song.name} - ${song.artists} - ${song.album} 上传成功`,1)
                     this.currentIndex+=1
                     this.uploadSong()
+                }
+            }
+            //单独上传
+            function selectUpload(songs){
+                Swal.fire({
+                    showCloseButton: true,
+                    showConfirmButton:false,
+                    width: 800,
+                    html:`<style>
+        table {
+            width: 100%;
+            border-spacing: 0px;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            height: 50px;
+            text-align: center;
+            border: 1px solid gray;
+        }
+        table tbody {
+            display: block;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table thead tr, table tbody tr, table tfoot tr {
+            box-sizing: border-box;
+            table-layout: fixed;
+            display: table;
+            width: 100%;
+        }
+        table tbody tr td{
+            border-bottom: none;
+        }
+ tr th:nth-child(1),tr td:nth-child(1){
+  width: 10%;
+}
+ tr th:nth-child(2),tr td:nth-child(2){
+  width: 26%;
+}
+ tr th:nth-child(3),tr td:nth-child(3){
+  width: 26%;
+}
+ tr th:nth-child(4),tr td:nth-child(4){
+  width: 18%;
+}
+ tr th:nth-child(5),tr td:nth-child(5){
+  width: 10%;
+}
+ tr th:nth-child(6),tr td:nth-child(6){
+  width: 8%;
+}
+.u-my-icn {
+    background-image: url(https://p1.music.126.net/UPFxeFR61Kw_JzK69hIy-A==/109951164007455283.png);
+    height: 27px;
+    width: 75px;
+    background-position: center;
+    color: white;
+    background-size: 100% 100%;
+    margin-top: -3px;
+    font-size: 13px;
+    line-height: 25px;
+    padding-left: 8px;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: middle;
+}
+</style>`,
+                    didOpen: () => {
+                        const container = Swal.getHtmlContainer()
+                        let filterInput=document.createElement('input')
+                        filterInput.id='text-filter'
+                        filterInput.className="swal2-input"
+                        filterInput.type='text'
+                        filterInput.placeholder='歌曲过滤'
+                        container.appendChild(filterInput)
+
+                        let songtb=document.createElement('table')
+                        songtb.border=1
+                        songtb.innerHTML=`<thead><tr><th>操作</th><th>音乐标题</th><th>专辑</th><th>歌手</th><th>大小</th><th>格式</th> </tr></thead><tbody></tbody>`
+                        let tbody=songtb.querySelector('tbody')
+                        filterInput.addEventListener('change', () => {
+                            reflashTable(songs,tbody,filterInput.value)
+                        })
+                        container.appendChild(songtb)
+                        reflashTable(songs,tbody,'')
+                    },
+                })
+            }
+            function reflashTable(songs,tbody,filter){
+                tbody.innerHTML=''
+                songs.forEach(function (song){
+                    if(!song.tablerow){
+                        let tablerow=document.createElement('tr')
+                        tablerow.innerHTML=`<td><button type="button" class="swal2-styled">上传</button></td><td class="song-title">${song.name}</td><td><img src="${song.picUrl}?param=60y60">${song.album}</td><td>${song.artists}</td><td>${fileSizeDesc(song.size)}</td><td>${song.ext}</td>`
+                        let songTitle=tablerow.querySelector('.song-title')
+                        if(song.isNoCopyright){
+                            songTitle.innerHTML=songTitle.innerHTML+'<i class="u-my-icn">无版权</i>'
+                        }
+                        else if(song.isVIP){
+                            songTitle.innerHTML=songTitle.innerHTML+'<i class="u-my-icn">VIP</i>'
+                        }
+                        else if(song.isPay){
+                            songTitle.innerHTML=songTitle.innerHTML+'<i class="u-my-icn">付费专辑</i>'
+                        }
+                        let btn=tablerow.querySelector('button')
+                        btn.addEventListener('click', () => {
+                            uploadSingleSong(song,btn)
+                        })
+                        song.tablerow=tablerow
+                    }
+                    if(filter.length>0&&!song.name.match(filter)&&!song.album.match(filter)&&!song.artists.match(filter)){
+                        return
+                    }
+                    tbody.appendChild(song.tablerow)
+                })
+            }
+            function uploadSingleSong(song,button){
+                let md5UploadObj=new Md5Upload([song],song.name,onSingleUploadFinnish)
+                md5UploadObj.start()
+            }
+            function onSingleUploadFinnish(md5UploadObj){
+                if(md5UploadObj.sucessCount==1){
+                    let btn=md5UploadObj.songs[0].tablerow.querySelector('button')
+                    btn.innerHTML='已上传'
+                    btn.disabled='disabled'
                 }
             }
         }
