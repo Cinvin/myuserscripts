@@ -2,7 +2,7 @@
 // @name             网易云:云盘上传周杰伦等歌手歌曲,音乐、歌词、乐谱下载
 // @namespace     https://github.com/Cinvin/myuserscripts
 // @license           MIT
-// @version           1.4.0
+// @version           1.4.1
 // @description     个人主页:云盘快速上传并关联歌手歌曲，歌曲页:音乐、歌词、乐谱下载
 // @author            cinvin
 // @match            https://music.163.com/*
@@ -65,12 +65,18 @@
     }
     function fileSizeDesc(fileSize) {
         if (fileSize >= Math.pow(1024, 2)) {
-            return (fileSize / Math.pow(1024, 2)).toFixed(2).toString() + 'M';
+            return (fileSize / Math.pow(1024, 2)).toFixed(1).toString() + 'M';
         } else if (fileSize >= 1024 && fileSize < Math.pow(1024, 2)) {
-            return (fileSize / 1024).toFixed(2).toString() + 'K'
+            return (fileSize / 1024).toFixed(1).toString() + 'K'
         } else if (fileSize < 1024) {
-            return fileSize.toFixed(2) + 'B'
+            return fileSize + 'B'
         }
+    };
+    function duringTimeDesc(dt) {
+        let secondTotal=Math.round(dt/1000)
+        let min=Math.floor(secondTotal/60)
+        let sec=secondTotal%60
+        return min.toString().padStart(2,'0')+':'+sec.toString().padStart(2,'0')
     };
 
     //歌曲页
@@ -392,11 +398,11 @@
             btn.style.marginRight='10px';
             btn.addEventListener('click',ShowCloudUploadPopUp)
             var toplist=[]
-            var selectOptions={"无版权歌手":{},"华语男歌手":{},"华语女歌手":{},"华语组合":{},"欧美男歌手":{},"欧美女歌手":{},"欧美组合":{},"日本男歌手":{},"日本女歌手":{},"日本组合":{},}
-            var optionMap={0:"无版权歌手",1:"华语男歌手",2:"华语女歌手",3:"华语组合",4:"欧美男歌手",5:"欧美女歌手",6:"欧美组合",7:"日本男歌手",8:"日本女歌手",9:"日本组合"}
+            var selectOptions={"热门":{},"华语男歌手":{},"华语女歌手":{},"华语组合":{},"欧美男歌手":{},"欧美女歌手":{},"欧美组合":{},"日本男歌手":{},"日本女歌手":{},"日本组合":{},"韩国男歌手":{},"韩国女歌手":{},"韩国组合":{},}
+            var optionMap={0:"热门",1:"华语男歌手",2:"华语女歌手",3:"华语组合",4:"欧美男歌手",5:"欧美女歌手",6:"欧美组合",7:"日本男歌手",8:"日本女歌手",9:"日本组合",10:"韩国男歌手",11:"韩国女歌手",12:"韩国组合"}
             var artistmap={}
             //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/top.json
-            //https://fastly.jsdelivr.net/gh/Cinvin/cdn/artist/top.json
+            //https://fastly.jsdelivr.net/gh/Cinvin/cdn@latest/artist/top.json
             fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn@latest/artist/top.json')
                 .then(r => r.json())
                 .then(r=>{
@@ -503,6 +509,8 @@
                                         album:content.songs[i].al.name,
                                         albumid:content.songs[i].al.id||0,
                                         artists:content.songs[i].ar.map(ar=>ar.name).join(),
+                                        tns:content.songs[i].tns?content.songs[i].tns.join():'',//翻译
+                                        dt:duringTimeDesc(content.songs[i].dt||0),
                                         filename:content.songs[i].name+'.'+config.ext,
                                         ext:config.ext,
                                         md5:config.md5,
@@ -768,14 +776,16 @@
             border-collapse: collapse;
         }
         table th, table td {
-            height: 50px;
+            text-align: left;
+            text-overflow: ellipsis;
+        }
+        song-name-text {
             text-align: center;
-            border: 1px solid gray;
         }
         table tbody {
             display: block;
             width: 100%;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -789,40 +799,28 @@
             border-bottom: none;
         }
  tr th:nth-child(1),tr td:nth-child(1){
-  width: 10%;
-}
- tr th:nth-child(2),tr td:nth-child(2){
-  width: 26%;
-}
- tr th:nth-child(3),tr td:nth-child(3){
-  width: 26%;
-}
- tr th:nth-child(4),tr td:nth-child(4){
-  width: 18%;
-}
- tr th:nth-child(5),tr td:nth-child(5){
-  width: 10%;
-}
- tr th:nth-child(6),tr td:nth-child(6){
   width: 8%;
 }
-.u-my-icn {
-    background-image: url(https://p1.music.126.net/UPFxeFR61Kw_JzK69hIy-A==/109951164007455283.png);
-    height: 27px;
-    width: 75px;
-    background-position: center;
-    color: white;
-    background-size: 100% 100%;
-    margin-top: -3px;
-    font-size: 13px;
-    line-height: 25px;
-    padding-left: 8px;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-    display: inline-block;
-    overflow: hidden;
-    vertical-align: middle;
+ tr th:nth-child(2){
+  width: 35%;
+}
+ tr td:nth-child(2){
+  width: 10%;
+}
+tr td:nth-child(3){
+  width: 25%;
+}
+ tr th:nth-child(3),tr td:nth-child(4){
+  width: 20%;
+}
+ tr th:nth-child(4),tr td:nth-child(5){
+  width: 8%;
+}
+ tr th:nth-child(5),tr td:nth-child(6){
+  width: 16%;
+}
+ tr th:nth-child(6),tr td:nth-child(7){
+  width: 8%;
 }
 </style>`,
                     didOpen: () => {
@@ -836,7 +834,9 @@
 
                         let songtb=document.createElement('table')
                         songtb.border=1
-                        songtb.innerHTML=`<thead><tr><th>操作</th><th>音乐标题</th><th>专辑</th><th>歌手</th><th>大小</th><th>格式</th> </tr></thead><tbody></tbody>`
+                        songtb.frame='hsides'
+                        songtb.rules='rows'
+                        songtb.innerHTML=`<thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>文件信息</th><th>备注</th> </tr></thead><tbody></tbody>`
                         let tbody=songtb.querySelector('tbody')
                         filterInput.addEventListener('change', () => {
                             reflashTable(songs,tbody,filterInput.value)
@@ -851,16 +851,16 @@
                 songs.forEach(function (song){
                     if(!song.tablerow){
                         let tablerow=document.createElement('tr')
-                        tablerow.innerHTML=`<td><button type="button" class="swal2-styled">上传</button></td><td class="song-title">${song.name}</td><td><img src="${song.picUrl}?param=60y60">${song.album}</td><td>${song.artists}</td><td>${fileSizeDesc(song.size)}</td><td>${song.ext}</td>`
-                        let songTitle=tablerow.querySelector('.song-title')
+                        tablerow.innerHTML=`<td><button type="button" class="swal2-styled">上传</button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=60y60" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`
+                        let songTitle=tablerow.querySelector('.song-remark')
                         if(song.isNoCopyright){
-                            songTitle.innerHTML=songTitle.innerHTML+'<i class="u-my-icn">无版权</i>'
+                            songTitle.innerHTML='无版权'
                         }
                         else if(song.isVIP){
-                            songTitle.innerHTML=songTitle.innerHTML+'<i class="u-my-icn">VIP</i>'
+                            songTitle.innerHTML='VIP'
                         }
                         else if(song.isPay){
-                            songTitle.innerHTML=songTitle.innerHTML+'<i class="u-my-icn">付费专辑</i>'
+                            songTitle.innerHTML='数字专辑'
                         }
                         let btn=tablerow.querySelector('button')
                         btn.addEventListener('click', () => {
@@ -868,7 +868,7 @@
                         })
                         song.tablerow=tablerow
                     }
-                    if(filter.length>0&&!song.name.match(filter)&&!song.album.match(filter)&&!song.artists.match(filter)){
+                    if(filter.length>0&&!song.name.match(filter)&&!song.album.match(filter)&&!song.artists.match(filter)&&!song.tns.match(filter)){
                         return
                     }
                     tbody.appendChild(song.tablerow)
