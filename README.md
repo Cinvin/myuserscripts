@@ -11,5 +11,5 @@
 网易云音乐API来自[Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)  
 ## 咪咕音乐下载脚本
 在咪咕音乐专辑详情页添加下载链接 可下载至臻(Hi-Res)  
-[安装](https://greasyfork.org/scripts/453820-%E5%92%AA%E5%92%95%E9%9F%B3%E4%B9%90%E4%B8%8B%E8%BD%BD/code/%E5%92%AA%E5%92%95%E9%9F%B3%E4%B9%90%E4%B8%8B%E8%BD%BD.user.js) (请确保浏览器已经安装了TamperMonkey) [![Greasy Fork](https://img.shields.io/greasyfork/dt/459633?label=greasyfork%20installs)](https://greasyfork.org/zh-CN/scripts/453820)    
+[安装](https://greasyfork.org/scripts/453820-%E5%92%AA%E5%92%95%E9%9F%B3%E4%B9%90%E4%B8%8B%E8%BD%BD/code/%E5%92%AA%E5%92%95%E9%9F%B3%E4%B9%90%E4%B8%8B%E8%BD%BD.user.js) (请确保浏览器已经安装了TamperMonkey) [![Greasy Fork](https://img.shields.io/greasyfork/dt/453820?label=greasyfork%20installs)](https://greasyfork.org/zh-CN/scripts/453820)    
 <img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot.png" width="60%">
