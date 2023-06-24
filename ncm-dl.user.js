@@ -1,20 +1,30 @@
 // ==UserScript==
-// @name			网易云:云盘歌曲快传(含周杰伦)|云盘匹配纠正|听歌量打卡|音乐歌词乐谱下载
-// @description		个人主页:云盘歌曲快传、云盘匹配纠正、300首听歌量打卡、云盘导入导出，歌曲页:音乐、歌词、乐谱下载
-// @namespace		https://github.com/Cinvin/myuserscripts
-// @version			2.1.0
+// @name			网易云:高音质试听|云盘歌曲快传(含周杰伦)|云盘匹配纠正|听歌量打卡|音乐歌词乐谱下载
+// @description		选择更高音质试听(支持超清母带,默认无损)。个人主页:无需文件快速上传云盘歌曲(含周杰伦)、云盘匹配纠正、快速完成300首听歌量打卡任务、云盘导入导出。歌曲页:音乐、歌词、乐谱下载。
+// @namespace	https://github.com/Cinvin/myuserscripts
+// @version			2.2.0
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
 // @icon			data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAALiSURBVHgBpVZLThtBEH3d40WkIGWWSSDSGMw6cAP7BBlOgDkB5gSYE2BOgDlBnBNgToCzDmQmii0iZYEXsRRBPJ1X6R4+Mz3IKLVxT1f1q9/rais8IQmiCLjZNlBNA8O1iqzGpAoqNcAnjfmgjh9pFYbyA7+ODIJjAjSxmPTp6MDnSJfBV3YzBOfPABdp88zpBd7ERcWjDC7xdp9bXfyXZHtruOqVHNjITW8RCGZ3xOSHClnITwaF6KFeQ7XqGA/tGrbmBO9W4E0tIFL33W9g0gmQpWuY9A30XvEAsT4mCMM7B3MEXf6EZUN8ZvM2BVAY47bPyK6QuvNLLCcGWdcTFPVLnX8OJHrWadsHXsOsKeuvWD6lza7ThHWkzEqJw4gRvodXzK5kodn92KNNa5hz/0Uo7BBGicOMtc0b2MA4ZnZ17h34HUgWL9uakX3wKIfCaVe6yDqcNWv4NUrINIkswfKGGK5j3K1yItkp1vEahfpr3GwCwZTRJ25rRxoqNbdlUS2gNspwe02Qdh2TEymj5+6MNDzNreMnDwfNe4ezwQXexS4bksLE0geOC9qhJxkR/ASeMmlUS1ilCIBXdmWm1m5pg/0Y+mzFQVrclIhY11H+zWbFDXwfkDlHjHrAHA7svMKGzWheFcxUmpwWdwWwxhqLgds6FEAyp7OK8Rbwm/3R+3BZBjCjP6hFRRxO4G96DnVWVMi9kBpzmbND6JpII8meYwbAZqu20/WFcQqmXcZRA2Vv5e01SmKH1hesdDXMPjzCQDiPZlvuviRFvdwTbdmAYfm4PpTxKzwXQ2EJ7UbusWE/sq1VTFr5ZfT4d5khH3bBOfzMqXxMeC/a/Dn0nEt5pnXnwBl3nLFXJEsZF7IWmnIdVwQEya6Bq4E7dy9P1XtRoeO9dUzKD04uLpM7Cj5DOGGznTzyXEo3mTOnJ29AxdWvkr59Nx6Di6inTrnmxzJx3a11WT382zIjW6bTKoy/H+Iy6oHlZ+kAAAAASUVORK5CYII=
 // @grant			GM_xmlhttpRequest
 // @grant			GM_download
+// @grant			GM_setValue
+// @grant			GM_getValue
+// @grant			GM_registerMenuCommand
 // @grant			unsafeWindow
-// @require			https://fastly.jsdelivr.net/npm/sweetalert2@11.7.10
+// @require			https://fastly.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.all.min.js
+// @require			https:/fastly.jsdelivr.net/npm/ajax-hook@3.0.1/dist/ajaxhook.min.js
 // ==/UserScript==
 
 (function() {
     'use strict';
+    // 备用CDN
+    // https://raw.kgithub.com/Cinvin/cdn/main/artist/
+    // https://gcore.jsdelivr.net/gh/Cinvin/cdn@latest/artist/
+    const baseCDNURL='https://fastly.jsdelivr.net/gh/Cinvin/cdn@latest/artist/'
+    const levelOptions={jymaster:'超清母带',sky:'沉浸环绕声',jyeffect:'高清环绕声',hires:'Hi-Res',lossless:'无损',exhigh:'极高',higher:'较高',standard:'标准'}
+    const defaultOfDEFAULT_LEVEL='lossless'
 
     function getcookie(key) {
         var cookies = document.cookie,
@@ -30,14 +40,12 @@
         }
         return cookies.substring(find, index) || ""
     };
-
     function weapiRequest(url, config) {
         let data = config.data || {}
         data.csrf_token = getcookie("__csrf");
         url = url.replace("api", "weapi");
         config.method = "post";
-        config.cookie = 'os=pc;appver=2.9.7'
-        delete config.query
+        config.cookie = 'os=android;appver=8.10.05'
         config.headers = {
             "content-type": "application/x-www-form-urlencoded",
         }
@@ -51,7 +59,6 @@
 		//console.log(config)
 		GM_xmlhttpRequest(config)
     }
-
     function showConfirmBox(msg) {
         Swal.fire({
             title: '提示',
@@ -59,7 +66,6 @@
             confirmButtonText: '确定',
         })
     }
-
     function showTips(tip, type) {
         //type:1 √ 2:!
         unsafeWindow.g_showTipCard({
@@ -67,7 +73,6 @@
             type: type
         })
     }
-
     function fileSizeDesc(fileSize) {
         if (fileSize < 1024) {
             return fileSize + 'B'
@@ -89,7 +94,6 @@
                 .toString() + 'T';
         }
     };
-
     function duringTimeDesc(dt) {
         let secondTotal = Math.round(dt / 1000)
         let min = Math.floor(secondTotal / 60)
@@ -98,26 +102,8 @@
             .padStart(2, '0') + ':' + sec.toString()
             .padStart(2, '0')
     };
-
     function levelDesc(level) {
-        switch (level) {
-            case 'standard':
-                return '标准'
-            case 'higher':
-                return '较高'
-            case 'exhigh':
-                return '极高'
-            case 'lossless':
-                return '无损'
-            case 'hires':
-                return 'Hi-Res'
-            case 'jyeffect':
-                return '鲸云臻音'
-            case 'jymaster':
-                return '鲸云母带'
-            default:
-                return level
-        }
+        return levelOptions[level]||level
     };
 
     //歌曲页
@@ -209,7 +195,7 @@
                                                 size: content.data[0].size,
                                                 desc: levelDesc(songdetail.privileges[0].plLevel)
                                             }
-                                            if (songdetail.privileges[0].dlLevel != "none" && songdetail.privileges[0].plLevel != songdetail.privileges[0].dlLevel) {
+                                            if (songdetail.privileges[0].dlLevel != "none" && songdetail.privileges[0].plLevel != songdetail.privileges[0].dlLevel && songdetail.songs[0].fee==0) {
                                                 config.desc = `试听版本(${config.desc})`
 											}
                                             this.createButton(config)
@@ -218,7 +204,7 @@
                                 })
                             }
                             //example songid:1914447186
-                            if (songdetail.privileges[0].dlLevel != "none" && songdetail.privileges[0].plLevel != songdetail.privileges[0].dlLevel && unsafeWindow.GUser.userType == 0) {
+                            if (songdetail.privileges[0].dlLevel != "none" && songdetail.privileges[0].plLevel != songdetail.privileges[0].dlLevel && songdetail.songs[0].fee==0) {
                                 weapiRequest("/api/song/enhance/download/url/v1", {
                                     type: "json",
                                     data: {
@@ -458,9 +444,7 @@
                 12: "韩国组合"
             }
             var artistmap = {}
-            //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/top.json
-            //https://fastly.jsdelivr.net/gh/Cinvin/cdn@latest/artist/top.json
-            fetch('https://fastly.jsdelivr.net/gh/Cinvin/cdn@latest/artist/top.json')
+            fetch(`${baseCDNURL}top.json`)
                 .then(r => r.json())
                 .then(r => {
                 toplist = r;
@@ -469,7 +453,7 @@
                     let id = artist.id
                     selectOptions[optionMap[artist.categroy]][artist.id] = `${artist.name}(${artist.count}首/${artist.sizeDesc})`
 						artistmap[artist.id] = artist
-                    })
+                })
                 //console.log(selectOptions)
                 btnUpload.addEventListener('click', ShowCloudUploadPopUp)
                 btnUploadDesc.innerHTML = '快速上传'
@@ -499,9 +483,7 @@
 
             function fetchCDNConfig(artistId) {
                 showTips(`正在获取资源配置...`, 1)
-                //https://raw.githubusercontent.com/Cinvin/cdn/main/artist/${artistid}.json
-                //https://cdn.jsdelivr.net/gh/Cinvin/cdn/artist/${artistid}.json
-                fetch(`https://fastly.jsdelivr.net/gh/Cinvin/cdn@latest/artist/${artistId}.json`)
+                fetch(`${baseCDNURL}${artistId}.json`)
                     .then(r => r.json())
                     .then(r => {
                     let uploader = new Uploader(r)
@@ -1411,26 +1393,26 @@ tr td:nth-child(3){
                                             if (res.matchData) {
                                                 msg = `${res.matchData.songName} 成功匹配到 ${res.matchData.simpleSong.name} `
 												}
-                                            }
-                                            showTips(msg, 1)
+                                        }
+                                        showTips(msg, 1)
 
-                                            if (matcher.filter.songs.length > 0 && res.matchData) {
-                                                for (let i = 0; i < matcher.filter.songs.length; i++) {
-                                                    if (matcher.filter.songs[i].simpleSong.id == fromId) {
-                                                        //matchData里无privilege
-                                                        res.matchData.simpleSong.privilege = matcher.filter.songs[i].simpleSong.privilege
-                                                        matcher.filter.songs[i] = res.matchData
-                                                        break
-                                                    }
+                                        if (matcher.filter.songs.length > 0 && res.matchData) {
+                                            for (let i = 0; i < matcher.filter.songs.length; i++) {
+                                                if (matcher.filter.songs[i].simpleSong.id == fromId) {
+                                                    //matchData里无privilege
+                                                    res.matchData.simpleSong.privilege = matcher.filter.songs[i].simpleSong.privilege
+                                                    matcher.filter.songs[i] = res.matchData
+                                                    break
                                                 }
                                             }
                                         }
-                                        matcher.openCloudList()
-                                    },
-                                })
-                            } else {
-                                matcher.openCloudList()
-                            }
+                                    }
+                                    matcher.openCloudList()
+                                },
+                            })
+                        } else {
+                            matcher.openCloudList()
+                        }
                     })
                 }
             }
@@ -1693,5 +1675,97 @@ tr td:nth-child(3){
                 }
             }
         }
+    }
+
+    //高音质播放
+    GM_registerMenuCommand(`优先试听音质`, setLevel)
+    function setLevel() {
+        Swal.fire({
+            title: '优先试听音质',
+            input: 'select',
+            inputOptions: levelOptions,
+            inputValue: GM_getValue('DEFAULT_LEVEL',defaultOfDEFAULT_LEVEL),
+            confirmButtonText: '确定',
+            showCloseButton: true,
+            footer: '<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
+        })
+            .then(result => {
+            if (result.isConfirmed) {
+                GM_setValue('DEFAULT_LEVEL',result.value)
+            }
+        })
+    }
+    if(!unsafeWindow.myhook){
+        unsafeWindow.myhook=ah.proxy({
+            onResponse: (response, handler) => {
+                if(response.config.url.includes('/weapi/song/enhance/player/url/v1')){
+                    let content = JSON.parse(response.response)
+                    let ids=[]
+                    content.data.forEach(song=>{
+                        if (song.type.toLowerCase() !== "mp3" && song.type.toLowerCase() !== "m4a") {
+                            song.type='mp3'
+                        }
+                        if(song.level=='standard' && GM_getValue('DEFAULT_LEVEL',defaultOfDEFAULT_LEVEL) != 'standard'){
+                            ids.push(song.id)
+                        }
+                    })
+                    if(ids.length>0){
+                        //免费歌曲用下载接口获取
+                        if (content.data.length==1 && content.data[0].fee==0) {
+                            weapiRequest("/api/song/enhance/download/url/v1", {
+                                type: "json",
+                                data: {
+                                    id: ids[0],
+                                    level: GM_getValue('DEFAULT_LEVEL',defaultOfDEFAULT_LEVEL),
+                                    encodeType: 'mp3'
+                                },
+                                onload: (resreget) => {
+                                    let song = JSON.parse(resreget.response).data
+                                    if(song.url&&song.level!=content.data[0].level){
+                                        content.data[0].url=song.url
+                                        console.log(`歌曲${song.id}音质替换为${levelDesc(song.level)}`)
+                                    }
+                                    response.response=JSON.stringify(content)
+                                    handler.next(response)
+                                }
+                            })
+                        }
+                        else{
+                            weapiRequest("/api/song/enhance/player/url/v1", {
+                                type: "json",
+                                data: {
+                                    ids: JSON.stringify(ids),
+                                    level: GM_getValue('DEFAULT_LEVEL',defaultOfDEFAULT_LEVEL),
+                                    encodeType: 'mp3'
+                                },
+                                onload: (resreget) => {
+                                    let res = JSON.parse(resreget.response);
+                                    res.data.forEach(song=>{
+                                        for(let i=0;i<content.data.length;i++){
+                                            if(song.id==content.data[i].id){
+                                                if(song.level!=content.data[i].level){
+                                                    content.data[i].url=song.url
+                                                    console.log(`歌曲${song.id}音质替换为${levelDesc(song.level)}`)
+                                                }
+                                                break
+                                            }
+                                        }
+                                    })
+                                    response.response=JSON.stringify(content)
+                                    handler.next(response)
+                                }
+                            })
+                        }
+                    }
+                    else{
+                        response.response=JSON.stringify(content)
+                        handler.next(response)
+                    }
+                }
+                else{
+                    handler.next(response)
+                }
+            }
+        },unsafeWindow)
     }
 })();
