@@ -14,7 +14,7 @@
 // @grant			GM_registerMenuCommand
 // @grant			unsafeWindow
 // @require			https://fastly.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.all.min.js
-// @require			https:/fastly.jsdelivr.net/npm/ajax-hook@3.0.1/dist/ajaxhook.min.js
+// @require			https://fastly.jsdelivr.net/npm/ajax-hook@3.0.1/dist/ajaxhook.min.js
 // ==/UserScript==
 
 (function() {
