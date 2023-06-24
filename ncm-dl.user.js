@@ -2,7 +2,7 @@
 // @name			网易云:高音质试听|云盘歌曲快传(含周杰伦)|云盘匹配纠正|听歌量打卡|音乐歌词乐谱下载
 // @description		选择更高音质试听(支持超清母带,默认无损)。个人主页:无需文件快速上传云盘歌曲(含周杰伦)、云盘匹配纠正、快速完成300首听歌量打卡任务、云盘导入导出。歌曲页:音乐、歌词、乐谱下载。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			2.2.1
+// @version			2.2.2
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -45,7 +45,7 @@
         data.csrf_token = getcookie("__csrf");
         url = url.replace("api", "weapi");
         config.method = "post";
-        config.cookie = 'os=android;appver=8.10.05'
+        if(!config.cookie) config.cookie = 'os=android;appver=8.10.05'
         config.headers = {
             "content-type": "application/x-www-form-urlencoded",
         }
@@ -56,7 +56,6 @@
             "0CoJUm6Qyw8W8jud");
         config.data = `params=${ encodeURIComponent(encRes.encText) }&encSecKey=${ encodeURIComponent(encRes.encSecKey) }`
 		config.url = url + `?csrf_token=${data.csrf_token}`
-		//console.log(config)
 		GM_xmlhttpRequest(config)
     }
     function showConfirmBox(msg) {
@@ -1449,6 +1448,7 @@ tr td:nth-child(3){
                 weapiRequest('/api/feedback/weblog', {
                     type: "json",
                     method: "POST",
+                    cookie:'os=pc;appver=2.9.7',
                     data: {
                         logs: JSON.stringify(logs)
                     },
