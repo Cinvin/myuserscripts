@@ -2,7 +2,7 @@
 // @name			网易云:高音质试听|云盘歌曲快传(含周杰伦)|云盘匹配纠正|听歌量打卡|音乐歌词乐谱下载
 // @description		选择更高音质试听(支持超清母带,默认无损)。个人主页:无需文件快速上传云盘歌曲(含周杰伦)、云盘匹配纠正、快速完成300首听歌量打卡任务、云盘导入导出。歌曲页:音乐、歌词、乐谱下载。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			2.2.0
+// @version			2.2.1
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -13,8 +13,8 @@
 // @grant			GM_getValue
 // @grant			GM_registerMenuCommand
 // @grant			unsafeWindow
-// @require			https://fastly.jsdelivr.net/npm/sweetalert2@11.7.12/dist/sweetalert2.all.min.js
-// @require			https://fastly.jsdelivr.net/npm/ajax-hook@3.0.1/dist/ajaxhook.min.js
+// @require			https://unpkg.com/sweetalert2@11.7.12/dist/sweetalert2.all.min.js
+// @require			https://unpkg.com/ajax-hook@3.0.1/dist/ajaxhook.min.js
 // ==/UserScript==
 
 (function() {
@@ -407,7 +407,7 @@
             btnUpload.id = 'cloudBtn'
             btnUpload.className = 'u-btn2 u-btn2-1'
             let btnUploadDesc = document.createElement('i')
-            btnUploadDesc.innerHTML = '加载中'
+            btnUploadDesc.innerHTML = '快速上传加载中(或许是fastly.jsdelivr.net无法访问...)'
             btnUpload.appendChild(btnUploadDesc)
             btnUpload.setAttribute("hidefocus", "true");
             btnUpload.style.marginRight = '10px';
