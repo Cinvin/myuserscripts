@@ -1,13 +1,12 @@
 // ==UserScript==
 // @name         咪咕音乐下载
 // @namespace    https://github.com/Cinvin
-// @version      0.2.1
-// @description  在咪咕音乐专辑页面添加下载链接,可下载最高音质,支持VIP/付费专辑
+// @version      0.2.4
+// @description  咪咕音乐专辑页面添加下载,可下载至臻音质,支持VIP/付费专辑
 // @author       cinvin
 // @license MIT
 // @match        https://music.migu.cn/v3/music/album/*
 // @match        https://music.migu.cn/v3/music/digital_album/*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=migu.cn
 // @grant       GM_xmlhttpRequest
 // @grant       GM_download
 // @grant       GM_notification
@@ -30,7 +29,7 @@
             return (fileSize / Math.pow(1024, 4)).toFixed(2).toString() + 'T';
         }
     };
-    var QualityDesc = {'PQ':'普通','HQ':'极高','SQ':'无损','ZQ':'至臻'}
+    var QualityDesc = {'LQ':'低音质(64K)','PQ':'普通(128K)','HQ':'极高(320K)','SQ':'无损','ZQ':'至臻'}
     var AlbumId = (document.querySelector('#J_AlbumId') || document.querySelector('#J_ResId')).getAttribute("value");
 
     var fullUrl = "https://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=01&resourceId="+AlbumId+"&resourceType=2003";
@@ -50,15 +49,19 @@
             //console.log(jsonObj);
             if (jsonObj.resource[0] && jsonObj.resource[0].songItems) {
                 let dllist= {};
+                let filenamelist={}
                 for (let item of jsonObj.resource[0].songItems) {
                     let songid = item.songId;
                     let songdllist=item.newRateFormats.map((detail) => ({
                         formatType: QualityDesc[detail.formatType] || detail.formatType,
                         url: encodeURI(detail.androidUrl || detail.url),
-                        size: fileSizeDesc(Number(detail.androidSize || detail.size)),
+                        size: detail.androidSize || detail.size,
+                        sizeDesc: fileSizeDesc(Number(detail.androidSize || detail.size)),
                         fileType: detail.androidFileType || detail.fileType,
+                        bit:detail.androidBit
                     }));
                     dllist[songid]=songdllist;
+                    filenamelist[songid]=`${item.singer.replace('|','_')}-${item.songName}`
                 }
                 let songselectorList = document.querySelector('.songlist-body').children;
                 console.log(songselectorList);
@@ -75,21 +78,25 @@
                                 urlObj.hostname = 'freetyst.nf.migu.cn';
                                 let dl = document.createElement('a');
                                 dl.text = item.formatType;
-                                dl.title = item.size;
+                                if (item.bit) dl.text = `${item.formatType}(${item.bit}bit)`
+                                dl.title = fileSizeDesc(item.size);
                                 dl.style.margin='5px';
+                                //dl.href=urlObj.href;
                                 dl.addEventListener('click', () => {
-                                    let filename=songname+'.'+item.fileType;
+                                    let filename=filenamelist[songid]+'.'+item.fileType;
+                                    console.log(urlObj.href,item.size);
                                     GM_download({
                                         url: urlObj.href,
                                         name: filename,
                                         onprogress:function(e){
-                                           // console.log(e);
+                                            // console.log(e);
                                             dl.text=`${item.formatType} (${Math.round(e.loaded/e.totalSize*10000)/100}%)`
                                         },
                                         onload: function () {
                                             dl.text=item.formatType
                                         },
-                                        onerror :function(){
+                                        onerror :function(res){
+                                            console.log(res)
                                             GM_notification({ text: filename, title: "下载失败", timeout: 5000 })
                                         }
                                     });
