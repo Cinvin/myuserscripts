@@ -2,7 +2,7 @@
 // @name			网易云:云盘快传(含周杰伦)|高音质试听|云盘匹配纠正|听歌量打卡|歌曲下载&上传
 // @description		无需文件云盘快传歌曲(含周杰伦)、选择更高音质试听(支持超清母带,默认无损)、云盘匹配纠正、快速完成300首听歌量打卡任务、歌曲下载上传(可批量)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.0.0
+// @version			3.0.1
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -2264,6 +2264,7 @@ tr td:nth-child(3){
                         let filename=result.value[0].name
                         let song={
                             songFile:result.value[0],
+                            fileFullName:filename,
                             title,
                             artist,
                             album,
