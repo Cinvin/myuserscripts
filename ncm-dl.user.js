@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name			网易云:云盘快传(含周杰伦)|高音质试听|云盘匹配纠正|听歌量打卡|歌曲下载&上传
-// @description		无需文件云盘快传歌曲(含周杰伦)、选择更高音质试听(支持超清母带,默认无损)、云盘匹配纠正、快速完成300首听歌量打卡任务、歌曲下载上传(可批量)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
+// @description		无需文件云盘快传歌曲(含周杰伦)、选择更高音质试听(支持超清母带,默认无损)、云盘匹配纠正、快速完成300首听歌量打卡任务、歌曲下载上传(可批量)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
 // @version			3.0.2
 // @author			cinvin
@@ -15,6 +15,7 @@
 // @grant			unsafeWindow
 // @require			https://unpkg.com/sweetalert2@11.7.12/dist/sweetalert2.all.min.js
 // @require			https://unpkg.com/ajax-hook@3.0.1/dist/ajaxhook.min.js
+// @require			https://unpkg.com/jsmediatags@3.9.7/dist/jsmediatags.min.js
 // @connect 45.127.129.8
 // @connect 126.net
 // ==/UserScript==
@@ -50,7 +51,7 @@
         data.csrf_token = getcookie("__csrf");
         url = url.replace("api", "weapi");
         config.method = "post";
-        if(!config.cookie) config.cookie = 'os=android;appver=8.10.05'
+        if(!config.cookie) config.cookie = 'os=android;appver=8.20.30'
         config.headers = {
             "content-type": "application/x-www-form-urlencoded",
         }
@@ -113,7 +114,6 @@
     //下载后上传
     class ncmDownUpload{
         constructor(songs,showfinishBox=true,onSongDUSuccess=null,onSongDUFail=null) {
-            console.log(songs)
             this.songs = songs
             this.currentIndex = 0
             this.failSongs = []
@@ -137,10 +137,9 @@
                     onload: (responses) => {
                         showTips(`(1/6)${song.title} 获取文件信息完成`,1)
                         let content = JSON.parse(responses.response);
-                        console.log(content)
+                        //console.log(content)
                         let resData=content.data[0]||content.data
                         if (resData.url != null) {
-                            console.log(content)
                             song.fileFullName = song.artist + '-' + song.title + '.' + resData.type.toLowerCase()
                             song.dlUrl = resData.url
                             song.md5 = resData.md5
@@ -442,6 +441,15 @@
             let songTitle = document.head.querySelector("[property~='og:title'][content]")?.content
             let songArtist = document.head.querySelector("[property~='og:music:artist'][content]")?.content //split by /
             let songAlbum = document.head.querySelector("[property~='og:music:album'][content]")?.content
+            //songRedCount
+            let songRedCountDiv = document.createElement('div');
+            songRedCountDiv.className = "out s-fc3"
+            let songRedCountP = document.createElement('p');
+            songRedCountP.innerHTML = '红心数量:';
+            songRedCountDiv.style.display = "none"
+            songRedCountDiv.appendChild(songRedCountP)
+            cvrwrap.appendChild(songRedCountDiv)
+
             //songdownload
             let songDownloadDiv = document.createElement('div');
             songDownloadDiv.className = "out s-fc3"
@@ -497,7 +505,7 @@
                         onload: (responses) => {
                             //example songid:1914447186
                             let res = JSON.parse(responses.response);
-                            console.log(res)
+                            //console.log(res)
                             let channel='pl'
                             let plLevel=res["/api/v3/song/detail"].privileges[0].plLevel
                             let dlLevel=res["/api/v3/song/detail"].privileges[0].dlLevel
@@ -548,7 +556,7 @@
                             let content = JSON.parse(responses.response);
                             let resData=content.data[0]||content.data
                             if (resData.url != null) {
-                                console.log(content)
+                                //console.log(content)
                                 let fileFullName = songArtist + '-' + songTitle + '.' + resData.type.toLowerCase()
                                 let url = resData.url
                                 let btntext = dlbtn.text
@@ -657,6 +665,20 @@
                 },
             });
 
+            //redccount
+            weapiRequest("/api/song/red/count", {
+                type: "json",
+                data: {
+                    songId: songId,
+                },
+                onload: function(responses) {
+                    let content = JSON.parse(responses.response)
+                    //console.log(content)
+                    songRedCountP.innerHTML += content.data.count
+                    songRedCountDiv.style.display = "inline"
+                },
+            });
+
             function downloadLyric(type, songTitle) {
                 let content = lyricObj.lrc.lyric
                 let lrc = document.createElement('a');
@@ -717,8 +739,11 @@
                     onload: (responses) => {
                         let res = JSON.parse(responses.response)
                         //console.log(res1)
-                        if (res.code = 200) {
+                        if (res.code == 200) {
                             showConfirmBox('今日听歌量+300首完成')
+                        }
+                        else{
+                            showConfirmBox('听歌量打卡失败。'+responses.response)
                         }
                     }
                 })
@@ -1518,7 +1543,7 @@ tr td:nth-child(3){
                         },
                         onload: (responses) => {
                             let res = JSON.parse(responses.response)
-                            console.log(res)
+                            //console.log(res)
                             matcher.currentPage = (offset / this.cloudCountLimit) + 1
                             let maxPage = Math.ceil(res.count / this.cloudCountLimit)
                             this.controls.cloudDesc.innerHTML = `云盘容量 ${fileSizeDesc(res.size)}/${fileSizeDesc(res.maxSize)} 共${res.count}首歌曲`
@@ -1705,6 +1730,22 @@ tr td:nth-child(3){
                                 return '内容为空'
                             }
                         },
+                        didOpen: () => {
+                            let titleDOM = Swal.getTitle()
+                            weapiRequest("/api/song/enhance/player/url/v1", {
+                                type: "json",
+                                data: {
+                                    immerseType:'ste',
+                                    ids: JSON.stringify([song.simpleSong.id]),
+                                    level: 'standard',
+                                    encodeType: 'mp3'
+                                },
+                                onload: (responses) => {
+                                    let content = JSON.parse(responses.response)
+                                    titleDOM.innerHTML+=' 文件时长'+duringTimeDesc(content.data[0].time)
+                                }
+                            })
+                        }
                     })
                         .then(result => {
                         if (result.isConfirmed) {
@@ -2146,7 +2187,6 @@ tr td:nth-child(3){
                     }
                 }
                 onUploadFail(ULsong){
-                    console.log(ULsong)
                     let song = ULsong.Upgrader.songs[ULsong.songIndex]
                     try {
                         weapiRequest("/api/cloud/user/song/match", {
@@ -2173,7 +2213,6 @@ tr td:nth-child(3){
                     }
                 }
                 onUploadSuccess(ULsong){
-                    console.log(ULsong)
                     let song = ULsong.Upgrader.songs[ULsong.songIndex]
                     try {
                         weapiRequest("/api/cloud/del", {
@@ -2243,157 +2282,164 @@ tr td:nth-child(3){
                     input: 'file',
                     inputAttributes: {
                         'accept': 'audio/*',
+                        'multiple':'multiple',
                     },
                     confirmButtonText: '上传',
                     showCloseButton: true,
-                    html:`
-                    <div><label class="form-title-label" for="text-title">标题</label><input id="text-title" class="swal2-input" type="text" placeholder="未知"></div>
-                    <div><label class="form-artist-label" for="text-artist">歌手</label><input id="text-artist" class="swal2-input" type="text" placeholder="未知"></div>
-                    <div><label class="form-album-label" for="text-album">专辑</label><input id="text-album" class="swal2-input" type="text" placeholder="未知"></div>
-`,
                     inputValidator: (value) => {
                         if (!value) {
                             return '请选择文件'
                         }
                     },
-                    preConfirm: (value) => {
-                        return [
-                            value,
-                            document.getElementById('text-title').value.trim(),
-                            document.getElementById('text-artist').value.trim(),
-                            document.getElementById('text-album').value.trim()
-                        ]
-                    },
-                    didOpen: () => {
-                        let container = Swal.getHtmlContainer()
-                        let fileinput = Swal.getInput()
-                        let titleinput = container.querySelector('#text-title')
-                        fileinput.onchange=(e)=>{
-                            let fileData = fileinput.files[0]
-                            let title=fileData?fileData.name:''
-                            titleinput.value=title.slice(0,title.lastIndexOf('.'))
-                        }
-                    },
                 })
                     .then(result => {
                     if (result.isConfirmed) {
-                        let title=result.value[1].length>0?result.value[1]:'未知'
-                        let artist=result.value[2].length>0?result.value[2]:'未知'
-                        let album=result.value[3].length>0?result.value[3]:'未知'
-                        let filename=result.value[0].name
-                        let song={
-                            songFile:result.value[0],
-                            fileFullName:filename,
-                            title,
-                            artist,
-                            album,
-                            size:result.value[0].size,
-                            ext:filename.slice(filename.lastIndexOf('.')+1)
-                        }
-                        localUploadPart1(song)
+                        new LocalUpload().start(result.value)
                     }
                 })
             }
 
-            function localUploadPart1(song){
-                console.log(song)
-                let reader = new FileReader()
-                let chunkSize = 1024*1024
-                let loaded = 0
-                let md5sum=unsafeWindow.CryptoJS.algo.MD5.create()
-                showTips(`(1/5)${song.title} 正在获取文件MD5值`,1)
-                reader.onload = function (e) {
-                    md5sum.update(unsafeWindow.CryptoJS.enc.Latin1.parse(reader.result));
-                    loaded += e.loaded;
-                    if (loaded < song.size) {
-                        readBlob(loaded);
-                    } else {
-                        showTips(`(1/5)${song.title} 已计算文件MD5值`,1)
-                        song.md5 = md5sum.finalize().toString()
-                        try{
-                            weapiRequest("/api/cloud/upload/check", {
-                                method: "POST",
-                                type: "json",
-                                data: {
-                                    songId: 0,
-                                    md5: song.md5,
-                                    length: song.size,
-                                    ext: song.ext,
-                                    version: 1,
-                                    bitrate: 128,
-                                },
-                                onload: (responses1) => {
-                                    let res1 = JSON.parse(responses1.response)
-                                    console.log(song.title, '1.检查资源', res1)
-                                    if (res1.code != 200) {
-                                        showConfirmBox('上传失败\n'+res1.toString())
-                                        return
-                                    }
-                                    song.cloudId=res1.songId
-                                    showTips(`(2/5)${song.title} 检查资源完成`,1)
-                                    //step2 上传令牌
-                                    weapiRequest("/api/nos/token/alloc", {
-                                        method: "POST",
-                                        type: "json",
-                                        data: {
-                                            filename: song.title,
-                                            length: song.size,
-                                            ext: song.ext,
-                                            type: 'audio',
-                                            bucket: 'jd-musicrep-privatecloud-audio-public',
-                                            local: false,
-                                            nos_product: 3,
-                                            md5: song.md5
-                                        },
-                                        onload: (responses2) => {
-                                            let res2 = JSON.parse(responses2.response)
-                                            if (res2.code != 200) {
-                                                console.error(song.title, '2.获取令牌', res2)
-                                                showConfirmBox('上传失败\n'+res2.toString())
-                                                return
-                                            }
-                                            song.resourceId=res2.result.resourceId
-                                            let tokenRes=JSON.parse(responses2.response)
-                                            song.token=tokenRes.result.token
-                                            song.objectKey = tokenRes.result.objectKey.replace('/', '%2F')
-                                            showTips(`(3/5)${song.title} 获取令牌完成`,1)
-                                            console.log(song.title, '2.获取令牌', res2)
-                                            if (res1.needUpload) {
-                                                showTips(`(3/5)${song.title} 开始上传文件`,1)
-                                                localUploadFile(song,0)
-                                            }
-                                            else{
-                                                localUploadPart2(song)
-                                            }
-                                        },
-                                        onerror: (res) => {
-                                            console.error(song.title, '2.获取令牌', res)
-                                            showConfirmBox('上传失败\n'+res.toString())
-                                        }
-                                    });
-                                },
-                                onerror: (res) => {
-                                    console.error(song.title, '1.检查资源', res)
-                                    showConfirmBox('上传失败\n'+res.toString())
-                                }
-                            })
+            class LocalUpload{
+                start(files){
+                    this.files=files
+                    this.task=[]
+                    this.currentIndex=0
+                    this.failIndexs=[]
+
+                    for (let i=0;i<files.length;i++){
+                        let file=files[i]
+                        let fileName=file.name
+                        let song={
+                            songFile:file,
+                            fileFullName:fileName,
+                            title:fileName.slice(0,fileName.lastIndexOf('.')),
+                            artist:'未知',
+                            album:'未知',
+                            size:file.size,
+                            ext:fileName.slice(fileName.lastIndexOf('.')+1)
                         }
-                        catch (e) {
-                            console.error(e);
-                            showConfirmBox('上传失败\n'+e.toString())
+                        this.task.push(song)
+                    }
+                    this.localIUploadPart0(0)
+                }
+                localIUploadPart0(songindex){
+                    let song=this.task[songindex]
+                    let fileData=song.songFile
+                    new jsmediatags.Reader(fileData)
+                        .read({
+                        onSuccess: (res) => {
+                            if (res.tags.title) song.title=res.tags.title
+                            if (res.tags.artist) song.artist=res.tags.artist
+                            if (res.tags.album) song.album=res.tags.album
+                            this.localUploadPart1(songindex)
+                        },
+                        onError: (error) => {
+                            this.localUploadPart1(songindex)
+                        }
+                    });
+                }
+                localUploadPart1(songindex){
+                    let self=this
+                    let song=self.task[songindex]
+                    let reader = new FileReader()
+                    let chunkSize = 1024*1024
+                    let loaded = 0
+                    let md5sum=unsafeWindow.CryptoJS.algo.MD5.create()
+                    showTips(`(1/5)${song.title} 正在获取文件MD5值`,1)
+                    reader.onload = function (e) {
+                        md5sum.update(unsafeWindow.CryptoJS.enc.Latin1.parse(reader.result));
+                        loaded += e.loaded;
+                        if (loaded < song.size) {
+                            readBlob(loaded);
+                        } else {
+                            showTips(`(1/5)${song.title} 已计算文件MD5值`,1)
+                            song.md5 = md5sum.finalize().toString()
+                            try{
+                                weapiRequest("/api/cloud/upload/check", {
+                                    method: "POST",
+                                    type: "json",
+                                    data: {
+                                        songId: 0,
+                                        md5: song.md5,
+                                        length: song.size,
+                                        ext: song.ext,
+                                        version: 1,
+                                        bitrate: 128,
+                                    },
+                                    onload: (responses1) => {
+                                        let res1 = JSON.parse(responses1.response)
+                                        console.log(song.title, '1.检查资源', res1)
+                                        if (res1.code != 200) {
+                                            self.uploadFail()
+                                            return
+                                        }
+                                        song.cloudId=res1.songId
+                                        showTips(`(2/5)${song.title} 检查资源完成`,1)
+                                        //step2 上传令牌
+                                        weapiRequest("/api/nos/token/alloc", {
+                                            method: "POST",
+                                            type: "json",
+                                            data: {
+                                                filename: song.title,
+                                                length: song.size,
+                                                ext: song.ext,
+                                                type: 'audio',
+                                                bucket: 'jd-musicrep-privatecloud-audio-public',
+                                                local: false,
+                                                nos_product: 3,
+                                                md5: song.md5
+                                            },
+                                            onload: (responses2) => {
+                                                let res2 = JSON.parse(responses2.response)
+                                                if (res2.code != 200) {
+                                                    console.error(song.title, '2.获取令牌', res2)
+                                                    self.uploadFail()
+                                                    return
+                                                }
+                                                song.resourceId=res2.result.resourceId
+                                                let tokenRes=JSON.parse(responses2.response)
+                                                song.token=tokenRes.result.token
+                                                song.objectKey = tokenRes.result.objectKey.replace('/', '%2F')
+                                                showTips(`(3/5)${song.title} 获取令牌完成`,1)
+                                                console.log(song.title, '2.获取令牌', res2)
+                                                if (res1.needUpload) {
+                                                    showTips(`(3/5)${song.title} 开始上传文件`,1)
+                                                    self.localUploadFile(songindex,0)
+                                                }
+                                                else{
+                                                    self.localUploadPart2(songindex)
+                                                }
+                                            },
+                                            onerror: (res) => {
+                                                console.error(song.title, '2.获取令牌', res)
+                                                self.uploadFail()
+                                            }
+                                        });
+                                    },
+                                    onerror: (res) => {
+                                        console.error(song.title, '1.检查资源', res)
+                                        self.uploadFail()
+                                    }
+                                })
+                            }
+                            catch (e) {
+                                console.error(e);
+                                self.uploadFail()
+                            }
                         }
                     }
+                    readBlob(0);
+                    function readBlob(offset) {
+                        let blob = song.songFile.slice(offset, offset + chunkSize);
+                        reader.readAsBinaryString(blob);
+                    }
                 }
-                readBlob(0);
-                function readBlob(offset) {
-                    let blob = song.songFile.slice(offset, offset + chunkSize);
-                    reader.readAsBinaryString(blob);
-                }
-            }
-            function localUploadFile(song,offset,context=null){
-                try{
-                    let complete=offset+uploadChunkSize>song.size
-                    let url=`http://45.127.129.8/jd-musicrep-privatecloud-audio-public/${song.objectKey}?offset=${offset}&complete=${String(complete)}&version=1.0`
+                localUploadFile(songindex,offset,context=null){
+                    let self=this
+                    let song=self.task[songindex]
+                    try{
+                        let complete=offset+uploadChunkSize>song.size
+                        let url=`http://45.127.129.8/jd-musicrep-privatecloud-audio-public/${song.objectKey}?offset=${offset}&complete=${String(complete)}&version=1.0`
                     if (context) url += `&context=${context}`
                     GM_xmlhttpRequest({
                         method: "POST",
@@ -2409,82 +2455,108 @@ tr td:nth-child(3){
                             if(complete){
                                 console.log(song.title, '2.5.上传文件完成', res)
                                 showTips(`(3.5/5)${song.title} 上传文件完成`,1)
-                                localUploadPart2(song)
+                                self.localUploadPart2(songindex)
                             }
                             else{
                                 showTips(`(3.4/5)${song.title} 正在上传${fileSizeDesc(res.offset)}/${fileSizeDesc(song.size)}`,1)
-                                localUploadFile(song,res.offset,res.context)
+                                self.localUploadFile(songindex,res.offset,res.context)
                             }
                         },
                         onerror: (response3) => {
                             console.error(song.title, '文件上传时失败', response3)
-                            showConfirmBox('文件上传时失败\n'+response3.toString())
+                            self.uploadFail()
                         },
                     });
+                    }
+                    catch (e) {
+                        console.error(e);
+                        self.uploadFail()
+                    }
                 }
-                catch (e) {
-                    console.error(e);
-                    showConfirmBox('上传失败\n'+e.toString())
-                }
-            }
-            function localUploadPart2(song){
-                try{
-                    weapiRequest("/api/upload/cloud/info/v2", {
-                        method: "POST",
-                        type: "json",
-                        data: {
-                            md5: song.md5,
-                            songid: song.cloudId,
-                            filename: song.fileFullName,
-                            song: song.title,
-                            album: song.album,
-                            artist: song.artist,
-                            bitrate: '128',
-                            resourceId: song.resourceId,
-                        },
-                        onload: (responses3) => {
-                            let res3 = JSON.parse(responses3.response)
-                            if (res3.code != 200) {
-                                console.error(song.title, '3.提交文件', res3)
-                                showConfirmBox('上传失败\n'+res3.toString())
-                                return
-                            }
-                            console.log(song.title, '3.提交文件', res3)
-                            showTips(`(4/5)${song.title} 提交文件完成`,1)
-                            //step4 发布
-                            weapiRequest("/api/cloud/pub/v2", {
-                                method: "POST",
-                                type: "json",
-                                data: {
-                                    songid: res3.songId,
-                                },
-                                onload: (responses4) => {
-                                    let res4 = JSON.parse(responses4.response)
-                                    if (res4.code != 200 && res4.code != 201) {
-                                        console.error(song.title, '4.发布资源', res4)
-                                        this.uploadSongFail(song)
-                                        return
-                                    }
-                                    //完成
-                                    showTips(`(5/5)${song.title} 上传完成`,1)
-                                    showConfirmBox('上传完成')
-                                },
-                                onerror: (res)=> {
-                                    console.error(song.title, '4.发布资源', res)
-                                    this.uploadSongFail(song)
-                                    showConfirmBox('上传失败\n'+res.toString())
+                localUploadPart2(songindex){
+                    let self=this
+                    let song=self.task[songindex]
+                    try{
+                        weapiRequest("/api/upload/cloud/info/v2", {
+                            method: "POST",
+                            type: "json",
+                            data: {
+                                md5: song.md5,
+                                songid: song.cloudId,
+                                filename: song.fileFullName,
+                                song: song.title,
+                                album: song.album,
+                                artist: song.artist,
+                                bitrate: '128',
+                                resourceId: song.resourceId,
+                            },
+                            onload: (responses3) => {
+                                let res3 = JSON.parse(responses3.response)
+                                if (res3.code != 200) {
+                                    console.error(song.title, '3.提交文件', res3)
+                                    self.uploadFail()
+                                    return
                                 }
-                            })
-                        },
-                        onerror: (res)=>{
-                            console.error(song.title, '3.提交文件', res)
-                            showConfirmBox('上传失败\n'+res.toString())
-                        }
-                    });
+                                console.log(song.title, '3.提交文件', res3)
+                                showTips(`(4/5)${song.title} 提交文件完成`,1)
+                                //step4 发布
+                                weapiRequest("/api/cloud/pub/v2", {
+                                    method: "POST",
+                                    type: "json",
+                                    data: {
+                                        songid: res3.songId,
+                                    },
+                                    onload: (responses4) => {
+                                        let res4 = JSON.parse(responses4.response)
+                                        if (res4.code != 200 && res4.code != 201) {
+                                            console.error(song.title, '4.发布资源', res4)
+                                            self.uploadFail()
+                                            return
+                                        }
+                                        //完成
+                                        showTips(`(5/5)${song.title} 上传完成`,1)
+                                        self.uploadSuccess()
+                                    },
+                                    onerror: (res)=> {
+                                        console.error(song.title, '4.发布资源', res)
+                                        self.uploadFail()
+                                    }
+                                })
+                            },
+                            onerror: (res)=>{
+                                console.error(song.title, '3.提交文件', res)
+                                self.uploadFail()
+                            }
+                        });
+                    }
+                    catch (e) {
+                        console.error(e);
+                        self.uploadFail()
+                    }
                 }
-                catch (e) {
-                    console.error(e);
-                    showConfirmBox('上传失败\n'+e.toString())
+                uploadFail(){
+                    this.failIndexs.push(this.currentIndex)
+                    this.uploadNext()
+                }
+                uploadSuccess(){
+                    this.uploadNext()
+                }
+                uploadNext(){
+                    this.currentIndex+=1
+                    if (this.currentIndex>=this.task.length){
+                        this.uploadFinnsh()
+                    }
+                    else{
+                        this.localIUploadPart0(this.currentIndex)
+                    }
+                }
+                uploadFinnsh(){
+                    let msg='上传完成'
+                    if (this.failIndexs.length>0){
+                        msg+=',以下文件上传失败：'
+                        msg+=this.failIndexs.map(idx => this.task[idx].fileFullName).join()
+                    }
+                    showConfirmBox(msg)
                 }
             }
 
@@ -2510,13 +2582,12 @@ tr td:nth-child(3){
                     },
                     onload: (responses) => {
                         let res = JSON.parse(responses.response)
-                        console.log(res)
+                        //console.log(res)
                         let songList=res.data.blocks[0].resourceIdList.map(item => {
                             return {
                                 'id': Number(item)
                             }
                         })
-                        console.log(songList)
                         openVIPDownLoadPopup(songList,'APP发现页「免费听VIP歌曲」的内容',23)
                     }
                 })
@@ -2543,13 +2614,12 @@ tr td:nth-child(3){
                     },
                     onload: (responses) => {
                         let res = JSON.parse(responses.response)
-                        console.log(res)
+                        //console.log(res)
                         let songList=res.playlist.trackIds.map(item => {
                             return {
                                 'id': Number(item.id)
                             }
                         })
-                        console.log(songList)
                         openVIPDownLoadPopup(songList,'歌单<a href="https://music.163.com/#/playlist?id=8402996200" target="_blank">「会员雷达」</a>的内容',22)
                     }
                 })
@@ -2628,7 +2698,7 @@ tr td:nth-child(3){
 
                             onload: function(responses) {
                                 let content = JSON.parse(responses.response)
-                                console.log(content)
+                                //console.log(content)
                                 let songlen = content.songs.length
                                 let privilegelen = content.privileges.length
                                 for (let i = 0; i < songlen; i++) {
@@ -2674,9 +2744,8 @@ tr td:nth-child(3){
                     },
                     onload: (responses) => {
                         let content = JSON.parse(responses.response);
-                        console.log(content)
+                        //console.log(content)
                         if (content.data[0].url != null) {
-                            console.log(content)
                             GM_download({
                                 url: content.data[0].url,
                                 name: filename + '.' + content.data[0].type.toLowerCase(),
@@ -2875,11 +2944,10 @@ tr td:nth-child(3){
                     },
                     onload: (responses) => {
                         let res = JSON.parse(responses.response)
-                        console.log(res)
+                        //console.log(res)
                         let trackIds=res.playlist.trackIds.map(item => {
                             return item.id
                         })
-                        console.log(trackIds)
                         exportCloudByPlaylistSub(filter,trackIds, {
                             data: []
                         }, 0)
@@ -2901,7 +2969,7 @@ tr td:nth-child(3){
 
                     onload: function(responses) {
                         let res = JSON.parse(responses.response)
-                        console.log(res)
+                        //console.log(res)
                         let matchSongs = []
                         res.data.forEach(song => {
                             if (song.simpleSong.al && song.simpleSong.al.id > 0) {
@@ -3119,7 +3187,7 @@ tr td:nth-child(3){
                             },
                             onload: (res)=> {
                                 let content = JSON.parse(res.response)
-                                console.log(content)
+                                //console.log(content)
                                 let songList=[]
                                 let tracklen = content.playlist.tracks.length
                                 let privilegelen = content.privileges.length
@@ -3160,7 +3228,7 @@ tr td:nth-child(3){
                             method: "POST",
                             onload: (res)=> {
                                 let content = JSON.parse(res.response)
-                                console.log(content)
+                                //console.log(content)
                                 let songList=[]
                                 for(let i=0;i<content.songs.length;i++){
                                     if(content.songs[i].privilege.st<0||content.songs[i].privilege.cs||content.songs[i].privilege.plLevel=='none') continue
@@ -3224,7 +3292,304 @@ tr td:nth-child(3){
                 let ULobj=new ncmDownUpload(songList)
                 ULobj.startUpload()
             }
+
+            //歌单排序
+            if (pageType=='playlist'){
+                let creatorhomeURL = document.head.querySelector("[property~='music:creator'][content]")?.content
+                let creatorId = new URLSearchParams(new URL(creatorhomeURL).search).get('id')
+                if(creatorId==unsafeWindow.GUser.userId){
+                    //批量上传云盘
+                    let btnPlaylistSort = document.createElement('a')
+                    btnPlaylistSort.id = 'sortBtn'
+                    btnPlaylistSort.className = 'u-btn2 u-btn2-1'
+                    let btnPlaylistSortDesc = document.createElement('i')
+                    btnPlaylistSortDesc.innerHTML = '歌单排序'
+                    btnPlaylistSort.appendChild(btnPlaylistSortDesc)
+                    btnPlaylistSort.setAttribute("hidefocus", "true");
+                    btnPlaylistSort.style.margin = '5px';
+                    operationArea.appendChild(btnPlaylistSort)
+                    btnPlaylistSort.addEventListener('click', () => {
+                        ShowPLSortPopUp()
+                    })
+                    function ShowPLSortPopUp(){
+                        Swal.fire({
+                            title: '歌单内歌曲排序',
+                            input: 'select',
+                            inputOptions: ['发行时间降序','发行时间升序','红心数量降序','红心数量升序','评论数量降序','评论数量升序'],
+                            inputPlaceholder: '选择排序方式',
+                            confirmButtonText: '开始排序',
+                            showCloseButton: true,
+                            focusConfirm: false,
+                            inputValidator: (way) => {
+                                if (!way) {
+                                    return '请选择排序方式'
+                                }
+                            },
+                        }).then(res=>{
+                            if(!res.isConfirmed) return
+                            if(res.value==0){
+                                PlaylistTimeSort(listId,true)
+                            }
+                            else if(res.value==1){
+                                PlaylistTimeSort(listId,false)
+                            }
+                            else if(res.value==2){
+                                PlaylistCountSort(listId,true,'Red')
+                            }
+                            else if(res.value==3){
+                                 PlaylistCountSort(listId,false,'Red')
+                            }
+                            else if(res.value==4){
+                                 PlaylistCountSort(listId,true,'Comment')
+                            }
+                            else if(res.value==5){
+                                 PlaylistCountSort(listId,false,'Comment')
+                            }
+                        })
+                    }
+                    function PlaylistTimeSort(playlistId,descending){
+                        showTips(`正在获取歌单内歌曲信息`,1)
+                        weapiRequest("/api/v6/playlist/detail", {
+                            type: "json",
+                            method: "POST",
+                            data:{
+                                id: playlistId,
+                                n: 100000,
+                                s: 8,
+                            },
+                            onload: (res)=> {
+                                let content = JSON.parse(res.response)
+                                let songList=[]
+                                let tracklen = content.playlist.tracks.length
+                                for (let i = 0; i < tracklen; i++) {
+                                    let songItem={id:content.playlist.tracks[i].id,publishTime:content.playlist.tracks[i].publishTime,albumId:content.playlist.tracks[i].al.id,no:content.playlist.tracks[i].no}
+                                    songList.push(songItem)
+                                }
+                                if(content.playlist.trackCount>content.playlist.tracks.length){
+                                    showTips(`大歌单,开始分批获取${content.playlist.trackCount}首歌信息`,1)
+                                    let trackIds=content.playlist.trackIds.map(item => {
+                                        return {
+                                            'id': item.id
+                                        }
+                                    })
+                                    PlaylistTimeSortFetchAll(playlistId,descending,trackIds,0,songList)
+                                }
+                                else{
+                                    PlaylistTimeSortFetchAllPublishTime(playlistId,descending,0,songList,{})
+                                }
+                            }
+                        })
+                    }
+                    function PlaylistTimeSortFetchAll(playlistId,descending,trackIds,startIndex,songList){
+                        if(startIndex>=trackIds.length){
+                            PlaylistTimeSortFetchAllPublishTime(playlistId,descending,0,songList,{})
+                            return
+                        }
+                        weapiRequest("/api/v3/song/detail", {
+                            type: "json",
+                            method: "post",
+                            sync: true,
+                            data: {
+                                c: JSON.stringify(trackIds.slice(startIndex, startIndex + 1000))
+                            },
+                            onload: function(responses) {
+                                let content = JSON.parse(responses.response)
+                                let songlen = content.songs.length
+                                for (let i = 0; i < songlen; i++) {
+                                    let songItem={id:content.songs[i].id,publishTime:content.songs[i].publishTime,albumId:content.songs[i].al.id,no:content.songs[i].no}
+                                    songList.push(songItem)
+                                }
+                                PlaylistTimeSortFetchAll(playlistId,descending,trackIds, startIndex + content.songs.length,songList)
+                            }
+                        })
+                    }
+                    function PlaylistTimeSortFetchAllPublishTime(playlistId,descending,index,songList,aldict){
+                        if(index==0) showTips('正在获取专辑发行时间')
+                        if(index>=songList.length){
+                            PlaylistTimeSortSongs(playlistId,descending,songList)
+                            return
+                        }
+                        let albumId=songList[index].albumId
+                        if(albumId<=0){
+                            PlaylistTimeSortFetchAllPublishTime(playlistId,descending,index+1,songList,aldict)
+                            return
+                        }
+
+                        if(aldict[albumId]){
+                            songList[index].publishTime=aldict[albumId]
+                            PlaylistTimeSortFetchAllPublishTime(playlistId,descending,index+1,songList,aldict)
+                            return
+                        }
+                        weapiRequest(`/api/v1/album/${albumId}`, {
+                            type: "json",
+                            method: "post",
+                            sync: true,
+                            onload: function(responses) {
+                                let content = JSON.parse(responses.response)
+                                let publishTime = content.album.publishTime
+                                aldict[albumId]=publishTime
+                                songList[index].publishTime=publishTime
+                                PlaylistTimeSortFetchAllPublishTime(playlistId,descending,index+1,songList,aldict)
+                            }
+                        })
+                    }
+                    function PlaylistTimeSortSongs(playlistId,descending,songList){
+                        songList.sort((a, b) => {
+                            if (a.publishTime != b.publishTime) {
+                                if(descending){
+                                    return b.publishTime - a.publishTime
+                                }
+                                else{
+                                    return a.publishTime - b.publishTime
+                                }
+                            }
+                            else if(a.albumId != b.albumId){
+                                if(descending){
+                                    return b.albumId - a.albumId
+                                }
+                                else{
+                                    return a.albumId - b.albumId
+                                }
+                            }
+                            else if(a.no != b.no){
+                                return a.no - b.no
+                            }
+                            return a.id - b.id
+                        })
+                        let trackIds=songList.map(song=>song.id)
+                        weapiRequest("/api/playlist/manipulate/tracks", {
+                            type: "json",
+                            method: "post",
+                            data: {
+                                pid: playlistId,
+                                trackIds: JSON.stringify(trackIds),
+                                op: 'update',
+                            },
+                            onload: function(responses) {
+                                let content = JSON.parse(responses.response)
+                                //console.log(content)
+                                if(content.code==200){
+                                    showConfirmBox('排序完成')
+                                }
+                                else{
+                                    showConfirmBox('排序失败,'+responses.response)
+                                }
+                            }
+                        })
+                    }
+                    function PlaylistCountSort(playlistId,descending,way){
+                        showTips(`正在获取歌单内歌曲信息`,1)
+                        weapiRequest("/api/v6/playlist/detail", {
+                            type: "json",
+                            method: "POST",
+                            data:{
+                                id: playlistId,
+                                n: 100000,
+                                s: 8,
+                            },
+                            onload: (res)=> {
+                                let content = JSON.parse(res.response)
+                                let songList=content.playlist.trackIds.map(item => {
+                                    return {
+                                        'id': item.id,
+                                        'count': 0,
+                                    }
+                                })
+                                let trackIds=content.playlist.trackIds.map(item => {return item.id })
+                                if(way=='Red'){
+                                    PlaylistCountSortFetchRedCount(playlistId,songList,0,descending)
+                                }
+                                else if(way=='Comment'){
+                                    PlaylistCountSortFetchCommentCount(playlistId,songList,trackIds,0,descending)
+                                }
+                            }
+                        })
+                    }
+                    function PlaylistCountSortFetchRedCount(playlistId,songList,index,descending){
+                        if(index>=songList.length){
+                            PlaylistCountSortSongs(playlistId,descending,songList)
+                            return
+                        }
+                        if(index==0) showTips('开始获取歌曲红心数量')
+                        if(index%10==9) showTips(`正在获取歌曲红心数量(${index+1}/${songList.length})`)
+                        weapiRequest("/api/song/red/count", {
+                            type: "json",
+                            data: {
+                                songId: songList[index].id,
+                            },
+                            onload: function(responses) {
+                                let content = JSON.parse(responses.response)
+                                songList[index].count= content.data.count
+                                PlaylistCountSortFetchRedCount(playlistId,songList,index+1,descending)
+                            },
+                        });
+                    }
+                    function PlaylistCountSortFetchCommentCount(playlistId,songList,trackIds,index,descending){
+                        if(index>=songList.length){
+                            PlaylistCountSortSongs(playlistId,descending,songList)
+                            return
+                        }
+                        if(index==0) showTips('开始获取歌曲评论数量')
+                        else showTips(`正在获取歌曲评论数量(${index+1}/${songList.length})`)
+                        weapiRequest("/api/resource/commentInfo/list", {
+                            type: "json",
+                            data: {
+                                resourceType: "4",
+                                resourceIds: JSON.stringify(trackIds.slice(index, index + 1000)),
+                            },
+                            onload: function(responses) {
+                                let content = JSON.parse(responses.response)
+
+                                content.data.forEach(item => {
+                                    let songId=item.resourceId
+                                    for(let i=0;i<songList.length;i++){
+                                        if(songList[i].id==songId){
+                                            songList[i].count=item.commentCount
+                                            break
+                                        }
+                                    }
+                                })
+                                PlaylistCountSortFetchCommentCount(playlistId,songList,trackIds,index+1000,descending)
+                            },
+                        });
+                    }
+                    function PlaylistCountSortSongs(playlistId,descending,songList){
+                        songList.sort((a, b) => {
+                            if (a.count != b.count) {
+                                if(descending){
+                                    return b.count - a.count
+                                }
+                                else{
+                                    return a.count - b.count
+                                }
+                            }
+                            return a.id - b.id
+                        })
+                        let trackIds=songList.map(song=>song.id)
+                        weapiRequest("/api/playlist/manipulate/tracks", {
+                            type: "json",
+                            method: "post",
+                            data: {
+                                pid: playlistId,
+                                trackIds: JSON.stringify(trackIds),
+                                op: 'update',
+                            },
+                            onload: function(responses) {
+                                let content = JSON.parse(responses.response)
+                                if(content.code==200){
+                                    showConfirmBox('排序完成')
+                                }
+                                else{
+                                    showConfirmBox('排序失败')
+                                }
+                            }
+                        })
+                    }
+                }
+            }
         }
+
+
     }
     //高音质播放
     GM_registerMenuCommand(`优先试听音质`, setLevel)
