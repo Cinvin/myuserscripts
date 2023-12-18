@@ -2,7 +2,7 @@
 // @name			网易云:云盘快传(含周杰伦)|高音质试听|云盘匹配纠正|听歌量打卡|歌曲下载&上传
 // @description		无需文件云盘快传歌曲(含周杰伦)、选择更高音质试听(支持超清母带,默认无损)、云盘匹配纠正、快速完成300首听歌量打卡任务、歌曲下载上传(可批量)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.1.1
+// @version			3.1.2
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -3362,7 +3362,7 @@ tr td:nth-child(3){
                                 let songList=[]
                                 let tracklen = content.playlist.tracks.length
                                 for (let i = 0; i < tracklen; i++) {
-                                    let songItem={id:content.playlist.tracks[i].id,publishTime:content.playlist.tracks[i].publishTime,albumId:content.playlist.tracks[i].al.id,cd:content.playlist.tracks[i].cd,no:content.playlist.tracks[i].no}
+                                    let songItem={id:content.playlist.tracks[i].id,publishTime:content.playlist.tracks[i].publishTime,albumId:content.playlist.tracks[i].al.id,cd:content.playlist.tracks[i].cd?Number(content.playlist.tracks[i].cd.split(' ')[0]):0,no:content.playlist.tracks[i].no}
                                     songList.push(songItem)
                                 }
                                 if(content.playlist.trackCount>content.playlist.tracks.length){
@@ -3396,7 +3396,7 @@ tr td:nth-child(3){
                                 let content = JSON.parse(responses.response)
                                 let songlen = content.songs.length
                                 for (let i = 0; i < songlen; i++) {
-                                    let songItem={id:content.songs[i].id,publishTime:content.songs[i].publishTime,albumId:content.songs[i].al.id,cd:content.songs[i].cd,no:content.songs[i].no}
+                                    let songItem={id:content.songs[i].id,publishTime:content.songs[i].publishTime,albumId:content.songs[i].al.id,cd:content.songs[i].cd?Number(content.songs[i].cd.split(' ')[0]):0,no:content.songs[i].no}
                                     songList.push(songItem)
                                 }
                                 PlaylistTimeSortFetchAll(playlistId,descending,trackIds, startIndex + content.songs.length,songList)
