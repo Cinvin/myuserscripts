@@ -2,7 +2,7 @@
 // @name			网易云:云盘快传(含周杰伦)|高音质试听|云盘匹配纠正|听歌量打卡|歌曲下载&上传
 // @description		无需文件云盘快传歌曲(含周杰伦)、选择更高音质试听(支持超清母带,默认无损)、云盘匹配纠正、快速完成300首听歌量打卡任务、歌曲下载上传(可批量)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.1.0
+// @version			3.1.1
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -13,9 +13,9 @@
 // @grant			GM_getValue
 // @grant			GM_registerMenuCommand
 // @grant			unsafeWindow
-// @require			https://unpkg.com/sweetalert2@11.7.12/dist/sweetalert2.all.min.js
-// @require			https://unpkg.com/ajax-hook@3.0.1/dist/ajaxhook.min.js
-// @require			https://unpkg.com/jsmediatags@3.9.7/dist/jsmediatags.min.js
+// @require			https://fastly.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js
+// @require			https://fastly.jsdelivr.net/npm/ajax-hook@3.0.1/dist/ajaxhook.min.js
+// @require			https://fastly.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js
 // @connect 45.127.129.8
 // @connect 126.net
 // ==/UserScript==
@@ -754,7 +754,7 @@
             btnUpload.id = 'cloudBtn'
             btnUpload.className = 'u-btn2 u-btn2-1'
             let btnUploadDesc = document.createElement('i')
-            btnUploadDesc.innerHTML = '快速上传加载中(或许是fastly.jsdelivr.net无法访问...)'
+            btnUploadDesc.innerHTML = '快速上传加载中'
             btnUpload.appendChild(btnUploadDesc)
             btnUpload.setAttribute("hidefocus", "true");
             btnUpload.style.marginRight = '10px';
@@ -3362,7 +3362,7 @@ tr td:nth-child(3){
                                 let songList=[]
                                 let tracklen = content.playlist.tracks.length
                                 for (let i = 0; i < tracklen; i++) {
-                                    let songItem={id:content.playlist.tracks[i].id,publishTime:content.playlist.tracks[i].publishTime,albumId:content.playlist.tracks[i].al.id,no:content.playlist.tracks[i].no}
+                                    let songItem={id:content.playlist.tracks[i].id,publishTime:content.playlist.tracks[i].publishTime,albumId:content.playlist.tracks[i].al.id,cd:content.playlist.tracks[i].cd,no:content.playlist.tracks[i].no}
                                     songList.push(songItem)
                                 }
                                 if(content.playlist.trackCount>content.playlist.tracks.length){
@@ -3396,7 +3396,7 @@ tr td:nth-child(3){
                                 let content = JSON.parse(responses.response)
                                 let songlen = content.songs.length
                                 for (let i = 0; i < songlen; i++) {
-                                    let songItem={id:content.songs[i].id,publishTime:content.songs[i].publishTime,albumId:content.songs[i].al.id,no:content.songs[i].no}
+                                    let songItem={id:content.songs[i].id,publishTime:content.songs[i].publishTime,albumId:content.songs[i].al.id,cd:content.songs[i].cd,no:content.songs[i].no}
                                     songList.push(songItem)
                                 }
                                 PlaylistTimeSortFetchAll(playlistId,descending,trackIds, startIndex + content.songs.length,songList)
@@ -3404,11 +3404,12 @@ tr td:nth-child(3){
                         })
                     }
                     function PlaylistTimeSortFetchAllPublishTime(playlistId,descending,index,songList,aldict){
-                        if(index==0) showTips('正在获取专辑发行时间')
                         if(index>=songList.length){
                             PlaylistTimeSortSongs(playlistId,descending,songList)
                             return
                         }
+                        if(index==0) showTips('开始获取歌曲专辑发行时间')
+                        if(index%10==9) showTips(`正在获取歌曲专辑发行时间(${index+1}/${songList.length})`)
                         let albumId=songList[index].albumId
                         if(albumId<=0){
                             PlaylistTimeSortFetchAllPublishTime(playlistId,descending,index+1,songList,aldict)
@@ -3450,6 +3451,9 @@ tr td:nth-child(3){
                                 else{
                                     return a.albumId - b.albumId
                                 }
+                            }
+                            else if(a.cd != b.cd){
+                                return a.cd - b.cd
                             }
                             else if(a.no != b.no){
                                 return a.no - b.no
