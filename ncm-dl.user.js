@@ -2,7 +2,7 @@
 // @name			网易云:云盘快传(含周杰伦)|高音质试听|云盘匹配纠正|听歌量打卡|歌曲下载&上传
 // @description		无需文件云盘快传歌曲(含周杰伦)、选择更高音质试听(支持超清母带,默认无损)、云盘匹配纠正、快速完成300首听歌量打卡任务、歌曲下载上传(可批量)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.1.2
+// @version			3.1.3
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -2536,6 +2536,7 @@ tr td:nth-child(3){
                 }
                 uploadFail(){
                     this.failIndexs.push(this.currentIndex)
+                    showTips(`${this.task[this.currentIndex].title}上传失败`,2)
                     this.uploadNext()
                 }
                 uploadSuccess(){
@@ -2955,16 +2956,18 @@ tr td:nth-child(3){
                 })
             }
             function exportCloudByPlaylistSub(filter,trackIds, config, offset){
+                let limit=100
                 if(trackIds.length<=offset){
                     configToFile(config)
                     return
                 }
+                showTips(`正在获取第${offset+1}到${Math.min(offset+limit,trackIds.length)}首云盘歌曲信息`, 1)
                 weapiRequest("/api/v1/cloud/get/byids", {
                     type: "json",
                     method: "post",
                     sync: true,
                     data: {
-                        songIds: JSON.stringify(trackIds.slice(offset,offset+1000))
+                        songIds: JSON.stringify(trackIds.slice(offset,offset+limit))
                     },
 
                     onload: function(responses) {
@@ -3057,11 +3060,11 @@ tr td:nth-child(3){
                                             }
                                         }
                                     })
-                                    exportCloudByPlaylistSub(filter,trackIds, config, offset + 1000)
+                                    exportCloudByPlaylistSub(filter,trackIds, config, offset + limit)
                                 }
                             })
                         } else {
-                            exportCloudByPlaylistSub(filter,trackIds, config, offset + 1000)
+                            exportCloudByPlaylistSub(filter,trackIds, config, offset + limit)
                         }
                     }
                 })
