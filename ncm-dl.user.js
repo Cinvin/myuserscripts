@@ -100,7 +100,7 @@
         }
     };
     function duringTimeDesc(dt) {
-        let secondTotal = Math.round(dt / 1000)
+        let secondTotal = Math.floor(dt / 1000)
         let min = Math.floor(secondTotal / 60)
         let sec = secondTotal % 60
         return min.toString()
