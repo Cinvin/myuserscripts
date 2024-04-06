@@ -2,7 +2,7 @@
 // @name			网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|听歌量打卡|高音质试听
 // @description		无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、快速完成300首听歌量打卡任务、选择更高音质试听(支持超清母带,默认无损)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.2.0
+// @version			3.2.1
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -207,7 +207,7 @@
             let importSongData=[{
                 songId:song.cloudId,
                 bitrate:song.bitrate,
-                song:song.title,
+                song:song.artist + '-' + song.title,
                 artist:song.artist,
                 album:song.album,
                 fileName:song.fileFullName
@@ -664,7 +664,7 @@
                                     url: url,
                                     name: fileFullName,
                                     onprogress: function(e) {
-                                        dlbtn.text = btntext + ` 正在下载(${Math.round(e.loaded/e.totalSize*10000)/100}%)`
+                                        dlbtn.text = btntext + ` 正在下载(${fileSizeDesc(e.loaded)})`
 				},
                                     onload: function() {
                                         dlbtn.text = btntext
@@ -1182,7 +1182,7 @@ tr td:nth-child(3){
                                             item.artists = content.songs[j].ar.map(ar => ar.name).join()
                                             item.tns = content.songs[j].tns ? content.songs[j].tns.join() : '' //翻译
                                             item.dt = duringTimeDesc(content.songs[j].dt || 0)
-                                            item.filename = content.songs[j].name + '.' + config.ext
+                                            item.filename = item.artists + '-' + item.name + '.' + config.ext
                                             item.picUrl = (content.songs[j].al && content.songs[j].al.picUrl) ? content.songs[j].al.picUrl : 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
                                             item.isVIP = content.songs[j].fee == 1
                                             item.isPay = content.songs[j].fee == 4
@@ -1193,7 +1193,7 @@ tr td:nth-child(3){
                                         item.name = config.name
                                         item.album = config.al
                                         item.artists = config.ar
-                                        item.filename = config.name + '.' + config.ext
+                                        item.filename = item.artists + '-' + item.name + '.' + config.ext
                                     }
                                     uploader.songs.push(item)
                                 }
@@ -1352,7 +1352,7 @@ tr td:nth-child(3){
 
                                 console.log(song.name, '1.检查资源', res1)
                                 song.cloudId=res1.data[0].songId
-                                showTips(`(2/6)${song.title} 检查资源`,1)
+                                showTips(`(2/6)${song.name} 检查资源`,1)
                                 if(res1.data[0].upload==1){
                                     uploader.uploadSongWay1Part1(songIndex)
                                 }
@@ -1377,10 +1377,10 @@ tr td:nth-child(3){
                     let importSongData=[{
                         songId:song.cloudId,
                         bitrate:song.bitrate,
-                        song:song.name,
+                        song:song.artists+'-'+song.name,
                         artist:song.artists,
                         album:song.album,
-                        fileName:song.filename
+                        fileName:song.filename,
                     }]
                     //step2 导入歌曲
                     try{
