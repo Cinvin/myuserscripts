@@ -2,7 +2,7 @@
 // @name			网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|听歌量打卡|高音质试听
 // @description		无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、快速完成300首听歌量打卡任务、选择更高音质试听(支持超清母带,默认无损)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.2.3
+// @version			3.3.0
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -114,12 +114,45 @@
         return new Promise(resolve => setTimeout(resolve, millisec));
     };
 
+    function getArtistTextInSongDetail(song){
+        let artist=''
+        if(song.ar&&song.ar[0].name&&song.ar[0].name.length>0){
+            artist=song.ar.map(ar => ar.name).join()
+        }
+        else if(song.pc&&song.pc.ar&&song.pc.ar.length>0){
+            artist=song.pc.ar
+        }
+        return artist
+    }
+    function getAlbumTextInSongDetail(song){
+        let album=''
+        if(song.al&&song.al.name&&song.al.name.length>0){
+            album=song.al.name
+        }
+        else if(song.pc&&song.pc.alb&&song.pc.alb.length>0){
+            album=song.pc.alb
+        }
+        return album
+    }
+    function nameFileWithoutExt(title,artist,out){
+        if(out=='title'||!artist||artist.length==0){
+            return title
+        }
+        if(out=='artist-title'){
+            return `${artist}-${title}`
+        }
+        if(out=='title-artist'){
+            return `${title}-${artist}`
+        }
+    }
+
     //下载后上传
     class ncmDownUpload{
-        constructor(songs,showfinishBox=true,onSongDUSuccess=null,onSongDUFail=null) {
+        constructor(songs,showfinishBox=true,onSongDUSuccess=null,onSongDUFail=null,out='artist-title') {
             this.songs = songs
             this.currentIndex = 0
             this.failSongs = []
+            this.out=out
             this.showfinishBox=showfinishBox
             this.onSongDUSuccess=onSongDUSuccess
             this.onSongDUFail=onSongDUFail
@@ -143,7 +176,7 @@
                         //console.log(content)
                         let resData=content.data[0]||content.data
                         if (resData.url != null) {
-                            song.fileFullName = song.artist + '-' + song.title + '.' + resData.type.toLowerCase()
+                            song.fileFullName = nameFileWithoutExt(song.title,song.artist,this.out) + '.' + resData.type.toLowerCase()
                             song.dlUrl = resData.url
                             song.md5 = resData.md5
                             song.size = resData.size
@@ -207,7 +240,7 @@
             let importSongData=[{
                 songId:song.cloudId,
                 bitrate:song.bitrate,
-                song:song.artist + '-' + song.title,
+                song:nameFileWithoutExt(song.title,song.artist,this.out),
                 artist:song.artist,
                 album:song.album,
                 fileName:song.fileFullName
@@ -223,12 +256,12 @@
                     },
                     onload: (responses) => {
                         let res=JSON.parse(responses.response)
+                        console.log(song.title, '2.导入文件', res)
                         if (res.code != 200 || res.data.successSongs.length<1) {
                             console.error(song.title, '2.导入文件', res)
                             this.uploadSongFail(song)
                             return
                         }
-                        console.log(song.title, '2.导入文件', res)
                         showTips(`(2/6)${song.title} 2.导入文件完成`,1)
                         song.cloudSongId=res.data.successSongs[0].song.songId
                         this.uploadSongMatch(song)
@@ -1188,9 +1221,9 @@ tr td:nth-child(3){
                                     for (let j = 0; j < songslen; j++) {
                                         if(content.songs[j].id==content.privileges[i].id){
                                             item.name = content.songs[j].name
-                                            item.album = content.songs[j].al.name
+                                            item.album = getAlbumTextInSongDetail(content.songs[j])
                                             item.albumid = content.songs[j].al.id || 0
-                                            item.artists = content.songs[j].ar.map(ar => ar.name).join()
+                                            item.artists = getArtistTextInSongDetail(content.songs[j])
                                             item.tns = content.songs[j].tns ? content.songs[j].tns.join() : '' //翻译
                                             item.dt = duringTimeDesc(content.songs[j].dt || 0)
                                             item.filename = item.artists + '-' + item.name + '.' + config.ext
@@ -2236,9 +2269,9 @@ tr td:nth-child(3){
                                         let songItem={
                                             id: content.songs[i].id,
                                             name: content.songs[i].name,
-                                            album: content.songs[i].al.name,
+                                            album: getAlbumTextInSongDetail(content.songs[i]),
                                             albumid: content.songs[i].al.id || 0,
-                                            artists: content.songs[i].ar.map(ar => ar.name).join(),
+                                            artists: getArtistTextInSongDetail(content.songs[i]),
                                             tns: content.songs[i].tns ? content.songs[i].tns.join() : '', //翻译
                                             dt: duringTimeDesc(content.songs[i].dt || 0),
                                             picUrl: (content.songs[i].al && content.songs[i].al.picUrl) ? content.songs[i].al.picUrl : 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg',
@@ -2366,7 +2399,7 @@ tr td:nth-child(3){
                                 let res = JSON.parse(responses.response)
                                 console.log(res)
                                 if (res.code == 200) {
-                                    showTips(`${song.name}解绑失败`, 1)
+                                    showTips(`${song.name}解绑成功`, 1)
                                     song.originalId=res.matchData.songId
                                     let songItem={api:{url:'/api/song/enhance/player/url/v1',data:{ ids: JSON.stringify([song.id]) ,level: upgrade.targetLevel, encodeType: 'mp3'}},id:song.id,title:song.name,artist:song.artists,album:song.album,songIndex:songIndex,Upgrader:this}
                                     let ULobj=new ncmDownUpload([songItem],false,this.onUploadSuccess,this.onUploadFail)
@@ -2983,16 +3016,16 @@ tr td:nth-child(3){
                                                 //移除云盘已存在歌曲
                                                 break
                                             }
-                                            let songArtist=content.songs[i].ar.map(ar => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>`).join()
+                                            let songArtist=content.songs[i].ar?content.songs[i].ar.map(ar => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>`).join():''
                                             let songTitle=content.songs[i].name
                                             let filename=songArtist + '-' + songTitle
                                             let tablerow = document.createElement('tr')
-                                            tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${content.songs[i].al.name}"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${content.songs[i].name}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`
+                                            tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${getAlbumTextInSongDetail(content.songs[i])}"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${content.songs[i].name}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`
                                             let btnDL = tablerow.querySelector('.mydl')
                                             btnDL.addEventListener('click', () => {TrialDownLoad(content.songs[i].id,trialMode,filename)})
                                             let btnUL = tablerow.querySelector('.myul')
                                             btnUL.addEventListener('click', () => {
-                                                let songItem={api:{url:'/api/song/enhance/player/url/v1',data:{ ids: JSON.stringify([content.songs[i].id]), trialMode:trialMode,level: 'exhigh', encodeType: 'mp3'}},id:content.songs[i].id,title:content.songs[i].name,artist:content.songs[i].ar.map(ar => ar.name).join(),album:content.songs[i].al.name}
+                                                let songItem={api:{url:'/api/song/enhance/player/url/v1',data:{ ids: JSON.stringify([content.songs[i].id]), trialMode:trialMode,level: 'exhigh', encodeType: 'mp3'}},id:content.songs[i].id,title:content.songs[i].name,artist:getArtistTextInSongDetail(content.songs[i]),album:getAlbumTextInSongDetail(content.songs[i])}
                                                 let ULobj=new ncmDownUpload([songItem],false)
                                                 ULobj.startUpload()
                                             })
@@ -3118,7 +3151,7 @@ tr td:nth-child(3){
                                         return
                                     }
                                 }
-                                if (filter[1].length > 0 && filter[1] != song.simpleSong.al.name) {
+                                if (filter[1].length > 0 && filter[1] != getAlbumTextInSongDetail(song.simpleSong)) {
                                     return
                                 }
                                 if (filter[2].length > 0 && filter[2] != song.simpleSong.name) {
@@ -3262,7 +3295,7 @@ tr td:nth-child(3){
                                         return
                                     }
                                 }
-                                if (filter[1].length > 0 && filter[1] != song.simpleSong.al.name) {
+                                if (filter[1].length > 0 && filter[1] != getAlbumTextInSongDetail(song.simpleSong)) {
                                     return
                                 }
                                 if (filter[2].length > 0 && filter[2] != song.simpleSong.name) {
@@ -3405,6 +3438,66 @@ tr td:nth-child(3){
         let listId = new URLSearchParams(location.search).get('id')
 
         if(operationArea && unsafeWindow.GUser.userId){
+            //批量下载
+            let btnBatchDownload = document.createElement('a')
+            btnBatchDownload.id = 'downloadBtn'
+            btnBatchDownload.className = 'u-btn2 u-btn2-1'
+            let btnBatchDownloadDesc = document.createElement('i')
+            btnBatchDownloadDesc.innerHTML = '批量下载'
+            btnBatchDownload.appendChild(btnBatchDownloadDesc)
+            btnBatchDownload.setAttribute("hidefocus", "true");
+            btnBatchDownload.style.margin = '5px';
+            operationArea.appendChild(btnBatchDownload)
+            btnBatchDownload.addEventListener('click', () => {
+                ShowBatchDLPopUp(pageType)
+            })
+            function ShowBatchDLPopUp(pageType){
+                Swal.fire({
+                    title: '批量下载',
+                    html: `<div id="my-cbs">
+<input class="form-check-input" type="checkbox" value="" id="cb-fee1" checked><label class="form-check-label" for="cb-fee1">VIP歌曲</label>
+<input class="form-check-input" type="checkbox" value="" id="cb-fee4" checked><label class="form-check-label" for="cb-fee4">付费专辑歌曲</label>
+</div>
+<div id="my-cbs2">
+<input class="form-check-input" type="checkbox" value="" id="cb-fee8" checked><label class="form-check-label" for="cb-fee8">低音质免费歌曲</label>
+<input class="form-check-input" type="checkbox" value="" id="cb-fee0" checked><label class="form-check-label" for="cb-fee0">免费和云盘未匹配歌曲</label>
+</div>
+<div id="my-cbs3">
+<input class="form-check-input" type="checkbox" value="" id="cb-skipcloud"><label class="form-check-label" for="cb-fee0">跳过云盘歌曲</label>
+</div>
+<div id="my-level">
+<label for="level-select" class="swal2-input-label">优先下载音质</label><select id="level-select" class="swal2-select"><option value="lossless">无损</option><option value="hires">Hi-Res</option><option value="jymaster" selected="">超清母带</option><option value="exhigh">极高</option></select>
+</div>
+<div id="my-out">
+<label for="out-select" class="swal2-input-label">文件命名格式</label><select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手-歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名-歌手</option></select>
+</div>
+<div id="my-thread-count">
+<label for="thread-count-select" class="swal2-input-label">同时下载的歌曲数</label><select id="thread-count-select" class="swal2-select"><option value=4 selected="">4</option><option value=3>3</option><option value="2">2</option><option value=1>1</option></select>
+</div>
+    `,
+                    confirmButtonText: '开始下载',
+                    showCloseButton: true,
+                    footer:'<span>不消耗会员下载次数</span><a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
+                    focusConfirm: false,
+                    preConfirm: (level) => {
+                        return [
+                            document.getElementById('cb-fee0').checked,
+                            document.getElementById('cb-fee1').checked,
+                            document.getElementById('cb-fee4').checked,
+                            document.getElementById('cb-fee8').checked,
+                            document.getElementById('cb-skipcloud').checked,
+                            document.getElementById('level-select').value,
+                            document.getElementById('out-select').value,
+                            Number(document.getElementById('thread-count-select').value),
+                        ]
+                    }
+                }).then(res=>{
+                    if(res.value[0].length==0) return
+                    let config={free:res.value[0],VIP:res.value[1],pay:res.value[2],lowFree:res.value[3],skipCloud:res.value[4],level:res.value[5],out:res.value[6],threadCount:res.value[7],listType:pageType,action:'batchDownload'}
+                    fetchSongList(config)
+                })
+            }
+
             //批量转存云盘
             let btnBatchUpload = document.createElement('a')
             btnBatchUpload.id = 'uploadBtn'
@@ -3421,111 +3514,130 @@ tr td:nth-child(3){
             function ShowBatchDLULPopUp(pageType){
                 Swal.fire({
                     title: '批量转存云盘',
-                    input: 'select',
-                    inputOptions: {lossless:'无损',hires:'Hi-Res',jymaster:'超清母带',exhigh:'极高'},
-                    inputPlaceholder: '选择优先音质',
                     html: `<div id="my-cbs">
 <input class="form-check-input" type="checkbox" value="" id="cb-fee1" checked><label class="form-check-label" for="cb-fee1">VIP歌曲</label>
-<input class="form-check-input" type="checkbox" value="" id="cb-fee4"><label class="form-check-label" for="cb-fee4">付费专辑歌曲</label>
+<input class="form-check-input" type="checkbox" value="" id="cb-fee4" checked><label class="form-check-label" for="cb-fee4">付费专辑歌曲</label>
 <input class="form-check-input" type="checkbox" value="" id="cb-fee8"><label class="form-check-label" for="cb-fee8">低音质免费歌曲</label>
 <input class="form-check-input" type="checkbox" value="" id="cb-fee0"><label class="form-check-label" for="cb-fee0">免费歌曲</label>
 </div>
+<div id="my-level">
+<label for="level-select" class="swal2-input-label">优先转存音质</label><select id="level-select" class="swal2-select"><option value="lossless">无损</option><option value="hires">Hi-Res</option><option value="jymaster" selected="">超清母带</option><option value="exhigh">极高</option></select>
+</div>
+<div id="my-out">
+<label for="out-select" class="swal2-input-label">文件命名格式</label><select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手-歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名-歌手</option></select>
+</div>
     `,
-                    confirmButtonText: '开始上传',
+                    confirmButtonText: '开始转存',
                     showCloseButton: true,
                     footer:'<span>不消耗会员下载次数</span><a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
                     focusConfirm: false,
-                    inputValidator: (level) => {
-                        if (!level) {
-                            return '请选择优先音质'
-                        }
-                    },
                     preConfirm: (level) => {
                         return [
-                            level,
                             document.getElementById('cb-fee0').checked,
                             document.getElementById('cb-fee1').checked,
                             document.getElementById('cb-fee4').checked,
                             document.getElementById('cb-fee8').checked,
+                            document.getElementById('level-select').value,
+                            document.getElementById('out-select').value,
                         ]
                     }
                 }).then(res=>{
                     if(res.value[0].length==0) return
-                    let selectOption={level:res.value[0],free:res.value[1],VIP:res.value[2],pay:res.value[3],lowFree:res.value[4]}
-                    if(pageType=='playlist'){
-                        weapiRequest("/api/v6/playlist/detail", {
-                            type: "json",
-                            method: "POST",
-                            data:{
-                                id: listId,
-                                n: 100000,
-                                s: 8,
-                            },
-                            onload: (res)=> {
-                                let content = JSON.parse(res.response)
-                                //console.log(content)
-                                let songList=[]
-                                let tracklen = content.playlist.tracks.length
-                                let privilegelen = content.privileges.length
-                                for (let i = 0; i < tracklen; i++) {
-                                    for (let j = 0; j < privilegelen; j++) {
-                                        if(content.playlist.tracks[i].id==content.privileges[j].id){
-                                            if(content.privileges[j].st<0||content.privileges[j].cs||content.privileges[j].plLevel=='none') break
-                                            if(content.privileges[j].fee==0&&!selectOption.free) break
-                                            if(content.privileges[j].fee==1&&!selectOption.VIP) break
-                                            if(content.privileges[j].fee==4&&!selectOption.pay) break
-                                            if(content.privileges[j].fee==8&&!selectOption.lowFree) break
-                                            let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.playlist.tracks[i].id]), level: selectOption.level, encodeType: 'mp3'}}
-                                            if (content.privileges[j].fee==0&&content.privileges[j].dlLevel!="none"&&content.privileges[j].plLevel!=content.privileges[j].dlLevel) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.playlist.tracks[i].id, level: selectOption.level, encodeType: 'mp3'}}
-                                            let songItem={api:api,id:content.playlist.tracks[i].id,title:content.playlist.tracks[i].name,artist:content.playlist.tracks[i].ar.map(ar => ar.name).join(),album:content.playlist.tracks[i].al.name}
-                                            songList.push(songItem)
-                                            break
-                                        }
-                                    }
-                                }
-                                if(content.playlist.trackCount>content.playlist.tracks.length){
-                                    showTips(`大歌单,开始分批获取${content.playlist.trackCount}首歌信息`,1)
-                                    let trackIds=content.playlist.trackIds.map(item => {
-                                        return {
-                                            'id': item.id
-                                        }
-                                    })
-                                    fetchplaylistSongInfo(trackIds,0,[],selectOption)
-                                }
-                                else{
-                                    startUploadSongs(songList)
-                                }
-                            }
-                        })
-                    }
-                    else if(pageType=='album'){
-                        weapiRequest(`/api/v1/album/${listId}`, {
-                            type: "json",
-                            method: "POST",
-                            onload: (res)=> {
-                                let content = JSON.parse(res.response)
-                                //console.log(content)
-                                let songList=[]
-                                for(let i=0;i<content.songs.length;i++){
-                                    if(content.songs[i].privilege.st<0||content.songs[i].privilege.cs||content.songs[i].privilege.plLevel=='none') continue
-                                    if(content.songs[i].privilege.fee==0&&!selectOption.free) continue
-                                    if(content.songs[i].privilege.fee==1&&!selectOption.VIP) continue
-                                    if(content.songs[i].privilege.fee==4&&!selectOption.pay) continue
-                                    if(content.songs[i].privilege.fee==8&&!selectOption.lowFree) continue
-                                    let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.songs[i].id]), level: selectOption.level, encodeType: 'mp3'}}
-                                    if (content.songs[i].privilege.fee==0&&content.songs[i].privilege.dlLevel!="none"&&content.songs[i].privilege.plLevel!=content.songs[i].privilege.dlLevel) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: selectOption.level, encodeType: 'mp3'}}
-                                    let songItem={api:api,id:content.songs[i].id,title:content.songs[i].name,artist:content.songs[i].ar.map(ar => ar.name).join(),album:content.songs[i].al.name}
-                                    songList.push(songItem)
-                                }
-                                startUploadSongs(songList)
-                            }
-                        })
-                    }
+                    let config={ree:res.value[0],VIP:res.value[1],pay:res.value[2],lowFree:res.value[3],skipCloud:true,level:res.value[4],out:res.value[5],listType:pageType,action:'batchUpload'}
+                    fetchSongList(config)
                 })
             }
-            function fetchplaylistSongInfo(trackIds,startIndex,songList,selectOption){
+            function fetchSongList(config){
+                if(config.listType=='playlist'){
+                    weapiRequest("/api/v6/playlist/detail", {
+                        type: "json",
+                        method: "POST",
+                        data:{
+                            id: listId,
+                            n: 100000,
+                            s: 8,
+                        },
+                        onload: (res)=> {
+                            let content = JSON.parse(res.response)
+                            //console.log(content)
+                            let songList=[]
+                            let tracklen = content.playlist.tracks.length
+                            let privilegelen = content.privileges.length
+                            for (let i = 0; i < tracklen; i++) {
+                                for (let j = 0; j < privilegelen; j++) {
+                                    if(content.playlist.tracks[i].id==content.privileges[j].id){
+                                        if(content.privileges[j].st<0||content.privileges[j].plLevel=='none') break
+                                        if(content.privileges[j].cs&&config.skipCloud) break
+                                        if(content.privileges[j].fee==0&&!config.free) break
+                                        if(content.privileges[j].fee==1&&!config.VIP) break
+                                        if(content.privileges[j].fee==4&&!config.pay) break
+                                        if(content.privileges[j].fee==8&&!config.lowFree) break
+                                        let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.playlist.tracks[i].id]), level: config.level, encodeType: 'mp3'}}
+                                        if (content.privileges[j].fee==0&&content.privileges[j].dlLevel!="none"&&content.privileges[j].plLevel!=content.privileges[j].dlLevel) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.playlist.tracks[i].id, level: config.level, encodeType: 'mp3'}}
+                                        let songItem={api:api,id:content.playlist.tracks[i].id,title:content.playlist.tracks[i].name,artist:getArtistTextInSongDetail(content.playlist.tracks[i]),album:getAlbumTextInSongDetail(content.playlist.tracks[i])}
+                                        songList.push(songItem)
+                                        break
+                                    }
+                                }
+                            }
+                            if(content.playlist.trackCount>content.playlist.tracks.length){
+                                showTips(`大歌单,开始分批获取${content.playlist.trackCount}首歌信息`,1)
+                                let trackIds=content.playlist.trackIds.map(item => {
+                                    return {
+                                        'id': item.id
+                                    }
+                                })
+                                fetchplaylistSongInfo(trackIds,0,[],config)
+                            }
+                            else{
+                                if(config.action=='batchUpload'){
+                                    startUploadSongs(songList,config)
+                                }
+                                else if(config.action=='batchDownload'){
+                                    startDownloadSongs(songList,config)
+                                }
+                            }
+                        }
+                    })
+                }
+                else if(config.listType=='album'){
+                    weapiRequest(`/api/v1/album/${listId}`, {
+                        type: "json",
+                        method: "POST",
+                        onload: (res)=> {
+                            let content = JSON.parse(res.response)
+                            //console.log(content)
+                            let songList=[]
+                            for(let i=0;i<content.songs.length;i++){
+                                if(content.songs[i].privilege.st<0||content.songs[i].privilege.plLevel=='none') continue
+                                if(content.songs[i].privilege.cs&&config.skipCloud) continue
+                                if(content.songs[i].privilege.fee==0&&!config.free) continue
+                                if(content.songs[i].privilege.fee==1&&!config.VIP) continue
+                                if(content.songs[i].privilege.fee==4&&!config.pay) continue
+                                if(content.songs[i].privilege.fee==8&&!config.lowFree) continue
+                                let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.songs[i].id]), level: config.level, encodeType: 'mp3'}}
+                                if (content.songs[i].privilege.fee==0&&content.songs[i].privilege.dlLevel!="none"&&content.songs[i].privilege.plLevel!=content.songs[i].privilege.dlLevel) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
+                                let songItem={api:api,id:content.songs[i].id,title:content.songs[i].name,artist:getArtistTextInSongDetail(content.songs[i]),album:getAlbumTextInSongDetail(content.songs[i])}
+                                songList.push(songItem)
+                            }
+                            if(config.action=='batchUpload'){
+                                startUploadSongs(songList,config)
+                            }
+                            else if(config.action=='batchDownload'){
+                                startDownloadSongs(songList,config)
+                            }
+                        }
+                    })
+                }
+            }
+            function fetchplaylistSongInfo(trackIds,startIndex,songList,config){
                 if(startIndex>=trackIds.length){
-                    startUploadSongs(songList)
+                    if(config.action=='batchUpload'){
+                        startUploadSongs(songList,config)
+                    }
+                    else if(config.action=='batchDownload'){
+                        startDownloadSongs(songList,config)
+                    }
                     return
                 }
                 weapiRequest("/api/v3/song/detail", {
@@ -3542,30 +3654,131 @@ tr td:nth-child(3){
                         for (let i = 0; i < songlen; i++) {
                             for (let j = 0; j < privilegelen; j++) {
                                 if(content.songs[i].id==content.privileges[j].id){
-                                    if(content.privileges[j].st<0||content.privileges[j].cs||content.privileges[j].plLevel=='none') break
-                                    if(content.privileges[j].fee==0&&!selectOption.free) break
-                                    if(content.privileges[j].fee==1&&!selectOption.VIP) break
-                                    if(content.privileges[j].fee==4&&!selectOption.pay) break
-                                    if(content.privileges[j].fee==8&&!selectOption.lowFree) break
-                                    let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.songs[i].id]), level: selectOption.level, encodeType: 'mp3'}}
-                                    if (content.privileges[j].fee==0&&content.privileges[j].dlLevel!="none"&&content.privileges[j].plLevel!=content.privileges[j].dlLevel) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: selectOption.level, encodeType: 'mp3'}}
-                                    let songItem={api:api,id:content.songs[i].id,title:content.songs[i].name,artist:content.songs[i].ar.map(ar => ar.name).join(),album:content.songs[i].al.name}
+                                    if(content.privileges[j].st<0||content.privileges[j].plLevel=='none') break
+                                    if(content.privileges[j].cs&&config.skipCloud) break
+                                    if(content.privileges[j].fee==0&&!config.free) break
+                                    if(content.privileges[j].fee==1&&!config.VIP) break
+                                    if(content.privileges[j].fee==4&&!config.pay) break
+                                    if(content.privileges[j].fee==8&&!config.lowFree) break
+                                    let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.songs[i].id]), level: config.level, encodeType: 'mp3'}}
+                                    if (content.privileges[j].fee==0&&content.privileges[j].dlLevel!="none"&&content.privileges[j].plLevel!=content.privileges[j].dlLevel) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
+                                    let songItem={api:api,id:content.songs[i].id,title:content.songs[i].name,artist:getArtistTextInSongDetail(content.songs[i]),album:getAlbumTextInSongDetail(content.songs[i])}
                                     songList.push(songItem)
                                     break
                                 }
                             }
                         }
-                        fetchplaylistSongInfo(trackIds, startIndex + content.songs.length,songList,selectOption)
+                        fetchplaylistSongInfo(trackIds, startIndex + content.songs.length,songList,config)
                     }
                 })
             }
-            function startUploadSongs(songList){
+            function startDownloadSongs(songList,config){
+                if(songList.length==0){
+                    showConfirmBox('没有可下载的歌曲')
+                    return
+                }
+                Swal.fire({
+                    title: '批量下载',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showCloseButton: false,
+                    showConfirmButton:false,
+                    html: `<div id="my-dllist"><ul></ul></div>`,
+                    footer: '<div></div>',
+                    didOpen: () => {
+                        let container = Swal.getHtmlContainer()
+                        let ulDOM = container.querySelector('ul')
+                        let textDOMList=[]
+                        for(let i=0;i<config.threadCount;i++){
+                            let liDOM = document.createElement('li')
+                            ulDOM.appendChild(liDOM)
+                            textDOMList.push(liDOM)
+                        }
+                        config.finnshCount=0
+                        for(let i=0;i<config.threadCount;i++){
+                            downloadSongSub(i,songList,config,textDOMList)
+                        }
+                    },
+                })
+            }
+            function downloadSongSub(songIndex,songList,config,textDOMList){
+                let textDOMIndex=songIndex%config.threadCount
+                let textDOM=textDOMList[textDOMIndex]
+                if(songIndex>=songList.length){
+                    textDOM.innerHTML=''
+                    let allFinnsh=true
+                    for(let i=0;i<config.threadCount;i++){
+                        if(textDOMList[i].innerHTML!=''){
+                            allFinnsh=false
+                            break
+                        }
+                    }
+                    if(allFinnsh){
+                        Swal.update({
+                            allowOutsideClick: true,
+                            allowEscapeKey: true,
+                            showCloseButton: true,
+                            showConfirmButton:true,
+                            html:'下载完成',
+                        })
+                    }
+                    return
+                }
+                let song=songList[songIndex]
+                try{
+                    weapiRequest(song.api.url, {
+                        type: "json",
+                        data: song.api.data,
+                        onload: (responses) => {
+                            let content = JSON.parse(responses.response);
+                            let resData=content.data[0]||content.data
+                            if (resData.url != null) {
+                                let fileFullName = nameFileWithoutExt(song.title,song.artist,config.out) + '.' + resData.type.toLowerCase()
+                                let dlUrl = resData.url
+                                let basetext = `${song.title}\t${song.artist}\t${levelDesc(resData.level)}\t${fileSizeDesc(resData.size)}`
+                                GM_download({
+                                    url:dlUrl,
+                                    name: fileFullName,
+                                    onprogress: function(e) {
+                                        textDOM.innerHTML = `${basetext}\t${fileSizeDesc(e.loaded)}\n`
+                                    },
+                                    onload: function() {
+                                        config.finnshCount+=1
+                                        Swal.getFooter().innerHTML = `已完成:${config.finnshCount} 总共: ${songList.length}`
+                                        textDOM.innerHTML = `${basetext}\t完成\n`
+                                        downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                                    },
+                                    onerror: function() {
+                                        textDOM.innerHTML = `${basetext}\下载出错\n`
+                                        downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                                    }
+                                });
+                            }
+                            else{
+                                showTips(`${song.title} 无法下载`,2)
+                                downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                            }
+                        },
+                        onerror: (res) => {
+                            console.error(res)
+                            showTips(`${song.title} 下载出错`,2)
+                            downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                        }
+                    })
+                }
+                catch (e) {
+                    console.error(e);
+                    showTips(`${song.title} 下载出错`,2)
+                    downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                }
+            }
+            function startUploadSongs(songList,config){
                 if(songList.length==0){
                     showConfirmBox('没有可上传的歌曲')
                     return
                 }
                 showTips(`开始下载上传${songList.length}首歌曲`,1)
-                let ULobj=new ncmDownUpload(songList)
+                let ULobj=new ncmDownUpload(songList,true,null,null,config.out)
                 ULobj.startUpload()
             }
 
