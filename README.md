@@ -21,16 +21,8 @@
 - 云盘快传\转存:无损以上音质文件(flac)上传后再下载文件名后缀变为mp3,但不会影响文件的音质。
 - 上传失败时，浏览器控制台有输出具体错误内容。大多数时候重试一次就好了。
 - 云盘音质提升:当目标高音质文件已在云盘中时,提升音质只是把高音质文件匹配到目标歌曲，然后删除低音质文件。这就造成云盘歌曲数量减少的现象。
- ### 截图
-![云盘快传P1](https://www.helloimg.com/images/2023/06/05/omja6c.md.png)  
-![云盘快传P2](https://www.helloimg.com/images/2023/06/05/omjXLr.md.png)  
-![云盘匹配纠正](https://www.helloimg.com/images/2023/06/05/omjeQT.md.png)  
-![听歌量打卡](https://www.helloimg.com/images/2023/06/17/otsMzP.md.png)  
-![云盘导出](https://www.helloimg.com/images/2023/06/05/omjPlh.md.png)  
-![云盘导人](https://www.helloimg.com/images/2023/06/05/omj3Zq.md.png)  
-![歌曲歌词歌谱下载](https://www.helloimg.com/images/2023/05/10/oxMJzg.md.png)  
 ### 参考
-网易云音乐API来自[Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)  
+网易云音乐API来自[Binaryify/NeteaseCloudMusicApi](https://gitlab.com/Binaryify/NeteaseCloudMusicApi)  
 ## 咪咕音乐下载脚本
 在咪咕音乐专辑详情页添加下载链接 可无需登录下载至臻(24Bit)  
 [安装](https://greasyfork.org/scripts/453820-%E5%92%AA%E5%92%95%E9%9F%B3%E4%B9%90%E4%B8%8B%E8%BD%BD/code/%E5%92%AA%E5%92%95%E9%9F%B3%E4%B9%90%E4%B8%8B%E8%BD%BD.user.js) (请确保浏览器已经安装了TamperMonkey)  
