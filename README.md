@@ -21,6 +21,11 @@
 - 云盘快传\转存:无损以上音质文件(flac)上传后再下载文件名后缀变为mp3,但不会影响文件的音质。
 - 上传失败时，浏览器控制台有输出具体错误内容。大多数时候重试一次就好了。
 - 云盘音质提升:当目标高音质文件已在云盘中时,提升音质只是把高音质文件匹配到目标歌曲，然后删除低音质文件。这就造成云盘歌曲数量减少的现象。
+### 截图
+<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/ncmHomePage.png" width="60%">
+
+<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/ncmPlaylist.png" width="60%">
+
 ### 参考
 网易云音乐API来自[Binaryify/NeteaseCloudMusicApi](https://gitlab.com/Binaryify/NeteaseCloudMusicApi)  
 ## 咪咕音乐下载脚本
