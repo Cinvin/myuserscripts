@@ -2,7 +2,7 @@
 // @name			网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|听歌量打卡|高音质试听
 // @description		无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、快速完成300首听歌量打卡任务、选择更高音质试听(支持超清母带,默认无损)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.3.0
+// @version			3.3.1
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -1025,9 +1025,6 @@
             text-align: left;
             text-overflow: ellipsis;
         }
-        song-name-text {
-            text-align: center;
-        }
         table tbody {
             display: block;
             width: 100%;
@@ -1672,9 +1669,6 @@ tr td:nth-child(3){
             text-align: left;
             text-overflow: ellipsis;
         }
-        song-name-text {
-            text-align: center;
-        }
         table tbody {
             display: block;
             width: 100%;
@@ -2113,9 +2107,6 @@ tr td:nth-child(3){
         table th, table td {
             text-align: left;
             text-overflow: ellipsis;
-        }
-        song-name-text {
-            text-align: center;
         }
         table tbody {
             display: block;
@@ -2947,9 +2938,6 @@ tr td:nth-child(3){
             text-align: left;
             text-overflow: ellipsis;
         }
-        song-name-text {
-            text-align: center;
-        }
         table tbody {
             display: block;
             width: 100%;
@@ -3683,48 +3671,105 @@ tr td:nth-child(3){
                     allowEscapeKey: false,
                     showCloseButton: false,
                     showConfirmButton:false,
-                    html: `<div id="my-dllist"><ul></ul></div>`,
+                    width: 800,
+                    html: `<style>
+        table {
+            width: 100%;
+            border-spacing: 0px;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            text-align: left;
+            text-overflow: ellipsis;
+        }
+        table tbody {
+            display: block;
+            width: 100%;
+            max-height: 400px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table thead tr, table tbody tr, table tfoot tr {
+            box-sizing: border-box;
+            table-layout: fixed;
+            display: table;
+            width: 100%;
+        }
+        table tbody tr td{
+            border-bottom: none;
+        }
+ tr th:nth-child(1),tr td:nth-child(1){
+  width: 26%;
+}
+ tr th:nth-child(2),tr td:nth-child(2){
+  width: 22%;
+}
+ tr th:nth-child(3),tr td:nth-child(3){
+  width: 22%;
+}
+ tr th:nth-child(4),tr td:nth-child(4){
+  width: 10%;
+}
+ tr th:nth-child(5),tr td:nth-child(5){
+  width: 10%;
+}
+ tr th:nth-child(6),tr td:nth-child(6){
+  width: 10%;
+}
+</style>
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>歌曲标题</th><th>歌手</th><th>专辑</th><th>音质</th><th>大小</th><th>进度</th> </tr></thead><tbody></tbody></table>
+`,
                     footer: '<div></div>',
                     didOpen: () => {
                         let container = Swal.getHtmlContainer()
-                        let ulDOM = container.querySelector('ul')
-                        let textDOMList=[]
+                        let tbodyDOM = container.querySelector('tbody')
+                        let threadList=[]
                         for(let i=0;i<config.threadCount;i++){
-                            let liDOM = document.createElement('li')
-                            ulDOM.appendChild(liDOM)
-                            textDOMList.push(liDOM)
+                            let trDOM = document.createElement('tr')
+                            tbodyDOM.appendChild(trDOM)
+                            threadList.push({tableRowDOM:trDOM,working:true})
                         }
                         config.finnshCount=0
+                        config.errorSongTitles=[]
+                        config.taskCount=songList.length
+                        config.threadList=threadList
                         for(let i=0;i<config.threadCount;i++){
-                            downloadSongSub(i,songList,config,textDOMList)
+                            downloadSongSub(i,songList,config)
                         }
                     },
                 })
             }
-            function downloadSongSub(songIndex,songList,config,textDOMList){
-                let textDOMIndex=songIndex%config.threadCount
-                let textDOM=textDOMList[textDOMIndex]
-                if(songIndex>=songList.length){
-                    textDOM.innerHTML=''
+            function downloadSongSub(threadIndex,songList,config){
+                let song=songList.shift()
+                let tableRowDOM=config.threadList[threadIndex].tableRowDOM
+                if(song == undefined){
+                    config.threadList[threadIndex].working=false
                     let allFinnsh=true
                     for(let i=0;i<config.threadCount;i++){
-                        if(textDOMList[i].innerHTML!=''){
+                        if(config.threadList[i].working){
                             allFinnsh=false
                             break
                         }
                     }
                     if(allFinnsh){
+                        let finnshText='下载完成'
+                        if(config.errorSongTitles.length>0){
+                            finnshText=`下载完成。以下${config.errorSongTitles.length}首歌曲下载失败: ${config.errorSongTitles.join()}`
+                        }
                         Swal.update({
                             allowOutsideClick: true,
                             allowEscapeKey: true,
                             showCloseButton: true,
                             showConfirmButton:true,
-                            html:'下载完成',
+                            html:finnshText,
                         })
                     }
                     return
                 }
-                let song=songList[songIndex]
+                tableRowDOM.innerHTML = `<td>${song.title}</td><td>${song.artist}</td><td>${song.album}</td><td class='my-level'></td><td class='my-size'></td><td class='my-pr'></td>`
+                let levelText=tableRowDOM.querySelector('.my-level')
+                let sizeText=tableRowDOM.querySelector('.my-size')
+                let prText=tableRowDOM.querySelector('.my-pr')
                 try{
                     weapiRequest(song.api.url, {
                         type: "json",
@@ -3735,41 +3780,68 @@ tr td:nth-child(3){
                             if (resData.url != null) {
                                 let fileFullName = nameFileWithoutExt(song.title,song.artist,config.out) + '.' + resData.type.toLowerCase()
                                 let dlUrl = resData.url
-                                let basetext = `${song.title}\t${song.artist}\t${levelDesc(resData.level)}\t${fileSizeDesc(resData.size)}`
+                                levelText.innerHTML = levelDesc(resData.level)
+                                sizeText.innerHTML = fileSizeDesc(resData.size)
                                 GM_download({
                                     url:dlUrl,
                                     name: fileFullName,
                                     onprogress: function(e) {
-                                        textDOM.innerHTML = `${basetext}\t${fileSizeDesc(e.loaded)}\n`
+                                        prText.innerHTML = `${fileSizeDesc(e.loaded)}`
                                     },
                                     onload: function() {
                                         config.finnshCount+=1
-                                        Swal.getFooter().innerHTML = `已完成:${config.finnshCount} 总共: ${songList.length}`
-                                        textDOM.innerHTML = `${basetext}\t完成\n`
-                                        downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                                        Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
+                                        prText.innerHTML = `完成`
+                                        downloadSongSub(threadIndex,songList,config)
                                     },
                                     onerror: function() {
-                                        textDOM.innerHTML = `${basetext}\下载出错\n`
-                                        downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                                        if(song.retry){
+                                            prText.innerHTML = `下载出错`
+                                            config.errorSongTitles.push(song.title)
+                                        }
+                                        else{
+                                            prText.innerHTML = `下载出错\t稍后重试`
+                                            song.retry=true
+                                            songList.push(song)
+                                        }
+                                        downloadSongSub(threadIndex,songList,config)
                                     }
                                 });
                             }
                             else{
-                                showTips(`${song.title} 无法下载`,2)
-                                downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                                showTips(`${song.title}\t无法下载`,2)
+                                prText.innerHTML = `无法下载`
+                                config.errorSongTitles.push(song.title)
+                                downloadSongSub(threadIndex,songList,config)
                             }
                         },
                         onerror: (res) => {
                             console.error(res)
-                            showTips(`${song.title} 下载出错`,2)
-                            downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                            if(song.retry){
+                                prText.innerHTML = `下载出错`
+                                config.errorSongTitles.push(song.title)
+                            }
+                            else{
+                                prText.innerHTML = `下载出错\t稍后重试`
+                                song.retry=true
+                                songList.push(song)
+                            }
+                            downloadSongSub(threadIndex,songList,config)
                         }
                     })
                 }
                 catch (e) {
                     console.error(e);
-                    showTips(`${song.title} 下载出错`,2)
-                    downloadSongSub(songIndex+config.threadCount,songList,config,textDOMList)
+                    if(song.retry){
+                        prText.innerHTML = `下载出错`
+                        config.errorSongTitles.push(song.title)
+                    }
+                    else{
+                        prText.innerHTML = `下载出错\t稍后重试`
+                        song.retry=true
+                        songList.push(song)
+                    }
+                    downloadSongSub(threadIndex,songList,config)
                 }
             }
             function startUploadSongs(songList,config){
