@@ -31,7 +31,7 @@
     const levelWeight={jymaster:8,sky:7,jyeffect:6,hires:5,lossless:4,exhigh:3,higher:2,standard:1,none:0}
     const defaultOfDEFAULT_LEVEL='jymaster'
     const uploadChunkSize=8*1024*1024
-    const player=window.top.player
+    const player=unsafeWindow.top.player
 
     function getcookie(key) {
         var cookies = document.cookie,
@@ -2502,16 +2502,25 @@ tr td:nth-child(3){
             function ShowLocalUploadPopUp() {
                 Swal.fire({
                     title: '云盘本地上传',
-                    input: 'file',
-                    inputAttributes: {
-                        'accept': 'audio/*',
-                        'multiple':'multiple',
-                    },
+
+                    html:`<div id="my-file">
+                    <input id='song-file' type="file" accept="audio/*" multiple="multiple" class="swal2-file" placeholder="" style="display: flex;">
+                    </div>
+                    <div id="my-rd">
+                    <div class="swal2-radio"">
+                    <label><input type="radio" name="file-info" value="autofill" checked><span class="swal2-label">直接上传</span></label>
+                    <label><input type="radio" name="file-info" value="needInput" id="need-fill-info-radio"><span class="swal2-label">先填写文件的歌手、专辑信息</span></label>
+                    </div>
+                    </div>`,
                     confirmButtonText: '上传',
+                    footer: '填写信息可用于网易云没有文件对应的歌曲信息的情况',
                     showCloseButton: true,
-                    inputValidator: (value) => {
-                        if (!value) {
-                            return '请选择文件'
+                    preConfirm: (level) => {
+                        let files=document.getElementById('song-file').files
+                        if(files.length==0) return Swal.showValidationMessage('请选择文件')
+                        return {
+                            files:files,
+                            needFillInfo:document.getElementById('need-fill-info-radio').checked,
                         }
                     },
                 })
@@ -2523,14 +2532,15 @@ tr td:nth-child(3){
             }
 
             class LocalUpload{
-                start(files){
-                    this.files=files
+                start(config){
+                    this.files=config.files
+                    this.needFillInfo=config.needFillInfo
                     this.task=[]
                     this.currentIndex=0
                     this.failIndexs=[]
 
-                    for (let i=0;i<files.length;i++){
-                        let file=files[i]
+                    for (let i=0;i<config.files.length;i++){
+                        let file=config.files[i]
                         let fileName=file.name
                         let song={
                             id:-2,
@@ -2545,23 +2555,128 @@ tr td:nth-child(3){
                         }
                         this.task.push(song)
                     }
-                    this.localIUploadPart0(0)
+                    showTips(`开始获取文件中的标签信息`,1)
+                    this.readFileTags(0)
                 }
-                localIUploadPart0(songindex){
-                    let song=this.task[songindex]
-                    let fileData=song.songFile
+                readFileTags(songIndex){
+                    if(songIndex>=this.task.length){
+                        if(this.needFillInfo){
+                            this.showFillSongInforBox()
+                        }
+                        else{
+                            this.localUploadPart1(0)
+                        }
+                        return
+                    }
+                    let fileData=this.task[songIndex].songFile
                     new jsmediatags.Reader(fileData)
                         .read({
                         onSuccess: (res) => {
-                            if (res.tags.title) song.title=res.tags.title
-                            if (res.tags.artist) song.artist=res.tags.artist
-                            if (res.tags.album) song.album=res.tags.album
-                            this.localUploadPart1(songindex)
+                            if (res.tags.title) this.task[songIndex].title=res.tags.title
+                            if (res.tags.artist) this.task[songIndex].artist=res.tags.artist
+                            if (res.tags.album) this.task[songIndex].album=res.tags.album
+                            this.readFileTags(songIndex+1)
                         },
                         onError: (error) => {
-                            this.localUploadPart1(songindex)
+                            this.readFileTags(songIndex+1)
                         }
                     });
+                }
+                showFillSongInforBox(){
+                    Swal.fire({
+                        html:`<style>
+        table {
+            width: 100%;
+            border-spacing: 0px;
+            border-collapse: collapse;
+        }
+        table th, table td {
+            text-align: left;
+            text-overflow: ellipsis;
+        }
+        table tbody {
+            display: block;
+            width: 100%;
+            max-height: 400px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table thead tr, table tbody tr, table tfoot tr {
+            box-sizing: border-box;
+            table-layout: fixed;
+            display: table;
+            width: 100%;
+        }
+        table tbody tr td{
+            border-bottom: none;
+        }
+ tr th:nth-child(1),tr td:nth-child(1){
+  width: 16%;
+}
+ tr th:nth-child(2),tr td:nth-child(2){
+  width: 30%;
+}
+ tr th:nth-child(3),tr td:nth-child(3){
+  width: 27%;
+}
+ tr th:nth-child(4),tr td:nth-child(4){
+  width: 27%;
+}
+</style>
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>专辑</th></tr></thead><tbody></tbody></table>
+`,
+                        confirmButtonText: '上传',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showCloseButton: false,
+                        didOpen: () => {
+                            let container = Swal.getHtmlContainer()
+                            let tbody = container.querySelector('tbody')
+                            for(let i=0;i<this.task.length;i++){
+                                let tablerow = document.createElement('tr')
+                                tablerow.innerHTML = `<td><button type="button" class="swal2-styled my-edit">编辑</button></td><td>${this.task[i].title}</td><td>${this.task[i].artist}</td><td>${this.task[i].album}</td>`
+                                let btnEdit = tablerow.querySelector('.my-edit')
+                                btnEdit.addEventListener('click', () => {
+                                    this.showEditInforBox(i)
+                                })
+                                tbody.appendChild(tablerow)
+                            }
+                        },
+                    })
+                        .then(result => {
+                        if (result.isConfirmed) {
+                            this.localUploadPart1(0)
+                        }
+                    })
+                }
+                showEditInforBox(songIndex){
+                    Swal.fire({
+                        title: this.task[songIndex].fileFullName,
+                        html: `<div><label for="text-title">歌名</label><input class="swal2-input" id="text-title" type="text" value="${this.task[songIndex].title}"></div>
+                    <div><label for="text-artist">歌手</label><input class="swal2-input" id="text-artist" type="text"  value="${this.task[songIndex].artist}"></div>
+                    <div><label for="text-album">专辑</label><input class="swal2-input" id="text-album" type="text"  value="${this.task[songIndex].album}"></div>`,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showCloseButton: false,
+                        confirmButtonText: '确定',
+                        preConfirm: () => {
+                            let songTitle=document.getElementById('text-title').value.trim()
+                            if(songTitle.length==0) return Swal.showValidationMessage('歌名不能为空')
+                            return {
+                                title:songTitle,
+                                artist:document.getElementById('text-artist').value.trim(),
+                                album:document.getElementById('text-album').value.trim(),
+                            }
+                        },
+                    })
+                        .then((result) => {
+                        if (result.isConfirmed) {
+                            this.task[songIndex].title=result.value.title
+                            this.task[songIndex].artist=result.value.artist
+                            this.task[songIndex].album=result.value.album
+                            this.showFillSongInforBox()
+                        }
+                    })
                 }
                 localUploadPart1(songindex){
                     let self=this
@@ -2580,42 +2695,66 @@ tr td:nth-child(3){
                             showTips(`(1/5)${song.title} 已计算文件MD5值`,1)
                             song.md5 = md5sum.finalize().toString()
                             try{
-                                let songCheckData=[{
-                                    md5:song.md5,
-                                    songId: song.id,
-                                    bitrate: song.bitrate,
-                                    fileSize:song.size,
-                                }]
-                                weapiRequest("/api/cloud/upload/check/v2", {
+                                weapiRequest("/api/cloud/upload/check", {
                                     method: "POST",
                                     type: "json",
                                     data: {
-                                        uploadType: 0,
-                                        songs: JSON.stringify(songCheckData),
+                                        songId: 0,
+                                        md5: song.md5,
+                                        length: song.size,
+                                        ext: song.ext,
+                                        version: 1,
+                                        bitrate: song.bitrate,
                                     },
                                     onload: (responses1) => {
                                         let res1 = JSON.parse(responses1.response)
                                         console.log(song.title, '1.检查资源', res1)
-                                        if (res1.code != 200 || res1.data.length<1) {
+                                        if (res1.code != 200) {
+                                            console.error(song.title, '1.检查资源', res1)
                                             self.uploadFail()
                                             return
                                         }
-                                        song.cloudId=res1.data[0].songId
-                                        if(res1.data[0].upload==0){
-                                            //文件已存在 跳过
-                                            showTips(`(2/5)${song.title} 文件已在云盘中,跳过`,1)
-                                            self.uploadSuccess()
-                                        }
-                                        else if(res1.data[0].upload==1){
-                                            //不用上传文件
-                                            showTips(`(2/6)${song.title} 检查资源`,1)
-                                            self.localUploadSongWay1Part1(songindex)
-                                        }
-                                        else{
-                                            //需要上传文件
-                                            showTips(`(2/6)${song.title} 检查资源`,1)
-                                            self.localUploadSongWay2Part1(songindex)
-                                        }
+                                        song.cloudId=res1.songId
+                                        song.needUpload=res1.needUpload
+                                        weapiRequest("/api/nos/token/alloc", {
+                                            method: "POST",
+                                            type: "json",
+                                            data: {
+                                                filename: song.title,
+                                                length: song.size,
+                                                ext: song.ext,
+                                                type: 'audio',
+                                                bucket: 'jd-musicrep-privatecloud-audio-public',
+                                                local: false,
+                                                nos_product: 3,
+                                                md5: song.md5
+                                            },
+                                            onload: (responses2) => {
+                                                let res2 = JSON.parse(responses2.response)
+                                                if (res2.code != 200) {
+                                                    console.error(song.title, '2.获取令牌', res2)
+                                                    self.uploadFail()
+                                                    return
+                                                }
+                                                song.resourceId=res2.result.resourceId
+                                                let tokenRes=JSON.parse(responses2.response)
+                                                song.token=tokenRes.result.token
+                                                song.objectKey = tokenRes.result.objectKey
+                                                showTips(`(3/5)${song.title} 开始上传文件`,1)
+                                                console.log(song.title, '2.获取令牌', res2)
+                                                if(res1.needUpload){
+                                                    self.localUploadFile(songindex,0)
+                                                }
+                                                else{
+                                                    song.expireTime=Date.now()+60000
+                                                    self.localUploadPart2(songindex)
+                                                }
+                                            },
+                                            onerror: (res) => {
+                                                console.error(song.title, '2.获取令牌', res)
+                                                self.uploadFail()
+                                            }
+                                        });
                                     },
                                     onerror: (res) => {
                                         console.error(song.title, '1.检查资源', res)
@@ -2633,94 +2772,6 @@ tr td:nth-child(3){
                     function readBlob(offset) {
                         let blob = song.songFile.slice(offset, offset + chunkSize);
                         reader.readAsBinaryString(blob);
-                    }
-                }
-                localUploadSongWay1Part1(songindex){
-                    let self=this
-                    let song=self.task[songindex]
-                    let importSongData=[{
-                        songId:song.cloudId,
-                        bitrate:song.bitrate,
-                        song:song.title,
-                        artist:song.artist,
-                        album:song.album,
-                        fileName:song.fileFullName
-                    }]
-                    //step2 导入歌曲
-                    try{
-                        weapiRequest("/api/cloud/user/song/import", {
-                            method: "POST",
-                            type: "json",
-                            data: {
-                                uploadType: 0,
-                                songs: JSON.stringify(importSongData),
-                            },
-                            onload: (responses) => {
-                                let res=JSON.parse(responses.response)
-                                if (res.code != 200 || res.data.successSongs.length<1) {
-                                    console.error(song.title, '2.导入文件', res)
-                                    self.uploadFail()
-                                    return
-                                }
-                                console.log(song.title, '2.导入文件', res)
-                                showTips(`(2/2)${song.title} 2.导入文件完成`,1)
-                                self.uploadSuccess()
-                            },
-                            onerror: (responses2) => {
-                                console.error(song.title, '2.导入歌曲', responses2)
-                                self.uploadFail()
-                            }
-                        })
-                    }
-                    catch (e) {
-                        console.error(e);
-                        self.uploadFail()
-                    }
-                }
-                localUploadSongWay2Part1(songindex){
-                    let self=this
-                    let song=self.task[songindex]
-                    //step2 导入歌曲
-                    try{
-                        //step2 上传令牌
-                        weapiRequest("/api/nos/token/alloc", {
-                            method: "POST",
-                            type: "json",
-                            data: {
-                                filename: song.title,
-                                length: song.size,
-                                ext: song.ext,
-                                type: 'audio',
-                                bucket: 'jd-musicrep-privatecloud-audio-public',
-                                local: false,
-                                nos_product: 3,
-                                md5: song.md5
-                            },
-                            onload: (responses2) => {
-                                let res2 = JSON.parse(responses2.response)
-                                if (res2.code != 200) {
-                                    console.error(song.title, '2.获取令牌', res2)
-                                    self.uploadFail()
-                                    return
-                                }
-                                song.resourceId=res2.result.resourceId
-                                let tokenRes=JSON.parse(responses2.response)
-                                song.token=tokenRes.result.token
-                                song.objectKey = tokenRes.result.objectKey
-                                song.expireTime=Date.now()+60000
-                                showTips(`(3/5)${song.title} 开始上传文件`,1)
-                                console.log(song.title, '2.获取令牌', res2)
-                                self.localUploadFile(songindex,0)
-                            },
-                            onerror: (res) => {
-                                console.error(song.title, '2.获取令牌', res)
-                                self.uploadFail()
-                            }
-                        });
-                    }
-                    catch (e) {
-                        console.error(e);
-                        self.uploadFail()
                     }
                 }
                 localUploadFile(songindex,offset,context=null){
@@ -2744,6 +2795,7 @@ tr td:nth-child(3){
                             if(complete){
                                 console.log(song.title, '2.5.上传文件完成', res)
                                 showTips(`(3.5/5)${song.title} 上传文件完成`,1)
+                                song.expireTime=Date.now()+60000
                                 self.localUploadPart2(songindex)
                             }
                             else{
@@ -2847,7 +2899,7 @@ tr td:nth-child(3){
                         this.uploadFinnsh()
                     }
                     else{
-                        this.localIUploadPart0(this.currentIndex)
+                        this.localUploadPart1(this.currentIndex)
                     }
                 }
                 uploadFinnsh(){
@@ -4187,7 +4239,7 @@ tr td:nth-child(3){
                         content.data[0].type='mp3'
                     }
                     if(content.data[0].url){
-                        if(content.data[0].level=='standard' && targetLevel != 'standard'){
+                        if(content.data[0].level=='standard'){
                             if(targetLevel != 'standard'){
                                 let apiData= {
                                     '/api/song/enhance/player/url/v1': JSON.stringify({
@@ -4222,12 +4274,23 @@ tr td:nth-child(3){
                                         }
                                         response.response=JSON.stringify(content)
                                         handler.next(response)
+                                    },
+                                    onerror: (res) => {
+                                        console.error('/api/batch',apiData, res)
+                                        response.response=JSON.stringify(content)
+                                        handler.next(response)
                                     }
                                 })
                             }
+                            else{
+                                response.response=JSON.stringify(content)
+                                handler.next(response)
+                            }
                         }
                         else{
-                            player.tipPlay(levelDesc(content.data[0].level)+'音质')
+                            player.tipPlay(levelDesc(content.data[0].level)+'音质(云盘文件)')
+                            response.response=JSON.stringify(content)
+                            handler.next(response)
                         }
                     }
                     else{
