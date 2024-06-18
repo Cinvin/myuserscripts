@@ -627,7 +627,7 @@
                     this.title = title;
                     this.artists = artists
                     this.album = album
-                    this.filename = songArtist + '-' + songTitle
+                    this.filename = nameFileWithoutExt(songTitle,songArtist,'artist-title')
                 };
                 getNCMSource() {
                     weapiRequest("/api/batch", {
@@ -702,7 +702,7 @@
                             let resData=content.data[0]||content.data
                             if (resData.url != null) {
                                 //console.log(content)
-                                let fileFullName = songArtist + '-' + songTitle + '.' + resData.type.toLowerCase()
+                                let fileFullName = nameFileWithoutExt(songTitle,songArtist,'artist-title') + '.' + resData.type.toLowerCase()
                                 let url = resData.url
                                 let btntext = dlbtn.text
                                 GM_download({
@@ -1215,6 +1215,7 @@ tr td:nth-child(3){
                                         isVIP: false,
                                         isPay: false,
                                         uploaded: false,
+                                        needMatch:config.name !== undefined,
                                     }
                                     for (let j = 0; j < songslen; j++) {
                                         if(content.songs[j].id==content.privileges[i].id){
@@ -1224,7 +1225,7 @@ tr td:nth-child(3){
                                             item.artists = getArtistTextInSongDetail(content.songs[j])
                                             item.tns = content.songs[j].tns ? content.songs[j].tns.join() : '' //翻译
                                             item.dt = duringTimeDesc(content.songs[j].dt || 0)
-                                            item.filename = item.artists + '-' + item.name + '.' + config.ext
+                                            item.filename = nameFileWithoutExt(item.name,item.artists,'artist-title') + '.' + config.ext
                                             item.picUrl = (content.songs[j].al && content.songs[j].al.picUrl) ? content.songs[j].al.picUrl : 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
                                             item.isVIP = content.songs[j].fee == 1
                                             item.isPay = content.songs[j].fee == 4
@@ -1235,7 +1236,7 @@ tr td:nth-child(3){
                                         item.name = config.name
                                         item.album = config.al
                                         item.artists = config.ar
-                                        item.filename = item.artists + '-' + item.name + '.' + config.ext
+                                        item.filename = nameFileWithoutExt(item.name,item.artists,'artist-title') + '.' + config.ext
                                     }
                                     uploader.songs.push(item)
                                 }
@@ -1419,7 +1420,7 @@ tr td:nth-child(3){
                     let importSongData=[{
                         songId:song.cloudId,
                         bitrate:song.bitrate,
-                        song:song.artists+'-'+song.name,
+                        song:song.needMatch?nameFileWithoutExt(song.name,song.artists,'artist-title'):song.name,
                         artist:song.artists,
                         album:song.album,
                         fileName:song.filename,
@@ -3007,7 +3008,7 @@ tr td:nth-child(3){
                                             }
                                             let songArtist=content.songs[i].ar?content.songs[i].ar.map(ar => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>`).join():''
                                             let songTitle=content.songs[i].name
-                                            let filename=songArtist + '-' + songTitle
+                                            let filename=nameFileWithoutExt(songTitle,songArtist,'artist-title')
                                             let tablerow = document.createElement('tr')
                                             tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${getAlbumTextInSongDetail(content.songs[i])}"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${content.songs[i].name}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`
                                             let btnDL = tablerow.querySelector('.mydl')
