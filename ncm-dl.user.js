@@ -29,8 +29,9 @@
     //svip:超清母带,沉浸环绕声,vip:高清环绕声,Hi-Res,无损
     const levelOptions={jymaster:'超清母带',sky:'沉浸环绕声',jyeffect:'高清环绕声',hires:'Hi-Res',lossless:'无损',exhigh:'极高',higher:'较高',standard:'标准'}
     const levelWeight={jymaster:8,sky:7,jyeffect:6,hires:5,lossless:4,exhigh:3,higher:2,standard:1,none:0}
-    const defaultOfDEFAULT_LEVEL='lossless'
+    const defaultOfDEFAULT_LEVEL='jymaster'
     const uploadChunkSize=8*1024*1024
+    const player=window.top.player
 
     function getcookie(key) {
         var cookies = document.cookie,
@@ -4179,40 +4180,54 @@ tr td:nth-child(3){
             onResponse: (response, handler) => {
                 if(response.config.url.includes('/weapi/song/enhance/player/url/v1')){
                     let content = JSON.parse(response.response)
-                    let ids=[]
-                    content.data.forEach(song=>{
-                        if (song.type.toLowerCase() !== "mp3" && song.type.toLowerCase() !== "m4a") {
-                            song.type='mp3'
-                        }
-                        if(song.url && song.level=='standard' && GM_getValue('DEFAULT_LEVEL',defaultOfDEFAULT_LEVEL) != 'standard'){
-                            ids.push(song.id)
-                        }
-                    })
-                    if(ids.length>0){
-                        weapiRequest("/api/song/enhance/player/url/v1", {
-                            type: "json",
-                            data: {
-                                ids: JSON.stringify(ids),
-                                level: GM_getValue('DEFAULT_LEVEL',defaultOfDEFAULT_LEVEL),
-                                encodeType: 'mp3'
-                            },
-                            onload: (resreget) => {
-                                let res = JSON.parse(resreget.response);
-                                res.data.forEach(song=>{
-                                    for(let i=0;i<content.data.length;i++){
-                                        if(song.id==content.data[i].id){
-                                            if(song.level!=content.data[i].level){
-                                                content.data[i].url=song.url
-                                                console.log(`歌曲${song.id}音质替换为${levelDesc(song.level)}`)
+                    let songId=content.data[0].id
+                    let targetLevel=GM_getValue('DEFAULT_LEVEL',defaultOfDEFAULT_LEVEL)
+                    if (content.data[0].type.toLowerCase() !== "mp3" && content.data[0].type.toLowerCase() !== "m4a") {
+                        content.data[0].type='mp3'
+                    }
+                    if(content.data[0].url){
+                        if(content.data[0].level=='standard' && targetLevel != 'standard'){
+                            if(targetLevel != 'standard'){
+                                let apiData= {
+                                    '/api/song/enhance/player/url/v1': JSON.stringify({
+                                        ids: JSON.stringify([songId]),
+                                        level: targetLevel,
+                                        encodeType: 'mp3'
+                                    }),
+                                }
+                                if(content.data[0].fee==0){
+                                    apiData['/api/song/enhance/download/url/v1']=JSON.stringify({
+                                        id:songId,
+                                        level: targetLevel,
+                                        encodeType: 'mp3'})
+                                }
+                                weapiRequest("/api/batch", {
+                                    type: "json",
+                                    data: apiData,
+                                    onload: (resreget) => {
+                                        let res = JSON.parse(resreget.response)
+                                        let songUrl=res['/api/song/enhance/player/url/v1'].data[0].url
+                                        let songLevel=res["/api/song/enhance/player/url/v1"].data[0].level
+                                        if(res['/api/song/enhance/download/url/v1']){
+                                            let songDLLevel=res["/api/song/enhance/download/url/v1"].data.level
+                                            if (res["/api/song/enhance/download/url/v1"].data.url && songDLLevel!=songLevel){
+                                                songUrl=res["/api/song/enhance/download/url/v1"].data.url
+                                                songLevel=songDLLevel
                                             }
-                                            break
                                         }
+                                        if(songLevel!='standard'){
+                                            content.data[0].url=songUrl
+                                            player.tipPlay(levelDesc(songLevel)+'音质')
+                                        }
+                                        response.response=JSON.stringify(content)
+                                        handler.next(response)
                                     }
                                 })
-                                response.response=JSON.stringify(content)
-                                handler.next(response)
                             }
-                        })
+                        }
+                        else{
+                            player.tipPlay(levelDesc(content.data[0].level)+'音质')
+                        }
                     }
                     else{
                         response.response=JSON.stringify(content)
