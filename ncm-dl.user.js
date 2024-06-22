@@ -2,7 +2,7 @@
 // @name			网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|听歌量打卡|高音质试听
 // @description		无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、快速完成300首听歌量打卡任务、选择更高音质试听(支持超清母带,默认无损)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.4.1
+// @version			3.5.0
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -32,6 +32,7 @@
     const defaultOfDEFAULT_LEVEL='jymaster'
     const uploadChunkSize=8*1024*1024
     const player=unsafeWindow.top.player
+    const songMark={explicit:1048576}
 
     function getcookie(key) {
         var cookies = document.cookie,
@@ -140,10 +141,10 @@
             return title
         }
         if(out=='artist-title'){
-            return `${artist}-${title}`
+            return `${artist} - ${title}`
         }
         if(out=='title-artist'){
-            return `${title}-${artist}`
+            return `${title} - ${artist}`
         }
     }
 
@@ -573,8 +574,8 @@
         if (cvrwrap) {
             let songId = new URLSearchParams(location.search).get('id')
             let songTitle = document.head.querySelector("[property~='og:title'][content]")?.content
-            let songArtist = document.head.querySelector("[property~='og:music:artist'][content]")?.content //split by /
-            let songAlbum = document.head.querySelector("[property~='og:music:album'][content]")?.content
+            let songArtist = document.head.querySelector("[property~='og:music:artist'][content]")?document.head.querySelector("[property~='og:music:artist'][content]").content.replaceAll('/',','):''
+            let songAlbum = document.head.querySelector("[property~='og:music:album'][content]")?document.head.querySelector("[property~='og:music:album'][content]"):''
             //songRedCount
             let songRedCountDiv = document.createElement('div');
             songRedCountDiv.className = "out s-fc3"
@@ -610,6 +611,15 @@
             cvrwrap.appendChild(lrcDownloadDiv)
             let lyricObj = {}
 
+            //songMark
+            let songMarkDiv = document.createElement('div');
+            songMarkDiv.className = "out s-fc3"
+            let songMarkP = document.createElement('p');
+            songMarkP.innerHTML = '<b>🅴：</b>内容含有不健康因素';
+            songMarkDiv.style.display = "none"
+            songMarkDiv.appendChild(songMarkP)
+            cvrwrap.appendChild(songMarkDiv)
+
             //wikiMemory
             let wikiMemoryDiv = document.createElement('div');
             wikiMemoryDiv.className = "out s-fc3"
@@ -638,8 +648,12 @@
                         },
                         onload: (responses) => {
                             //example songid:1914447186
-                            let res = JSON.parse(responses.response);
+                            let res = JSON.parse(responses.response)
                             //console.log(res)
+                            //脏标
+                            if((res["/api/v3/song/detail"].songs[0].mark & songMark.explicit) == songMark.explicit){
+                                songMarkDiv.style.display = "inline"
+                            }
                             let channel='pl'
                             let plLevel=res["/api/v3/song/detail"].privileges[0].plLevel
                             let dlLevel=res["/api/v3/song/detail"].privileges[0].dlLevel
@@ -649,7 +663,7 @@
                                 songWeight=Math.max(songWeight,levelWeight[dlLevel])
                             }
                             if (res["/api/v3/song/detail"].privileges[0].cs) {
-                                this.createDLButton(`云盘文件(${levelDesc(plLevel)})`,'standard',channel)
+                                this.createDLButton(`云盘文件(${levelDesc(plLevel)})`,'standard','pl')
                             }
                             else if(channel=='pl'){
                                 let songDetail=res["/api/song/music/detail/get"].data
@@ -714,7 +728,8 @@
                                     onload: function() {
                                         dlbtn.text = btntext
                                     },
-                                    onerror: function() {
+                                    onerror: function(e) {
+                                        console.error(e)
                                         dlbtn.text = btntext + ' 下载失败'
                                     }
                                 });
@@ -2513,7 +2528,6 @@ tr td:nth-child(3){
                     </div>
                     </div>`,
                     confirmButtonText: '上传',
-                    footer: '填写信息可用于网易云没有文件对应的歌曲信息的情况',
                     showCloseButton: true,
                     preConfirm: (level) => {
                         let files=document.getElementById('song-file').files
@@ -3101,7 +3115,8 @@ tr td:nth-child(3){
                                 onload: function() {
                                     //
                                 },
-                                onerror: function() {
+                                onerror: function(e) {
+                                    console.error(e)
                                     showTips('下载失败',2)
                                 }
                             })
@@ -3511,7 +3526,10 @@ tr td:nth-child(3){
 <label for="level-select" class="swal2-input-label">优先下载音质</label><select id="level-select" class="swal2-select"><option value="lossless">无损</option><option value="hires">Hi-Res</option><option value="jymaster" selected="">超清母带</option><option value="exhigh">极高</option></select>
 </div>
 <div id="my-out">
-<label for="out-select" class="swal2-input-label">文件命名格式</label><select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手-歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名-歌手</option></select>
+<label for="out-select" class="swal2-input-label">文件命名格式</label><select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手 - 歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名-歌手</option></select>
+</div>
+<div id="my-folder">
+<label for="out-folder" class="swal2-input-label">文件夹格式</label><select id="out-folder" class="swal2-select"><option value="none" selected="">不建立文件夹</option><option value="artist">建立歌手文件夹</option><option value="artist-album">建立歌手 \\ 专辑文件夹</option></select>
 </div>
 <div id="my-thread-count">
 <label for="thread-count-select" class="swal2-input-label">同时下载的歌曲数</label><select id="thread-count-select" class="swal2-select"><option value=4 selected="">4</option><option value=3>3</option><option value="2">2</option><option value=1>1</option></select>
@@ -3522,21 +3540,23 @@ tr td:nth-child(3){
                     footer:'<span>不消耗会员下载次数</span><a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
                     focusConfirm: false,
                     preConfirm: (level) => {
-                        return [
-                            document.getElementById('cb-fee0').checked,
-                            document.getElementById('cb-fee1').checked,
-                            document.getElementById('cb-fee4').checked,
-                            document.getElementById('cb-fee8').checked,
-                            document.getElementById('cb-skipcloud').checked,
-                            document.getElementById('level-select').value,
-                            document.getElementById('out-select').value,
-                            Number(document.getElementById('thread-count-select').value),
-                        ]
+                        let container = Swal.getHtmlContainer()
+                        return {
+                            free:container.querySelector('#cb-fee0').checked,
+                            VIP:container.querySelector('#cb-fee1').checked,
+                            pay:container.querySelector('#cb-fee4').checked,
+                            lowFree:container.querySelector('#cb-fee8').checked,
+                            skipCloud:container.querySelector('#cb-skipcloud').checked,
+                            level:container.querySelector('#level-select').value,
+                            out:container.querySelector('#out-select').value,
+                            folder:container.querySelector('#out-folder').value,
+                            threadCount:Number(container.querySelector('#thread-count-select').value),
+                            listType:pageType,
+                            action:'batchDownload'
+                        }
                     }
                 }).then(res=>{
-                    if(res.value[0].length==0) return
-                    let config={free:res.value[0],VIP:res.value[1],pay:res.value[2],lowFree:res.value[3],skipCloud:res.value[4],level:res.value[5],out:res.value[6],threadCount:res.value[7],listType:pageType,action:'batchDownload'}
-                    fetchSongList(config)
+                    fetchSongList(res.value)
                 })
             }
 
@@ -3566,7 +3586,7 @@ tr td:nth-child(3){
 <label for="level-select" class="swal2-input-label">优先转存音质</label><select id="level-select" class="swal2-select"><option value="lossless">无损</option><option value="hires">Hi-Res</option><option value="jymaster" selected="">超清母带</option><option value="exhigh">极高</option></select>
 </div>
 <div id="my-out">
-<label for="out-select" class="swal2-input-label">文件命名格式</label><select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手-歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名-歌手</option></select>
+<label for="out-select" class="swal2-input-label">文件命名格式</label><select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手 - 歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名-歌手</option></select>
 </div>
     `,
                     confirmButtonText: '开始转存',
@@ -3833,6 +3853,14 @@ tr td:nth-child(3){
                             let resData=content.data[0]||content.data
                             if (resData.url != null) {
                                 let fileFullName = nameFileWithoutExt(song.title,song.artist,config.out) + '.' + resData.type.toLowerCase()
+                                let folder = ''
+                                if(config.folder != 'none' && song.artist.length>0){
+                                    folder = song.artist + '/'
+                                }
+                                if(config.folder == 'artist-album' && song.album.length>0){
+                                    folder += song.album + '/'
+                                }
+                                fileFullName = folder + fileFullName
                                 let dlUrl = resData.url
                                 levelText.innerHTML = levelDesc(resData.level)
                                 sizeText.innerHTML = fileSizeDesc(resData.size)
@@ -3848,7 +3876,7 @@ tr td:nth-child(3){
                                         prText.innerHTML = `完成`
                                         downloadSongSub(threadIndex,songList,config)
                                     },
-                                    onerror: function() {
+                                    onerror: function(e) {
                                         if(song.retry){
                                             prText.innerHTML = `下载出错`
                                             config.errorSongTitles.push(song.title)
@@ -3858,6 +3886,7 @@ tr td:nth-child(3){
                                             song.retry=true
                                             songList.push(song)
                                         }
+                                        console.error(e)
                                         downloadSongSub(threadIndex,songList,config)
                                     }
                                 });
@@ -4206,9 +4235,22 @@ tr td:nth-child(3){
                     }
                 }
             }
+            //显示脏标
+            else if(pageType=='album'){
+                if(document.querySelector('.topblk')){
+                weapiRequest(`/api/v1/album/${listId}`, {
+                        type: "json",
+                        method: "POST",
+                        onload: (res)=> {
+                            let content = JSON.parse(res.response)
+                            if((content.album.mark & songMark.explicit) == songMark.explicit){
+                                document.querySelector('.topblk').innerHTML+=`<p class="intr"><b>🅴：</b>内容含有不健康因素</p>`
+                            }
+                        }
+                    })
+                }
+            }
         }
-
-
     }
     //高音质播放
     GM_registerMenuCommand(`优先试听音质`, setLevel)
