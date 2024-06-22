@@ -2,7 +2,7 @@
 // @name			网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|听歌量打卡|高音质试听
 // @description		无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、快速完成300首听歌量打卡任务、选择更高音质试听(支持超清母带,默认无损)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.5.0
+// @version			3.5.1
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -3529,7 +3529,7 @@ tr td:nth-child(3){
 <label for="out-select" class="swal2-input-label">文件命名格式</label><select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手 - 歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名-歌手</option></select>
 </div>
 <div id="my-folder">
-<label for="out-folder" class="swal2-input-label">文件夹格式</label><select id="out-folder" class="swal2-select"><option value="none" selected="">不建立文件夹</option><option value="artist">建立歌手文件夹</option><option value="artist-album">建立歌手 \\ 专辑文件夹</option></select>
+<label for="folder-select" class="swal2-input-label">文件夹格式</label><select id="folder-select" class="swal2-select"><option value="none" selected="">不建立文件夹</option><option value="artist">建立歌手文件夹</option><option value="artist-album">建立歌手 \\ 专辑文件夹</option></select>
 </div>
 <div id="my-thread-count">
 <label for="thread-count-select" class="swal2-input-label">同时下载的歌曲数</label><select id="thread-count-select" class="swal2-select"><option value=4 selected="">4</option><option value=3>3</option><option value="2">2</option><option value=1>1</option></select>
@@ -3549,7 +3549,7 @@ tr td:nth-child(3){
                             skipCloud:container.querySelector('#cb-skipcloud').checked,
                             level:container.querySelector('#level-select').value,
                             out:container.querySelector('#out-select').value,
-                            folder:container.querySelector('#out-folder').value,
+                            folder:container.querySelector('#folder-select').value,
                             threadCount:Number(container.querySelector('#thread-count-select').value),
                             listType:pageType,
                             action:'batchDownload'
