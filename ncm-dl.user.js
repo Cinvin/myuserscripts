@@ -2,7 +2,7 @@
 // @name			网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|听歌量打卡|高音质试听
 // @description		无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、快速完成300首听歌量打卡任务、选择更高音质试听(支持超清母带,默认无损)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.5.1
+// @version			3.5.2
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -14,7 +14,7 @@
 // @grant			GM_registerMenuCommand
 // @grant			unsafeWindow
 // @require			https://fastly.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js
-// @require			https://fastly.jsdelivr.net/npm/ajax-hook@3.0.1/dist/ajaxhook.min.js
+// @require			https://fastly.jsdelivr.net/npm/ajax-hook@3.0.3/dist/ajaxhook.min.js
 // @require			https://fastly.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js
 // @connect 45.127.129.8
 // @connect 126.net
@@ -654,38 +654,29 @@
                             if((res["/api/v3/song/detail"].songs[0].mark & songMark.explicit) == songMark.explicit){
                                 songMarkDiv.style.display = "inline"
                             }
-                            let channel='pl'
                             let plLevel=res["/api/v3/song/detail"].privileges[0].plLevel
                             let dlLevel=res["/api/v3/song/detail"].privileges[0].dlLevel
-                            let songWeight=levelWeight[plLevel]
-                            if(res["/api/v3/song/detail"].privileges[0].fee==0&&dlLevel!="none"&&plLevel!=dlLevel){
-                                channel='dl'
-                                songWeight=Math.max(songWeight,levelWeight[dlLevel])
-                            }
+                            let songPlWeight=levelWeight[plLevel] || 0
+                            let songDlWeight=levelWeight[dlLevel] || 0
+                            let songDetail=res["/api/song/music/detail/get"].data
                             if (res["/api/v3/song/detail"].privileges[0].cs) {
                                 this.createDLButton(`云盘文件(${levelDesc(plLevel)})`,'standard','pl')
                             }
-                            else if(channel=='pl'){
-                                let songDetail=res["/api/song/music/detail/get"].data
-                                if(songDetail.l && songWeight>=1) {let desc=`标准(${Math.round(songDetail.l.br/1000)}k/${fileSizeDesc(songDetail.l.size)})`;let level='standard';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.m && songWeight>=2) {let desc=`较高(${Math.round(songDetail.m.br/1000)}k/${fileSizeDesc(songDetail.m.size)})`;let level='higher';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.h && songWeight>=3) {let desc=`极高(${Math.round(songDetail.h.br/1000)}k/${fileSizeDesc(songDetail.h.size)})`;let level='exhigh';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.sq && songWeight>=4) {let desc=`无损(${Math.round(songDetail.sq.br/1000)}k/${fileSizeDesc(songDetail.sq.size)})`;let level='lossless';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.hr && songWeight>=4) {let desc=`Hi-Res(${Math.round(songDetail.hr.br/1000)}k/${songDetail.hr.sr/1000}kHz/${fileSizeDesc(songDetail.hr.size)})`;let level='hires';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.je && songWeight>=4) {let desc=`高清环绕声(${Math.round(songDetail.je.br/1000)}k/${songDetail.je.sr/1000}kHz/${fileSizeDesc(songDetail.je.size)})`;let level='jyeffect';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.sk && songWeight>=7) {let desc=`沉浸环绕声(${Math.round(songDetail.sk.br/1000)}k/${songDetail.sk.sr/1000}kHz/${fileSizeDesc(songDetail.sk.size)})`;let level='sky';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.jm && songWeight>=7) {let desc=`超清母带(${Math.round(songDetail.jm.br/1000)}k/${songDetail.jm.sr/1000}kHz/${fileSizeDesc(songDetail.jm.size)})`;let level='jymaster';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                            }
-                            else if(channel=='dl'){
-                                let songDetail=res["/api/song/music/detail/get"].data
-                                if(songDetail.l && songWeight>=1) {let desc=`标准(${Math.round(songDetail.l.br/1000)}k/${fileSizeDesc(songDetail.l.size)})`;let level='standard';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.m && songWeight>=2) {let desc=`较高(${Math.round(songDetail.m.br/1000)}k/${fileSizeDesc(songDetail.m.size)})`;let level='higher';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.h && songWeight>=3) {let desc=`极高(${Math.round(songDetail.h.br/1000)}k/${fileSizeDesc(songDetail.h.size)})`;let level='exhigh';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.sq && songWeight>=4) {let desc=`无损(${Math.round(songDetail.sq.br/1000)}k/${fileSizeDesc(songDetail.sq.size)})`;let level='lossless';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.hr && songWeight>=5) {let desc=`Hi-Res(${Math.round(songDetail.hr.br/1000)}k/${songDetail.hr.sr/1000}kHz/${fileSizeDesc(songDetail.hr.size)})`;let level='hires';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.je && songWeight>=6) {let desc=`高清环绕声(${Math.round(songDetail.je.br/1000)}k/${songDetail.je.sr/1000}kHz/${fileSizeDesc(songDetail.je.size)})`;let level='jyeffect';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.sk && songWeight>=7) {let desc=`沉浸环绕声(${Math.round(songDetail.sk.br/1000)}k/${songDetail.sk.sr/1000}kHz/${fileSizeDesc(songDetail.sk.size)})`;let level='sky';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
-                                if(songDetail.jm && songWeight>=8) {let desc=`超清母带(${Math.round(songDetail.jm.br/1000)}k/${songDetail.jm.sr/1000}kHz/${fileSizeDesc(songDetail.jm.size)})`;let level='jymaster';this.createDLButton(desc,level,channel);this.createULButton(desc,level,channel)}
+                            else{
+                                if(songDetail.l && songPlWeight>=1) {let desc=`标准(${Math.round(songDetail.l.br/1000)}k/${fileSizeDesc(songDetail.l.size)})`;let level='standard';this.createDLButton(desc,level,'pl');this.createULButton(desc,level,'pl')}
+                                if(songDetail.m && songPlWeight>=2) {let desc=`较高(${Math.round(songDetail.m.br/1000)}k/${fileSizeDesc(songDetail.m.size)})`;let level='higher';this.createDLButton(desc,level,'pl');this.createULButton(desc,level,'pl')}
+                                if(songDetail.h && songPlWeight>=3) {let desc=`极高(${Math.round(songDetail.h.br/1000)}k/${fileSizeDesc(songDetail.h.size)})`;let level='exhigh';this.createDLButton(desc,level,'pl');this.createULButton(desc,level,'pl')}
+                                if(songDetail.sq && songPlWeight>=4) {let desc=`无损(${Math.round(songDetail.sq.br/1000)}k/${fileSizeDesc(songDetail.sq.size)})`;let level='lossless';this.createDLButton(desc,level,'pl');this.createULButton(desc,level,'pl')}
+                                if(songDetail.hr && songPlWeight>=4) {let desc=`Hi-Res(${Math.round(songDetail.hr.br/1000)}k/${songDetail.hr.sr/1000}kHz/${fileSizeDesc(songDetail.hr.size)})`;let level='hires';this.createDLButton(desc,level,'pl');this.createULButton(desc,level,'pl')}
+                                if(songDetail.je && songPlWeight>=4) {let desc=`高清环绕声(${Math.round(songDetail.je.br/1000)}k/${songDetail.je.sr/1000}kHz/${fileSizeDesc(songDetail.je.size)})`;let level='jyeffect';this.createDLButton(desc,level,'pl');this.createULButton(desc,level,'pl')}
+                                if(songDetail.sk && songPlWeight>=7) {let desc=`沉浸环绕声(${Math.round(songDetail.sk.br/1000)}k/${songDetail.sk.sr/1000}kHz/${fileSizeDesc(songDetail.sk.size)})`;let level='sky';this.createDLButton(desc,level,'pl');this.createULButton(desc,level,'pl')}
+                                if(songDetail.jm && songPlWeight>=7) {let desc=`超清母带(${Math.round(songDetail.jm.br/1000)}k/${songDetail.jm.sr/1000}kHz/${fileSizeDesc(songDetail.jm.size)})`;let level='jymaster';this.createDLButton(desc,level,'pl');this.createULButton(desc,level,'pl')}
+                                if(songDlWeight > songPlWeight && res["/api/v3/song/detail"].privileges[0].fee == 0){
+                                    if(songDetail.m && songDlWeight>=2 && songPlWeight<2) {let desc=`较高(${Math.round(songDetail.m.br/1000)}k/${fileSizeDesc(songDetail.m.size)})`;let level='higher';this.createDLButton(desc,level,'dl');this.createULButton(desc,level,'dl')}
+                                    if(songDetail.h && songDlWeight>=3 && songPlWeight<3) {let desc=`极高(${Math.round(songDetail.h.br/1000)}k/${fileSizeDesc(songDetail.h.size)})`;let level='exhigh';this.createDLButton(desc,level,'dl');this.createULButton(desc,level,'dl')}
+                                    if(songDetail.sq && songDlWeight>=4 && songPlWeight<4) {let desc=`无损(${Math.round(songDetail.sq.br/1000)}k/${fileSizeDesc(songDetail.sq.size)})`;let level='lossless';this.createDLButton(desc,level,'dl');this.createULButton(desc,level,'dl')}
+                                    if(songDetail.hr && songDlWeight>=5 && songPlWeight<5) {let desc=`Hi-Res(${Math.round(songDetail.hr.br/1000)}k/${songDetail.hr.sr/1000}kHz/${fileSizeDesc(songDetail.hr.size)})`;let level='hires';this.createDLButton(desc,level,'dl');this.createULButton(desc,level,'dl')}
+                                }
                             }
                         }
                     })
@@ -3635,7 +3626,7 @@ tr td:nth-child(3){
                                         if(content.privileges[j].fee==4&&!config.pay) break
                                         if(content.privileges[j].fee==8&&!config.lowFree) break
                                         let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.playlist.tracks[i].id]), level: config.level, encodeType: 'mp3'}}
-                                        if (content.privileges[j].fee==0&&content.privileges[j].dlLevel!="none"&&content.privileges[j].plLevel!=content.privileges[j].dlLevel) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.playlist.tracks[i].id, level: config.level, encodeType: 'mp3'}}
+                                        if (content.privileges[j].fee==0&&(levelWeight[content.privileges[j].plLevel] || 99) < (levelWeight[content.privileges[j].dlLevel] || -1)) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.playlist.tracks[i].id, level: config.level, encodeType: 'mp3'}}
                                         let songItem={api:api,id:content.playlist.tracks[i].id,title:content.playlist.tracks[i].name,artist:getArtistTextInSongDetail(content.playlist.tracks[i]),album:getAlbumTextInSongDetail(content.playlist.tracks[i])}
                                         songList.push(songItem)
                                         break
@@ -3678,7 +3669,7 @@ tr td:nth-child(3){
                                 if(content.songs[i].privilege.fee==4&&!config.pay) continue
                                 if(content.songs[i].privilege.fee==8&&!config.lowFree) continue
                                 let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.songs[i].id]), level: config.level, encodeType: 'mp3'}}
-                                if (content.songs[i].privilege.fee==0&&content.songs[i].privilege.dlLevel!="none"&&content.songs[i].privilege.plLevel!=content.songs[i].privilege.dlLevel) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
+                                if (content.songs[i].privilege.fee==0&&(levelWeight[content.songs[i].privilege.plLevel] || 99) < (levelWeight[content.songs[i].privilege.dlLevel] || -1)) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
                                 let songItem={api:api,id:content.songs[i].id,title:content.songs[i].name,artist:getArtistTextInSongDetail(content.songs[i]),album:getAlbumTextInSongDetail(content.songs[i])}
                                 songList.push(songItem)
                             }
@@ -3723,7 +3714,7 @@ tr td:nth-child(3){
                                     if(content.privileges[j].fee==4&&!config.pay) break
                                     if(content.privileges[j].fee==8&&!config.lowFree) break
                                     let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.songs[i].id]), level: config.level, encodeType: 'mp3'}}
-                                    if (content.privileges[j].fee==0&&content.privileges[j].dlLevel!="none"&&content.privileges[j].plLevel!=content.privileges[j].dlLevel) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
+                                    if (content.privileges[j].fee==0&&(levelWeight[content.privileges[j].plLevel] || 99) < (levelWeight[content.privileges[j].dlLevel] || -1)) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
                                     let songItem={api:api,id:content.songs[i].id,title:content.songs[i].name,artist:getArtistTextInSongDetail(content.songs[i]),album:getAlbumTextInSongDetail(content.songs[i])}
                                     songList.push(songItem)
                                     break
@@ -4293,7 +4284,7 @@ tr td:nth-child(3){
                                 if(content.data[0].fee==0){
                                     apiData['/api/song/enhance/download/url/v1']=JSON.stringify({
                                         id:songId,
-                                        level: targetLevel,
+                                        level: levelWeight[targetLevel]>levelWeight.hires?'hires':targetLevel,
                                         encodeType: 'mp3'})
                                 }
                                 weapiRequest("/api/batch", {
@@ -4305,7 +4296,7 @@ tr td:nth-child(3){
                                         let songLevel=res["/api/song/enhance/player/url/v1"].data[0].level
                                         if(res['/api/song/enhance/download/url/v1']){
                                             let songDLLevel=res["/api/song/enhance/download/url/v1"].data.level
-                                            if (res["/api/song/enhance/download/url/v1"].data.url && songDLLevel!=songLevel){
+                                            if (res["/api/song/enhance/download/url/v1"].data.url && (levelWeight[songDLLevel] || -1)>(levelWeight[songLevel] || 99)){
                                                 songUrl=res["/api/song/enhance/download/url/v1"].data.url
                                                 songLevel=songDLLevel
                                             }
