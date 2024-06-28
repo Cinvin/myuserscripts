@@ -2,7 +2,7 @@
 // @name			网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|听歌量打卡|高音质试听
 // @description		无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、快速完成300首听歌量打卡任务、选择更高音质试听(支持超清母带,默认无损)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.5.3
+// @version			3.5.4
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -3669,7 +3669,7 @@ tr td:nth-child(3){
                                 if(content.songs[i].privilege.fee==4&&!config.pay) continue
                                 if(content.songs[i].privilege.fee==8&&!config.lowFree) continue
                                 let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.songs[i].id]), level: config.level, encodeType: 'mp3'}}
-                                if (content.songs[i].privilege.fee==0&&(levelWeight[content.privileges[i].plLevel] || 99) < (levelWeight[content.privileges[i].dlLevel] || -1)) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
+                                if (content.songs[i].privilege.fee==0&&(levelWeight[content.songs[i].privilege.plLevel] || 99) < (levelWeight[content.songs[i].privilege.dlLevel] || -1)) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
                                 let songItem={api:api,id:content.songs[i].id,title:content.songs[i].name,artist:getArtistTextInSongDetail(content.songs[i]),album:getAlbumTextInSongDetail(content.songs[i])}
                                 songList.push(songItem)
                             }
