@@ -2,7 +2,7 @@
 // @name			网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|听歌量打卡|高音质试听
 // @description		无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、快速完成300首听歌量打卡任务、选择更高音质试听(支持超清母带,默认无损)、歌单歌曲排序(时间、红心数、评论数)、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @namespace	https://github.com/Cinvin/myuserscripts
-// @version			3.5.2
+// @version			3.5.3
 // @author			cinvin
 // @license			MIT
 // @match			https://music.163.com/*
@@ -574,8 +574,8 @@
         if (cvrwrap) {
             let songId = new URLSearchParams(location.search).get('id')
             let songTitle = document.head.querySelector("[property~='og:title'][content]")?.content
-            let songArtist = document.head.querySelector("[property~='og:music:artist'][content]")?document.head.querySelector("[property~='og:music:artist'][content]").content.replaceAll('/',','):''
-            let songAlbum = document.head.querySelector("[property~='og:music:album'][content]")?document.head.querySelector("[property~='og:music:album'][content]"):''
+            // let songArtist = document.head.querySelector("[property~='og:music:artist'][content]")?document.head.querySelector("[property~='og:music:artist'][content]").content.replaceAll('/',','):''
+            // let songAlbum = document.head.querySelector("[property~='og:music:album'][content]")?document.head.querySelector("[property~='og:music:album'][content]"):''
             //songRedCount
             let songRedCountDiv = document.createElement('div');
             songRedCountDiv.className = "out s-fc3"
@@ -632,12 +632,8 @@
 
             //songDownload
             class SongFetch {
-                constructor(songId, title, artists, album) {
+                constructor(songId) {
                     this.songId = songId;
-                    this.title = title;
-                    this.artists = artists
-                    this.album = album
-                    this.filename = nameFileWithoutExt(songTitle,songArtist,'artist-title')
                 };
                 getNCMSource() {
                     weapiRequest("/api/batch", {
@@ -654,6 +650,10 @@
                             if((res["/api/v3/song/detail"].songs[0].mark & songMark.explicit) == songMark.explicit){
                                 songMarkDiv.style.display = "inline"
                             }
+                            this.title=res["/api/v3/song/detail"].songs[0].name
+                            this.album=getAlbumTextInSongDetail(res["/api/v3/song/detail"].songs[0])
+                            this.artist=getArtistTextInSongDetail(res["/api/v3/song/detail"].songs[0])
+                            this.filename = nameFileWithoutExt(this.title,this.artist,'artist-title')
                             let plLevel=res["/api/v3/song/detail"].privileges[0].plLevel
                             let dlLevel=res["/api/v3/song/detail"].privileges[0].dlLevel
                             let songPlWeight=levelWeight[plLevel] || 0
@@ -707,7 +707,7 @@
                             let resData=content.data[0]||content.data
                             if (resData.url != null) {
                                 //console.log(content)
-                                let fileFullName = nameFileWithoutExt(songTitle,songArtist,'artist-title') + '.' + resData.type.toLowerCase()
+                                let fileFullName = this.filename + '.' + resData.type.toLowerCase()
                                 let url = resData.url
                                 let btntext = dlbtn.text
                                 GM_download({
@@ -740,7 +740,7 @@
                     if(channel=='dl') data={ id: songId, level: level, encodeType: 'mp3'}
                     let api={url:apiUrl,data:data}
                     //song:{api:{url,data},id,title,artist,album}
-                    let songItem={api:api,id:this.songId,title:this.title,artist:this.artists,album:this.album}
+                    let songItem={api:api,id:this.songId,title:this.title,artist:this.artist,album:this.album}
                     let btn = document.createElement('a');
                     btn.text = desc;
                     btn.className = "des s-fc7"
@@ -754,7 +754,7 @@
                 };
             }
 
-            let songFetch = new SongFetch(songId, songTitle, songArtist, songAlbum)
+            let songFetch = new SongFetch(songId)
 
             //wyy可播放
             if (!document.querySelector(".u-btni-play-dis")) {
@@ -3669,7 +3669,7 @@ tr td:nth-child(3){
                                 if(content.songs[i].privilege.fee==4&&!config.pay) continue
                                 if(content.songs[i].privilege.fee==8&&!config.lowFree) continue
                                 let api={url:'/api/song/enhance/player/url/v1',data:{ ids:JSON.stringify([content.songs[i].id]), level: config.level, encodeType: 'mp3'}}
-                                if (content.songs[i].privilege.fee==0&&(levelWeight[content.songs[i].privilege.plLevel] || 99) < (levelWeight[content.songs[i].privilege.dlLevel] || -1)) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
+                                if (content.songs[i].privilege.fee==0&&(levelWeight[content.privileges[i].plLevel] || 99) < (levelWeight[content.privileges[i].dlLevel] || -1)) api={url:'/api/song/enhance/download/url/v1',data:{ id:content.songs[i].id, level: config.level, encodeType: 'mp3'}}
                                 let songItem={api:api,id:content.songs[i].id,title:content.songs[i].name,artist:getArtistTextInSongDetail(content.songs[i]),album:getAlbumTextInSongDetail(content.songs[i])}
                                 songList.push(songItem)
                             }
