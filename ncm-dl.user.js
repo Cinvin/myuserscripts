@@ -51,20 +51,24 @@
     function weapiRequest(url, config) {
         let data = config.data || {}
         data.csrf_token = getcookie("__csrf");
-        url = url.replace("api", "weapi");
-        config.method = "post";
-        if(!config.cookie) config.cookie = 'os=android;appver=8.20.30'
-        config.headers = {
-            "content-type": "application/x-www-form-urlencoded",
-        }
-        var encRes = unsafeWindow.asrsea(
+        let encRes = unsafeWindow.asrsea(
             JSON.stringify(data),
             "010001",
             "00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7",
             "0CoJUm6Qyw8W8jud");
-        config.data = `params=${ encodeURIComponent(encRes.encText) }&encSecKey=${ encodeURIComponent(encRes.encSecKey) }`
-		config.url = url + `?csrf_token=${data.csrf_token}`
-		GM_xmlhttpRequest(config)
+        let details={
+            url:url.replace("api", "weapi") + `?csrf_token=${data.csrf_token}`,
+            method:"POST",
+            responseType:"json",
+            headers:{
+                "content-type": "application/x-www-form-urlencoded",
+            },
+            cookie: config.cookie || 'os=android;appver=8.20.30',
+            data: `params=${ encodeURIComponent(encRes.encText) }&encSecKey=${ encodeURIComponent(encRes.encSecKey) }`,
+            onload:res=>{ config.onload(res.response)},
+            onerror:config.onerror,
+        }
+        GM_xmlhttpRequest(details)
     }
     function showConfirmBox(msg) {
         Swal.fire({
@@ -170,11 +174,9 @@
         uploadSong(song) {
             try{
                 weapiRequest(song.api.url, {
-                    type: "json",
                     data: song.api.data,
-                    onload: (responses) => {
+                    onload: (content) => {
                         showTips(`(1/6)${song.title} 获取文件信息完成`,1)
-                        let content = JSON.parse(responses.response);
                         //console.log(content)
                         let resData=content.data[0]||content.data
                         if (resData.url != null) {
@@ -192,14 +194,11 @@
                                 fileSize:song.size,
                             }]
                             weapiRequest("/api/cloud/upload/check/v2", {
-                                method: "POST",
-                                type: "json",
                                 data: {
                                     uploadType: 0,
                                     songs: JSON.stringify(songCheckData),
                                 },
-                                onload: (responses1) => {
-                                    let res1 = JSON.parse(responses1.response)
+                                onload: (res1) => {
                                     console.log(song.title, '1.检查资源', res1)
                                     if (res1.code != 200 || res1.data.length<1) {
                                         this.uploadSongFail(song)
@@ -250,14 +249,11 @@
             //step2 导入歌曲
             try{
                 weapiRequest("/api/cloud/user/song/import", {
-                    method: "POST",
-                    type: "json",
                     data: {
                         uploadType: 0,
                         songs: JSON.stringify(importSongData),
                     },
-                    onload: (responses) => {
-                        let res=JSON.parse(responses.response)
+                    onload: (res) => {
                         console.log(song.title, '2.导入文件', res)
                         if (res.code != 200 || res.data.successSongs.length<1) {
                             console.error(song.title, '2.导入文件', res)
@@ -282,8 +278,6 @@
         uploadSongWay2Part1(song){
             try{
                 weapiRequest("/api/nos/token/alloc", {
-                    method: "POST",
-                    type: "json",
                     data: {
                         filename: song.fileFullName,
                         length: song.size,
@@ -294,8 +288,7 @@
                         nos_product: 3,
                         md5: song.md5
                     },
-                    onload: (responses2) => {
-                        let res2 = JSON.parse(responses2.response)
+                    onload: (res2) => {
                         if (res2.code != 200) {
                             console.error(song.title, '2.获取令牌', res2)
                             this.uploadSongFail(song)
@@ -334,8 +327,6 @@
                         let buffer=response.response
                         //step2 上传令牌
                         weapiRequest("/api/nos/token/alloc", {
-                            method: "POST",
-                            type: "json",
                             data: {
                                 filename: song.fileFullName,
                                 length: song.size,
@@ -346,8 +337,7 @@
                                 nos_product: 3,
                                 md5: song.md5
                             },
-                            onload: (responses2) => {
-                                let tokenRes=JSON.parse(responses2.response)
+                            onload: (tokenRes) => {
                                 song.token=tokenRes.result.token
                                 song.objectKey = tokenRes.result.objectKey
                                 console.log(song.title, '2.2.开始上传', tokenRes)
@@ -401,8 +391,6 @@
         uploadSongWay3Part1(song){
             try{
                 weapiRequest("/api/nos/token/alloc", {
-                    method: "POST",
-                    type: "json",
                     data: {
                         filename: song.fileFullName,
                         length: song.size,
@@ -413,8 +401,7 @@
                         nos_product: 3,
                         md5: song.md5
                     },
-                    onload: (responses2) => {
-                        let res2 = JSON.parse(responses2.response)
+                    onload: (res2) => {
                         if (res2.code != 200) {
                             console.error(song.title, '2.获取令牌', res2)
                             this.uploadSongFail(song)
@@ -441,8 +428,6 @@
             try{
                 console.log(song)
                 weapiRequest("/api/upload/cloud/info/v2", {
-                    method: "POST",
-                    type: "json",
                     data: {
                         md5: song.md5,
                         songid: song.cloudId,
@@ -453,8 +438,7 @@
                         bitrate: String(song.bitrate),
                         resourceId: song.resourceId,
                     },
-                    onload: (responses3) => {
-                        let res3 = JSON.parse(responses3.response)
+                    onload: (res3) => {
                         if (res3.code != 200) {
                             if(song.expireTime<Date.now()||(res3.msg&&res3.msg.includes('rep create failed'))){
                                 console.error(song.title, '3.提交文件', res3)
@@ -473,13 +457,10 @@
                         showTips(`(5/6)${song.title} 提交文件完成`,1)
                         //step4 发布
                         weapiRequest("/api/cloud/pub/v2", {
-                            method: "POST",
-                            type: "json",
                             data: {
                                 songid: res3.songId,
                             },
-                            onload: (responses4) => {
-                                let res4 = JSON.parse(responses4.response)
+                            onload: (res4) => {
                                 if (res4.code != 200 && res4.code != 201) {
                                     console.error(song.title, '4.发布资源', res4)
                                     this.uploadSongFail(song)
@@ -511,15 +492,11 @@
             //step5 关联
             if (song.cloudSongId != song.id) {
                 weapiRequest("/api/cloud/user/song/match", {
-                    method: "POST",
-                    type: "json",
-                    sync: true,
                     data: {
                         songId: song.cloudSongId,
                         adjustSongId: song.id,
                     },
-                    onload: (responses5) => {
-                        let res5 = JSON.parse(responses5.response)
+                    onload: (res5) => {
                         if (res5.code != 200) {
                             console.error(song.title, '5.匹配歌曲', res5)
                             this.uploadSongFail(song)
@@ -637,14 +614,12 @@
                 };
                 getNCMSource() {
                     weapiRequest("/api/batch", {
-                        type: "json",
                         data: {
                             '/api/v3/song/detail': JSON.stringify({c: JSON.stringify([{ 'id': songId}])}),
                             '/api/song/music/detail/get': JSON.stringify({'songId':songId,'immerseType': 'ste'}),
                         },
-                        onload: (responses) => {
+                        onload: (res) => {
                             //example songid:1914447186
-                            let res = JSON.parse(responses.response)
                             //console.log(res)
                             //脏标
                             if((res["/api/v3/song/detail"].songs[0].mark & songMark.explicit) == songMark.explicit){
@@ -700,10 +675,8 @@
                     let data={ ids: JSON.stringify([songId]),level: level,encodeType: 'mp3'}
                     if(channel=='dl') data={ id: songId, level: level, encodeType: 'mp3'}
                     weapiRequest(api, {
-                        type: "json",
                         data: data,
-                        onload: (responses) => {
-                            let content = JSON.parse(responses.response);
+                        onload: (content) => {
                             let resData=content.data[0]||content.data
                             if (resData.url != null) {
                                 //console.log(content)
@@ -763,7 +736,6 @@
 
             //lyric
             weapiRequest("/api/song/lyric", {
-                type: "json",
                 data: {
                     id: songId,
                     tv: -1,
@@ -771,8 +743,7 @@
                     rv: -1,
                     kv: -1,
                 },
-                onload: function(responses) {
-                    let content = JSON.parse(responses.response)
+                onload: function(content) {
                     lyricObj = content
                     let lrc = document.createElement('a');
                     lrc.text = '下载';
@@ -788,12 +759,10 @@
 
             //wiki
             weapiRequest("/api/song/play/about/block/page", {
-                type: "json",
                 data: {
                     songId: songId,
                 },
-                onload: function(responses) {
-                    let content = JSON.parse(responses.response)
+                onload: function(content) {
                     //console.log(content)
                     if (content.data.blocks[0].creatives.length > 0) {
                         content.data.blocks.forEach(block => {
@@ -818,12 +787,10 @@
 
             //redccount
             weapiRequest("/api/song/red/count", {
-                type: "json",
                 data: {
                     songId: songId,
                 },
-                onload: function(responses) {
-                    let content = JSON.parse(responses.response)
+                onload: function(content) {
                     //console.log(content)
                     songRedCountP.innerHTML += content.data.count
                     songRedCountDiv.style.display = "inline"
@@ -881,20 +848,17 @@
                     })
                 }
                 weapiRequest('/api/feedback/weblog', {
-                    type: "json",
-                    method: "POST",
                     cookie:'os=pc;appver=2.9.7',
                     data: {
                         logs: JSON.stringify(logs)
                     },
-                    onload: (responses) => {
-                        let res = JSON.parse(responses.response)
+                    onload: (res) => {
                         //console.log(res1)
                         if (res.code == 200) {
                             showConfirmBox('今日听歌量+300首完成')
                         }
                         else{
-                            showConfirmBox('听歌量打卡失败。'+responses.response)
+                            showConfirmBox('听歌量打卡失败。'+res)
                         }
                     }
                 })
@@ -1187,14 +1151,10 @@ tr td:nth-child(3){
                     this.popupObj.tbody.innerHTML = `正在获取第${startIndex+1}到${Math.min(ids.length,startIndex+1000)}首歌曲信息...`
 					let uploader = this
                     weapiRequest("/api/v3/song/detail", {
-                        type: "json",
-                        method: "post",
-                        sync: true,
                         data: {
                             c: JSON.stringify(ids.slice(startIndex, startIndex + 1000))
                         },
-                        onload: function(responses) {
-                            let content = JSON.parse(responses.response)
+                        onload: function(content) {
                             //console.log(content)
                             let songslen = content.songs.length
                             let privilegelen = content.privileges.length
@@ -1373,14 +1333,11 @@ tr td:nth-child(3){
                             fileSize:song.size,
                         }]
                         weapiRequest("/api/cloud/upload/check/v2", {
-                            method: "POST",
-                            type: "json",
                             data: {
                                 uploadType: 0,
                                 songs: JSON.stringify(songCheckData),
                             },
-                            onload: (responses1) => {
-                                let res1 = JSON.parse(responses1.response)
+                            onload: (res1) => {
                                 if (res1.code != 200) {
                                     console.error(song.name, '1.检查资源', res1)
                                     uploader.onUploadFail(songIndex)
@@ -1434,14 +1391,11 @@ tr td:nth-child(3){
                     //step2 导入歌曲
                     try{
                         weapiRequest("/api/cloud/user/song/import", {
-                            method: "POST",
-                            type: "json",
                             data: {
                                 uploadType: 0,
                                 songs: JSON.stringify(importSongData),
                             },
-                            onload: (responses) => {
-                                let res=JSON.parse(responses.response)
+                            onload: (res) => {
                                 if (res.code != 200 || res.data.successSongs.length<1) {
                                     console.error(song.name, '2.导入文件', res)
                                     uploader.onUploadFail(songIndex)
@@ -1467,8 +1421,6 @@ tr td:nth-child(3){
                     let uploader = this
                     try{
                         weapiRequest("/api/nos/token/alloc", {
-                            method: "POST",
-                            type: "json",
                             data: {
                                 filename: song.filename,
                                 length: song.size,
@@ -1479,8 +1431,7 @@ tr td:nth-child(3){
                                 nos_product: 3,
                                 md5: song.md5
                             },
-                            onload: (responses2) => {
-                                let tokenRes=JSON.parse(responses2.response)
+                            onload: (tokenRes) => {
                                 song.token=tokenRes.result.token
                                 song.objectKey = tokenRes.result.objectKey
                                 song.resourceId=tokenRes.result.resourceId
@@ -1503,8 +1454,6 @@ tr td:nth-child(3){
                     let song = this.songs[songIndex]
                     let uploader = this
                     weapiRequest("/api/upload/cloud/info/v2", {
-                        method: "POST",
-                        type: "json",
                         data: {
                             md5: song.md5,
                             songid: song.cloudId,
@@ -1515,8 +1464,7 @@ tr td:nth-child(3){
                             bitrate: String(song.bitrate||128),
                             resourceId: song.resourceId,
                         },
-                        onload: (responses3) => {
-                            let res3 = JSON.parse(responses3.response)
+                        onload: (res3) => {
                             if (res3.code != 200) {
                                 if(song.expireTime<Date.now()||(res3.msg&&res3.msg.includes('rep create failed'))){
                                     console.error(song.name, '3.提交文件', res3)
@@ -1533,13 +1481,10 @@ tr td:nth-child(3){
                             console.log(song.name, '3.提交文件', res3)
                             //step4 发布
                             weapiRequest("/api/cloud/pub/v2", {
-                                method: "POST",
-                                type: "json",
                                 data: {
                                     songid: res3.songId,
                                 },
-                                onload: (responses4) => {
-                                    let res4 = JSON.parse(responses4.response)
+                                onload: (res4) => {
                                     if (res4.code != 200 && res4.code != 201) {
                                         console.error(song.name, '4.发布资源', res4)
                                         uploader.onUploadFail(songIndex)
@@ -1567,15 +1512,11 @@ tr td:nth-child(3){
                     let uploader = this
                     if (song.cloudSongId != song.id && song.id > 0) {
                         weapiRequest("/api/cloud/user/song/match", {
-                            method: "POST",
-                            type: "json",
-                            sync: true,
                             data: {
                                 songId: song.cloudSongId,
                                 adjustSongId: song.id,
                             },
-                            onload: (responses5) => {
-                                let res5 = JSON.parse(responses5.response)
+                            onload: (res5) => {
                                 if (res5.code != 200) {
                                     console.error(song.name, '5.匹配歌曲', res5)
                                     uploader.onUploadFail(songIndex)
@@ -1767,14 +1708,11 @@ tr td:nth-child(3){
                     this.controls.tbody.innerHTML = '正在获取...'
                     let matcher = this
                     weapiRequest('/api/v1/cloud/get', {
-                        method: "POST",
-                        type: "json",
                         data: {
                             limit: this.cloudCountLimit,
                             offset: offset,
                         },
-                        onload: (responses) => {
-                            let res = JSON.parse(responses.response)
+                        onload: (res) => {
                             //console.log(res)
                             matcher.currentPage = (offset / this.cloudCountLimit) + 1
                             let maxPage = Math.ceil(res.count / this.cloudCountLimit)
@@ -1869,15 +1807,11 @@ tr td:nth-child(3){
                         this.filter.songs = []
                     }
                     weapiRequest('/api/v1/cloud/get', {
-                        method: "POST",
-                        type: "json",
                         data: {
                             limit: 1000,
                             offset: offset,
                         },
-                        onload: (responses) => {
-                            let res = JSON.parse(responses.response)
-                            responses = {}
+                        onload: (res) => {
                             matcher.controls.tbody.innerHTML = `正在搜索第${offset+1}到${Math.min(offset+1000,res.count)}云盘歌曲`
 							res.data.forEach(song => {
                                 if (matcher.filter.text.length > 0) {
@@ -1965,15 +1899,13 @@ tr td:nth-child(3){
                         didOpen: () => {
                             let titleDOM = Swal.getTitle()
                             weapiRequest("/api/song/enhance/player/url/v1", {
-                                type: "json",
                                 data: {
                                     immerseType:'ste',
                                     ids: JSON.stringify([song.simpleSong.id]),
                                     level: 'standard',
                                     encodeType: 'mp3'
                                 },
-                                onload: (responses) => {
-                                    let content = JSON.parse(responses.response)
+                                onload: (content) => {
                                     titleDOM.innerHTML+=' 文件时长'+duringTimeDesc(content.data[0].time)
                                 }
                             })
@@ -1984,16 +1916,12 @@ tr td:nth-child(3){
                             let fromId = song.simpleSong.id
                             let toId = result.value
                             weapiRequest("/api/cloud/user/song/match", {
-                                method: "POST",
-                                type: "json",
-                                sync: true,
                                 data: {
                                     songId: fromId,
                                     adjustSongId: toId,
                                 },
-                                onload: (responses) => {
-                                    let res = JSON.parse(responses.response)
-                                    console.log(res)
+                                onload: (res) => {
+                                    //console.log(res)
                                     if (res.code != 200) {
                                         showTips(res.message || res.msg || '匹配失败', 2)
                                     } else {
@@ -2061,10 +1989,7 @@ tr td:nth-child(3){
             }
             function checkVIPBeforeUpgrade(level) {
                 weapiRequest(`/api/v1/user/detail/${urlUserId}`, {
-                    method: "POST",
-                    type: "json",
-                    onload: (responses) => {
-                        let res = JSON.parse(responses.response)
+                    onload: (res) => {
                         if (res.profile.vipType<=10){
                             showConfirmBox('当前不是会员,无法获取无损以上音源,领取个会员礼品卡再来吧。')
                         }
@@ -2213,15 +2138,11 @@ tr td:nth-child(3){
                 fetchCloudSongInfoSub(offset,songIds) {
                     let upgrader = this
                     weapiRequest('/api/v1/cloud/get', {
-                        method: "POST",
-                        type: "json",
                         data: {
                             limit: 1000,
                             offset: offset,
                         },
-                        onload: (responses) => {
-                            let res = JSON.parse(responses.response)
-                            responses = {}
+                        onload: (res) => {
                             upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset+1}到${Math.min(offset+1000,res.count)}云盘歌曲`
 							res.data.forEach(song => {
                                 if (song.simpleSong.privilege.toast) return
@@ -2252,14 +2173,10 @@ tr td:nth-child(3){
                         return
                     }
                     weapiRequest("/api/v3/song/detail", {
-                        type: "json",
-                        method: "post",
-                        sync: true,
                         data: {
                             c: JSON.stringify(songIds.slice(offset, offset + 1000))
                         },
-                        onload: function(responses) {
-                            let content = JSON.parse(responses.response)
+                        onload: function(content) {
                             let songlen = content.songs.length
                             let privilegelen = content.privileges.length
                             for (let i = 0; i < songlen; i++) {
@@ -2387,15 +2304,11 @@ tr td:nth-child(3){
                     let upgrade = this
                     try {
                         weapiRequest("/api/cloud/user/song/match", {
-                            method: "POST",
-                            type: "json",
-                            sync: true,
                             data: {
                                 songId: song.id,
                                 adjustSongId: 0,
                             },
-                            onload: (responses) => {
-                                let res = JSON.parse(responses.response)
+                            onload: (res) => {
                                 console.log(res)
                                 if (res.code == 200) {
                                     showTips(`${song.name}解绑成功`, 1)
@@ -2419,15 +2332,11 @@ tr td:nth-child(3){
                     let song = ULsong.Upgrader.songs[ULsong.songIndex]
                     try {
                         weapiRequest("/api/cloud/user/song/match", {
-                            method: "POST",
-                            type: "json",
-                            sync: true,
                             data: {
                                 songId: song.originalId,
                                 adjustSongId: song.id,
                             },
-                            onload: (responses) => {
-                                let res = JSON.parse(responses.response)
+                            onload: (res) => {
                                 console.log(res)
                                 if (res.code != 200) {
                                     showTips(`${song.name} 重新关联失败`, 2)
@@ -2445,9 +2354,6 @@ tr td:nth-child(3){
                     let song = ULsong.Upgrader.songs[ULsong.songIndex]
                     try {
                         weapiRequest("/api/cloud/del", {
-                            method: "POST",
-                            type: "json",
-                            sync: true,
                             data: {
                                 songIds: [song.originalId],
                             },
@@ -2701,8 +2607,6 @@ tr td:nth-child(3){
                             song.md5 = md5sum.finalize().toString()
                             try{
                                 weapiRequest("/api/cloud/upload/check", {
-                                    method: "POST",
-                                    type: "json",
                                     data: {
                                         songId: 0,
                                         md5: song.md5,
@@ -2711,8 +2615,7 @@ tr td:nth-child(3){
                                         version: 1,
                                         bitrate: song.bitrate,
                                     },
-                                    onload: (responses1) => {
-                                        let res1 = JSON.parse(responses1.response)
+                                    onload: (res1) => {
                                         console.log(song.title, '1.检查资源', res1)
                                         if (res1.code != 200) {
                                             console.error(song.title, '1.检查资源', res1)
@@ -2722,8 +2625,6 @@ tr td:nth-child(3){
                                         song.cloudId=res1.songId
                                         song.needUpload=res1.needUpload
                                         weapiRequest("/api/nos/token/alloc", {
-                                            method: "POST",
-                                            type: "json",
                                             data: {
                                                 filename: song.title,
                                                 length: song.size,
@@ -2734,17 +2635,15 @@ tr td:nth-child(3){
                                                 nos_product: 3,
                                                 md5: song.md5
                                             },
-                                            onload: (responses2) => {
-                                                let res2 = JSON.parse(responses2.response)
+                                            onload: (res2) => {
                                                 if (res2.code != 200) {
                                                     console.error(song.title, '2.获取令牌', res2)
                                                     self.uploadFail()
                                                     return
                                                 }
                                                 song.resourceId=res2.result.resourceId
-                                                let tokenRes=JSON.parse(responses2.response)
-                                                song.token=tokenRes.result.token
-                                                song.objectKey = tokenRes.result.objectKey
+                                                song.token=res2.result.token
+                                                song.objectKey = res2.result.objectKey
                                                 showTips(`(3/5)${song.title} 开始上传文件`,1)
                                                 console.log(song.title, '2.获取令牌', res2)
                                                 if(res1.needUpload){
@@ -2824,8 +2723,6 @@ tr td:nth-child(3){
                     let song=self.task[songindex]
                     try{
                         weapiRequest("/api/upload/cloud/info/v2", {
-                            method: "POST",
-                            type: "json",
                             data: {
                                 md5: song.md5,
                                 songid: song.cloudId,
@@ -2836,8 +2733,7 @@ tr td:nth-child(3){
                                 bitrate: String(song.bitrate),
                                 resourceId: song.resourceId,
                             },
-                            onload: (responses3) => {
-                                let res3 = JSON.parse(responses3.response)
+                            onload: (res3) => {
                                 if (res3.code != 200) {
                                     if(song.expireTime<Date.now()||(res3.msg&&res3.msg.includes('rep create failed'))){
                                         console.error(song.title, '3.提交文件', res3)
@@ -2857,13 +2753,10 @@ tr td:nth-child(3){
                                 showTips(`(4/5)${song.title} 提交文件完成`,1)
                                 //step4 发布
                                 weapiRequest("/api/cloud/pub/v2", {
-                                    method: "POST",
-                                    type: "json",
                                     data: {
                                         songid: res3.songId,
                                     },
-                                    onload: (responses4) => {
-                                        let res4 = JSON.parse(responses4.response)
+                                    onload: (res4) => {
                                         if (res4.code != 200 && res4.code != 201) {
                                             console.error(song.title, '4.发布资源', res4)
                                             self.uploadFail()
@@ -2930,15 +2823,12 @@ tr td:nth-child(3){
             editArea.insertBefore(btnVIPfreeA, editArea.lastChild)
             function VIPfreeA(){
                 weapiRequest('/api/homepage/block/page', {
-                    type: "json",
-                    method: "POST",
                     data: {
                         cursor: JSON.stringify({offset:0,blockCodeOrderList:['HOMPAGE_BLOCK_VIP_RCMD']}),
                         refresh: true,
                         extInfo: JSON.stringify({refreshType:1,abInfo:{'hp-new-homepageV3.1':'t3'},netstate:1}),
                     },
-                    onload: (responses) => {
-                        let res = JSON.parse(responses.response)
+                    onload: (res) => {
                         //console.log(res)
                         let songList=res.data.blocks[0].resourceIdList.map(item => {
                             return {
@@ -2962,15 +2852,12 @@ tr td:nth-child(3){
             editArea.insertBefore(btnVIPfreeB, editArea.lastChild)
             function VIPfreeB(){
                 weapiRequest('/api/v6/playlist/detail', {
-                    type: "json",
-                    method: "POST",
                     data:{
                         id: 8402996200,
                         n: 100000,
                         s: 8,
                     },
-                    onload: (responses) => {
-                        let res = JSON.parse(responses.response)
+                    onload: (res) => {
                         //console.log(res)
                         let songList=res.playlist.trackIds.map(item => {
                             return {
@@ -3043,15 +2930,10 @@ tr td:nth-child(3){
                         let footer = Swal.getFooter()
                         let tbody = container.querySelector('tbody')
                         weapiRequest("/api/v3/song/detail", {
-                            type: "json",
-                            method: "post",
-                            sync: true,
                             data: {
                                 c: JSON.stringify(songIds)
                             },
-
-                            onload: function(responses) {
-                                let content = JSON.parse(responses.response)
+                            onload: function(content) {
                                 //console.log(content)
                                 let songlen = content.songs.length
                                 let privilegelen = content.privileges.length
@@ -3088,7 +2970,6 @@ tr td:nth-child(3){
             }
             function TrialDownLoad(songId,trialMode,filename){
                 weapiRequest("/api/song/enhance/player/url/v1", {
-                    type: "json",
                     data: {
                         immerseType:'ste',
                         trialMode:trialMode,
@@ -3096,8 +2977,7 @@ tr td:nth-child(3){
                         level: 'exhigh',
                         encodeType: 'mp3'
                     },
-                    onload: (responses) => {
-                        let content = JSON.parse(responses.response);
+                    onload: (content) => {
                         //console.log(content)
                         if (content.data[0].url != null) {
                             GM_download({
@@ -3174,14 +3054,11 @@ tr td:nth-child(3){
 
             function exportCloudSub(filter, config, offset) {
                 weapiRequest('/api/v1/cloud/get', {
-                    method: "POST",
-                    type: "json",
                     data: {
                         limit: 1000,
                         offset: offset,
                     },
-                    onload: (responses) => {
-                        let res = JSON.parse(responses.response)
+                    onload: (res) => {
                         showTips(`正在获取第${offset+1}到${Math.min(offset+1000,res.count)}首云盘歌曲信息`, 1)
                         let matchSongs = []
                         res.data.forEach(song => {
@@ -3245,15 +3122,12 @@ tr td:nth-child(3){
                         let ids = matchSongs.map(song => song.id)
                         if (ids.length > 0) {
                             weapiRequest("/api/song/enhance/player/url/v1", {
-                                type: "json",
-                                method: "POST",
                                 data: {
                                     ids: JSON.stringify(ids),
                                     level: 'hires',
                                     encodeType: 'mp3',
                                 },
-                                onload: (responses2) => {
-                                    let res2 = JSON.parse(responses2.response)
+                                onload: (res2) => {
                                     //console.log(res2)
                                     if (res2.code != 200) {
                                         //重试
@@ -3290,15 +3164,12 @@ tr td:nth-child(3){
             }
             function exportCloudByPlaylist(filter){
                 weapiRequest('/api/v6/playlist/detail', {
-                    type: "json",
-                    method: "POST",
                     data:{
                         id: filter[3],
                         n: 100000,
                         s: 8,
                     },
-                    onload: (responses) => {
-                        let res = JSON.parse(responses.response)
+                    onload: (res) => {
                         //console.log(res)
                         let trackIds=res.playlist.trackIds.map(item => {
                             return item.id
@@ -3317,15 +3188,11 @@ tr td:nth-child(3){
                 }
                 showTips(`正在获取第${offset+1}到${Math.min(offset+limit,trackIds.length)}首云盘歌曲信息`, 1)
                 weapiRequest("/api/v1/cloud/get/byids", {
-                    type: "json",
-                    method: "post",
-                    sync: true,
                     data: {
                         songIds: JSON.stringify(trackIds.slice(offset,offset+limit))
                     },
 
-                    onload: function(responses) {
-                        let res = JSON.parse(responses.response)
+                    onload: function(res) {
                         //console.log(res)
                         let matchSongs = []
                         res.data.forEach(song => {
@@ -3389,15 +3256,12 @@ tr td:nth-child(3){
                         let ids = matchSongs.map(song => song.id)
                         if (ids.length > 0) {
                             weapiRequest("/api/song/enhance/player/url/v1", {
-                                type: "json",
-                                method: "POST",
                                 data: {
                                     ids: JSON.stringify(ids),
                                     level: 'hires',
                                     encodeType: 'mp3',
                                 },
-                                onload: (responses2) => {
-                                    let res2 = JSON.parse(responses2.response)
+                                onload: (res2) => {
                                     //console.log(res2)
                                     if (res2.code != 200) {
                                         //重试
@@ -3603,15 +3467,12 @@ tr td:nth-child(3){
             function fetchSongList(config){
                 if(config.listType=='playlist'){
                     weapiRequest("/api/v6/playlist/detail", {
-                        type: "json",
-                        method: "POST",
                         data:{
                             id: listId,
                             n: 100000,
                             s: 8,
                         },
-                        onload: (res)=> {
-                            let content = JSON.parse(res.response)
+                        onload: (content)=> {
                             //console.log(content)
                             let songList=[]
                             let tracklen = content.playlist.tracks.length
@@ -3655,10 +3516,7 @@ tr td:nth-child(3){
                 }
                 else if(config.listType=='album'){
                     weapiRequest(`/api/v1/album/${listId}`, {
-                        type: "json",
-                        method: "POST",
-                        onload: (res)=> {
-                            let content = JSON.parse(res.response)
+                        onload: (content)=> {
                             //console.log(content)
                             let songList=[]
                             for(let i=0;i<content.songs.length;i++){
@@ -3694,14 +3552,10 @@ tr td:nth-child(3){
                     return
                 }
                 weapiRequest("/api/v3/song/detail", {
-                    type: "json",
-                    method: "post",
-                    sync: true,
                     data: {
                         c: JSON.stringify(trackIds.slice(startIndex, startIndex + 1000))
                     },
-                    onload: function(responses) {
-                        let content = JSON.parse(responses.response)
+                    onload: function(content) {
                         let songlen = content.songs.length
                         let privilegelen = content.privileges.length
                         for (let i = 0; i < songlen; i++) {
@@ -3837,10 +3691,8 @@ tr td:nth-child(3){
                 let prText=tableRowDOM.querySelector('.my-pr')
                 try{
                     weapiRequest(song.api.url, {
-                        type: "json",
                         data: song.api.data,
-                        onload: (responses) => {
-                            let content = JSON.parse(responses.response);
+                        onload: (content) => {
                             let resData=content.data[0]||content.data
                             if (resData.url != null) {
                                 let fileFullName = nameFileWithoutExt(song.title,song.artist,config.out) + '.' + resData.type.toLowerCase()
@@ -3985,15 +3837,12 @@ tr td:nth-child(3){
                     function PlaylistTimeSort(playlistId,descending){
                         showTips(`正在获取歌单内歌曲信息`,1)
                         weapiRequest("/api/v6/playlist/detail", {
-                            type: "json",
-                            method: "POST",
                             data:{
                                 id: playlistId,
                                 n: 100000,
                                 s: 8,
                             },
-                            onload: (res)=> {
-                                let content = JSON.parse(res.response)
+                            onload: (content)=> {
                                 let songList=[]
                                 let tracklen = content.playlist.tracks.length
                                 for (let i = 0; i < tracklen; i++) {
@@ -4021,14 +3870,10 @@ tr td:nth-child(3){
                             return
                         }
                         weapiRequest("/api/v3/song/detail", {
-                            type: "json",
-                            method: "post",
-                            sync: true,
                             data: {
                                 c: JSON.stringify(trackIds.slice(startIndex, startIndex + 1000))
                             },
-                            onload: function(responses) {
-                                let content = JSON.parse(responses.response)
+                            onload: function(content) {
                                 let songlen = content.songs.length
                                 for (let i = 0; i < songlen; i++) {
                                     let songItem={id:content.songs[i].id,publishTime:content.songs[i].publishTime,albumId:content.songs[i].al.id,cd:content.songs[i].cd?Number(content.songs[i].cd.split(' ')[0]):0,no:content.songs[i].no}
@@ -4057,11 +3902,7 @@ tr td:nth-child(3){
                             return
                         }
                         weapiRequest(`/api/v1/album/${albumId}`, {
-                            type: "json",
-                            method: "post",
-                            sync: true,
-                            onload: function(responses) {
-                                let content = JSON.parse(responses.response)
+                            onload: function(content) {
                                 let publishTime = content.album.publishTime
                                 aldict[albumId]=publishTime
                                 songList[index].publishTime=publishTime
@@ -4097,21 +3938,18 @@ tr td:nth-child(3){
                         })
                         let trackIds=songList.map(song=>song.id)
                         weapiRequest("/api/playlist/manipulate/tracks", {
-                            type: "json",
-                            method: "post",
                             data: {
                                 pid: playlistId,
                                 trackIds: JSON.stringify(trackIds),
                                 op: 'update',
                             },
-                            onload: function(responses) {
-                                let content = JSON.parse(responses.response)
+                            onload: function(content) {
                                 //console.log(content)
                                 if(content.code==200){
                                     showConfirmBox('排序完成')
                                 }
                                 else{
-                                    showConfirmBox('排序失败,'+responses.response)
+                                    showConfirmBox('排序失败,'+content)
                                 }
                             }
                         })
@@ -4119,15 +3957,12 @@ tr td:nth-child(3){
                     function PlaylistCountSort(playlistId,descending,way){
                         showTips(`正在获取歌单内歌曲信息`,1)
                         weapiRequest("/api/v6/playlist/detail", {
-                            type: "json",
-                            method: "POST",
                             data:{
                                 id: playlistId,
                                 n: 100000,
                                 s: 8,
                             },
-                            onload: (res)=> {
-                                let content = JSON.parse(res.response)
+                            onload: (content)=> {
                                 let songList=content.playlist.trackIds.map(item => {
                                     return {
                                         'id': item.id,
@@ -4152,12 +3987,10 @@ tr td:nth-child(3){
                         if(index==0) showTips('开始获取歌曲红心数量')
                         if(index%10==9) showTips(`正在获取歌曲红心数量(${index+1}/${songList.length})`)
                         weapiRequest("/api/song/red/count", {
-                            type: "json",
                             data: {
                                 songId: songList[index].id,
                             },
-                            onload: function(responses) {
-                                let content = JSON.parse(responses.response)
+                            onload: function(content) {
                                 songList[index].count= content.data.count
                                 PlaylistCountSortFetchRedCount(playlistId,songList,index+1,descending)
                             },
@@ -4171,14 +4004,11 @@ tr td:nth-child(3){
                         if(index==0) showTips('开始获取歌曲评论数量')
                         else showTips(`正在获取歌曲评论数量(${index+1}/${songList.length})`)
                         weapiRequest("/api/resource/commentInfo/list", {
-                            type: "json",
                             data: {
                                 resourceType: "4",
                                 resourceIds: JSON.stringify(trackIds.slice(index, index + 1000)),
                             },
-                            onload: function(responses) {
-                                let content = JSON.parse(responses.response)
-
+                            onload: function(content) {
                                 content.data.forEach(item => {
                                     let songId=item.resourceId
                                     for(let i=0;i<songList.length;i++){
@@ -4206,15 +4036,12 @@ tr td:nth-child(3){
                         })
                         let trackIds=songList.map(song=>song.id)
                         weapiRequest("/api/playlist/manipulate/tracks", {
-                            type: "json",
-                            method: "post",
                             data: {
                                 pid: playlistId,
                                 trackIds: JSON.stringify(trackIds),
                                 op: 'update',
                             },
-                            onload: function(responses) {
-                                let content = JSON.parse(responses.response)
+                            onload: function(content) {
                                 if(content.code==200){
                                     showConfirmBox('排序完成')
                                 }
@@ -4229,16 +4056,13 @@ tr td:nth-child(3){
             //显示脏标
             else if(pageType=='album'){
                 if(document.querySelector('.topblk')){
-                weapiRequest(`/api/v1/album/${listId}`, {
-                        type: "json",
-                        method: "POST",
-                        onload: (res)=> {
-                            let content = JSON.parse(res.response)
+                    weapiRequest(`/api/v1/album/${listId}`, {
+                        onload: (content)=> {
                             if((content.album.mark & songMark.explicit) == songMark.explicit){
                                 document.querySelector('.topblk').innerHTML+=`<p class="intr"><b>🅴：</b>内容含有不健康因素</p>`
                             }
                         }
-                    })
+                })
                 }
             }
         }
@@ -4288,10 +4112,8 @@ tr td:nth-child(3){
                                         encodeType: 'mp3'})
                                 }
                                 weapiRequest("/api/batch", {
-                                    type: "json",
                                     data: apiData,
-                                    onload: (resreget) => {
-                                        let res = JSON.parse(resreget.response)
+                                    onload: (res) => {
                                         let songUrl=res['/api/song/enhance/player/url/v1'].data[0].url
                                         let songLevel=res["/api/song/enhance/player/url/v1"].data[0].level
                                         if(res['/api/song/enhance/download/url/v1']){
