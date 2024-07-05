@@ -46,9 +46,9 @@
 - 不要从 `我的音乐` 里浏览歌单，请从右上角用户头像的 `个人主页` 里再进入具体的歌单。
 - 云盘音质提升:当目标高音质文件已在云盘中时,提升音质只是把高音质文件匹配到目标歌曲，然后删除低音质文件。这就造成云盘歌曲数量减少的现象。
 ### 截图
-<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/ncmHomePage.png" width="60%">
+<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/ncmHomePage.png" width="60%">
 
-<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/ncmPlaylist.png" width="60%">
+<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/ncmPlaylist.png" width="60%">
 
 ### 参考
 网易云音乐API来自[Binaryify/NeteaseCloudMusicApi](https://gitlab.com/Binaryify/NeteaseCloudMusicApi)  
@@ -56,4 +56,4 @@
 在咪咕音乐专辑详情页添加下载链接 可无需登录下载至臻(24Bit)  
 [安装](https://greasyfork.org/scripts/453820-%E5%92%AA%E5%92%95%E9%9F%B3%E4%B9%90%E4%B8%8B%E8%BD%BD/code/%E5%92%AA%E5%92%95%E9%9F%B3%E4%B9%90%E4%B8%8B%E8%BD%BD.user.js) (请确保浏览器已经安装了TamperMonkey)  
  [![Greasy Fork](https://img.shields.io/greasyfork/dt/453820?label=greasyfork%20installs)](https://greasyfork.org/zh-CN/scripts/453820)    
-<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot.png" width="60%">
+<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/screenshot.png" width="60%">

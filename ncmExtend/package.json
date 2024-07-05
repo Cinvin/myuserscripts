@@ -1,0 +1,20 @@
+{
+  "name": "ncmextend",
+  "private": true,
+  "version": "4.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.2.12",
+    "vite-plugin-monkey": "^4.0.0"
+  },
+  "dependencies": {
+    "ajax-hook": "^3.0.3",
+    "jsmediatags": "^3.9.7",
+    "sweetalert2": "^11.12.1"
+  }
+}
