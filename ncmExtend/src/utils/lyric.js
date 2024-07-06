@@ -49,6 +49,12 @@ const trimLyricContent = (content) => {
     return t.length < 1 ? content : t;
 }
 export const handleLyric = (lyricRes) => {
+    if (lyricRes.pureMusic) return {
+        orilrc: {
+            lyric: lyricRes.lrc.lyric,
+            parsedLyric: parseLyric(lyricRes.lrc.lyric),
+        },
+    }
     let LyricObj = {
         orilrc: {
             lyric: lyricRes.lrc.lyric,

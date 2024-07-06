@@ -96,7 +96,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
         if (allFinnsh) {
             let finnshText = '下载完成'
             if (config.errorSongs.length > 0) {
-                finnshText = `下载完成。以下${config.errorSongs.length}首歌曲下载失败: ${ config.errorSongs.map(song=>`<a href="https://music.163.com/#/song?id=${song.id}">${song.title}</a>`).join()}`
+                finnshText = `下载完成。以下${config.errorSongs.length}首歌曲下载失败: ${config.errorSongs.map(song => `<a href="https://music.163.com/#/song?id=${song.id}">${song.title}</a>`).join()}`
             }
             Swal.update({
                 allowOutsideClick: true,
@@ -118,14 +118,14 @@ const downloadSongSub = (threadIndex, songList, config) => {
             onload: (content) => {
                 let resData = content.data[0] || content.data
                 if (resData.url != null) {
-                    let fileName = nameFileWithoutExt(song.title, song.artist, config.out).replace('/','／')
+                    let fileName = nameFileWithoutExt(song.title, song.artist, config.out).replace('/', '／')
                     let fileFullName = fileName + '.' + resData.type.toLowerCase()
                     let folder = ''
                     if (config.folder != 'none' && song.artist.length > 0) {
-                        folder = song.artist.replace('/','／') + '/'
+                        folder = song.artist.replace('/', '／') + '/'
                     }
                     if (config.folder == 'artist-album' && song.album.length > 0) {
-                        folder += song.album.replace('/','／') + '/'
+                        folder += song.album.replace('/', '／') + '/'
                     }
                     fileFullName = folder + fileFullName
                     let dlUrl = resData.url
@@ -156,7 +156,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
                                 song.retry = true
                                 songList.push(song)
                             }
-                            console.error(e,dlUrl,fileFullName)
+                            console.error(e, dlUrl, fileFullName)
                             downloadSongSub(threadIndex, songList, config)
                         }
                     });
@@ -201,6 +201,7 @@ const downloadSongLyric = (songId, fileName) => {
     weapiRequest('/api/song/lyric/v1', {
         data: { id: songId, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, },
         onload: (content) => {
+            if (content.pureMusic) return
             const LyricObj = handleLyric(content)
             if (LyricObj.orilrc.parsedLyric.length == 0) return
             const LyricItem = LyricObj.oritlrc || LyricObj.orilrc

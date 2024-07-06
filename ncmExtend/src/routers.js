@@ -1,9 +1,10 @@
 import { unsafeWindow } from '$'
 import { hookTopWindow } from './hooks'
 import { myHomeMain } from './home/main'
-import {playlistMain} from'./playlist/main'
+import { playlistMain } from './playlist/main'
 import { albumMain } from './album/main'
 import { songMain } from './song/main'
+import { commentInfo } from './commentBox'
 export const router = () => {
     if (unsafeWindow.self == unsafeWindow.top) {
         hookTopWindow()
@@ -15,7 +16,7 @@ export const router = () => {
             myHomeMain()
         }
     }
-    else if (url.includes('/playlist') && !url.includes('/my/m/music/playlist') ) {
+    else if (url.includes('/playlist') && !url.includes('/my/m/music/playlist')) {
         playlistMain(Number(params.get('id')))
     }
     else if (url.includes('/album')) {
@@ -23,5 +24,10 @@ export const router = () => {
     }
     else if (url.includes('/song')) {
         songMain(Number(params.get('id')))
+    }
+
+    const commentBox = document.querySelector('#comment-box')
+    if (commentBox) {
+        commentInfo(commentBox)
     }
 }

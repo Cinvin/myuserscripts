@@ -66,29 +66,33 @@ export class SongDetail {
                 this.createTitle('歌曲其他信息')
                 this.infoTableBody = this.createTable().querySelector('tbody')
                 //lyric
-                this.lyricObj = handleLyric(res["/api/song/lyric/v1"])
-                if (this.lyricObj.orilrc.parsedLyric.length > 0) {
-                    this.lyricBlock = this.createTableRow(this.infoTableBody, '下载歌词')
-                    if (this.lyricObj.oritlrc) {
-                        let btn = this.createButton('原歌词+翻译')
+
+                if (!res["/api/song/lyric/v1"].pureMusic) {
+                    this.lyricObj = handleLyric(res["/api/song/lyric/v1"])
+                    if (this.lyricObj.orilrc.parsedLyric.length > 0) {
+                        this.lyricBlock = this.createTableRow(this.infoTableBody, '下载歌词')
+                        if (this.lyricObj.oritlrc) {
+                            let btn = this.createButton('原歌词+翻译')
+                            btn.addEventListener('click', () => {
+                                this.downloadLyric('oritlrc')
+                            })
+                            this.lyricBlock.appendChild(btn)
+                        }
+                        if (this.lyricObj.oriromalrc) {
+                            let btn = this.createButton('罗马音+原歌词')
+                            btn.addEventListener('click', () => {
+                                this.downloadLyric('oriromalrc')
+                            })
+                            this.lyricBlock.appendChild(btn)
+                        }
+                        let btn = this.createButton('原歌词')
                         btn.addEventListener('click', () => {
-                            this.downloadLyric('oritlrc')
+                            this.downloadLyric('orilrc')
                         })
                         this.lyricBlock.appendChild(btn)
                     }
-                    if (this.lyricObj.oriromalrc) {
-                        let btn = this.createButton('罗马音+原歌词')
-                        btn.addEventListener('click', () => {
-                            this.downloadLyric('oriromalrc')
-                        })
-                        this.lyricBlock.appendChild(btn)
-                    }
-                    let btn = this.createButton('原歌词')
-                    btn.addEventListener('click', () => {
-                        this.downloadLyric('orilrc')
-                    })
-                    this.lyricBlock.appendChild(btn)
                 }
+
                 if (this.songDetailObj.al.picUrl) {
                     let btn = this.createButton('专辑封面原图')
                     btn.href = this.songDetailObj.al.picUrl
@@ -222,7 +226,7 @@ export class SongDetail {
     createButtonDescTableRow(tbody, btn, desc) {
         let row = document.createElement("tr");
         if (tbody.children.length % 2 == 0) row.className = "even";
-        row.innerHTML = `<td ${desc ? 'style="width: 25%;"' : ''}><div></div></td><td><div><span>${desc || ""}</span></div></td>`;
+        row.innerHTML = `<td ${desc ? 'style="width: 23%;"' : ''}><div></div></td><td><div><span>${desc || ""}</span></div></td>`;
         let firstArea = row.querySelector("tr > td:nth-child(1) > div")
         firstArea.appendChild(btn)
         tbody.appendChild(row);
