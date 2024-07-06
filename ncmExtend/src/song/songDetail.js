@@ -5,6 +5,7 @@ import { levelWeight, songMark } from "../utils/constant"
 import { handleLyric } from "../utils/lyric"
 import { ncmDownUpload } from "../ncmDownUpload"
 import { showTips, saveContentAsFile } from "../utils/common"
+import { batchDownloadSongs } from "./batchDownloadSongs"
 export class SongDetail {
     constructor(songId, maindDiv) {
         this.songId = songId
@@ -22,44 +23,52 @@ export class SongDetail {
             onload: (res) => {
                 //example songid:1914447186
                 console.log(res)
-                this.title = res["/api/v3/song/detail"].songs[0].name
-                this.album = getAlbumTextInSongDetail(res["/api/v3/song/detail"].songs[0])
-                this.artist = getArtistTextInSongDetail(res["/api/v3/song/detail"].songs[0])
+                this.songDetailObj = res["/api/v3/song/detail"].songs[0]
+                this.title = this.songDetailObj.name
+                this.album = getAlbumTextInSongDetail(this.songDetailObj)
+                this.artist = getArtistTextInSongDetail(this.songDetailObj)
                 this.filename = nameFileWithoutExt(this.title, this.artist, 'artist-title')
+                this.songDetailObj = this.songDetailObj
 
                 if (res["/api/v3/song/detail"].privileges[0].plLevel != 'none') {
-                    this.downLoadBlock = this.createBlock('下载歌曲')
+                    this.createTitle('下载歌曲')
+                    this.downLoadTableBody = this.createTable().querySelector('tbody')
                     let plLevel = res["/api/v3/song/detail"].privileges[0].plLevel
                     let dlLevel = res["/api/v3/song/detail"].privileges[0].dlLevel
                     let songPlWeight = levelWeight[plLevel] || 0
                     let songDlWeight = levelWeight[dlLevel] || 0
                     let songDetail = res["/api/song/music/detail/get"].data
                     if (res["/api/v3/song/detail"].privileges[0].cs) {
-                        this.createDLButton(`云盘文件(${levelDesc(plLevel)})`, 'standard', 'pl')
+                        this.createDLRow('云盘文件', plLevel, 'pl')
                     }
                     else {
-                        this.upLoadBlock = this.createBlock('转存云盘')
-                        if (songDetail.l && songPlWeight >= 1) { let desc = `标准(${Math.round(songDetail.l.br / 1000)}k/${fileSizeDesc(songDetail.l.size)})`; let level = 'standard'; this.createDLButton(desc, level, 'pl'); this.createULButton(desc, level, 'pl') }
-                        if (songDetail.m && songPlWeight >= 2) { let desc = `较高(${Math.round(songDetail.m.br / 1000)}k/${fileSizeDesc(songDetail.m.size)})`; let level = 'higher'; this.createDLButton(desc, level, 'pl'); this.createULButton(desc, level, 'pl') }
-                        if (songDetail.h && songPlWeight >= 3) { let desc = `极高(${Math.round(songDetail.h.br / 1000)}k/${fileSizeDesc(songDetail.h.size)})`; let level = 'exhigh'; this.createDLButton(desc, level, 'pl'); this.createULButton(desc, level, 'pl') }
-                        if (songDetail.sq && songPlWeight >= 4) { let desc = `无损(${Math.round(songDetail.sq.br / 1000)}k/${fileSizeDesc(songDetail.sq.size)})`; let level = 'lossless'; this.createDLButton(desc, level, 'pl'); this.createULButton(desc, level, 'pl') }
-                        if (songDetail.hr && songPlWeight >= 4) { let desc = `Hi-Res(${Math.round(songDetail.hr.br / 1000)}k/${songDetail.hr.sr / 1000}kHz/${fileSizeDesc(songDetail.hr.size)})`; let level = 'hires'; this.createDLButton(desc, level, 'pl'); this.createULButton(desc, level, 'pl') }
-                        if (songDetail.je && songPlWeight >= 4) { let desc = `高清环绕声(${Math.round(songDetail.je.br / 1000)}k/${songDetail.je.sr / 1000}kHz/${fileSizeDesc(songDetail.je.size)})`; let level = 'jyeffect'; this.createDLButton(desc, level, 'pl'); this.createULButton(desc, level, 'pl') }
-                        if (songDetail.sk && songPlWeight >= 7) { let desc = `沉浸环绕声(${Math.round(songDetail.sk.br / 1000)}k/${songDetail.sk.sr / 1000}kHz/${fileSizeDesc(songDetail.sk.size)})`; let level = 'sky'; this.createDLButton(desc, level, 'pl'); this.createULButton(desc, level, 'pl') }
-                        if (songDetail.jm && songPlWeight >= 7) { let desc = `超清母带(${Math.round(songDetail.jm.br / 1000)}k/${songDetail.jm.sr / 1000}kHz/${fileSizeDesc(songDetail.jm.size)})`; let level = 'jymaster'; this.createDLButton(desc, level, 'pl'); this.createULButton(desc, level, 'pl') }
+                        this.createTitle('转存云盘')
+                        this.upLoadTableBody = this.createTable().querySelector('tbody')
                         if (songDlWeight > songPlWeight && res["/api/v3/song/detail"].privileges[0].fee == 0) {
-                            if (songDetail.m && songDlWeight >= 2 && songPlWeight < 2) { let desc = `较高(${Math.round(songDetail.m.br / 1000)}k/${fileSizeDesc(songDetail.m.size)})`; let level = 'higher'; this.createDLButton(desc, level, 'dl'); this.createULButton(desc, level, 'dl') }
-                            if (songDetail.h && songDlWeight >= 3 && songPlWeight < 3) { let desc = `极高(${Math.round(songDetail.h.br / 1000)}k/${fileSizeDesc(songDetail.h.size)})`; let level = 'exhigh'; this.createDLButton(desc, level, 'dl'); this.createULButton(desc, level, 'dl') }
-                            if (songDetail.sq && songDlWeight >= 4 && songPlWeight < 4) { let desc = `无损(${Math.round(songDetail.sq.br / 1000)}k/${fileSizeDesc(songDetail.sq.size)})`; let level = 'lossless'; this.createDLButton(desc, level, 'dl'); this.createULButton(desc, level, 'dl') }
-                            if (songDetail.hr && songDlWeight >= 5 && songPlWeight < 5) { let desc = `Hi-Res(${Math.round(songDetail.hr.br / 1000)}k/${songDetail.hr.sr / 1000}kHz/${fileSizeDesc(songDetail.hr.size)})`; let level = 'hires'; this.createDLButton(desc, level, 'dl'); this.createULButton(desc, level, 'dl') }
+                            const channel = 'dl'
+                            if (songDetail.hr && songDlWeight >= 5 && songPlWeight < 5) { const desc = `${Math.round(songDetail.hr.br / 1000)}k\t${fileSizeDesc(songDetail.hr.size)}\t${songDetail.hr.sr / 1000}kHz`; const level = 'hires'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                            if (songDetail.sq && songDlWeight >= 4 && songPlWeight < 4) { const desc = `${Math.round(songDetail.sq.br / 1000)}k\t${fileSizeDesc(songDetail.sq.size)}\t${songDetail.sq.sr / 1000}kHz`; const level = 'lossless'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                            if (songDetail.h && songDlWeight >= 3 && songPlWeight < 3) { const desc = `${Math.round(songDetail.h.br / 1000)}k\t${fileSizeDesc(songDetail.h.size)}`; const level = 'exhigh'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                            if (songDetail.m && songDlWeight >= 2 && songPlWeight < 2) { const desc = `${Math.round(songDetail.m.br / 1000)}k\t${fileSizeDesc(songDetail.m.size)}`; const level = 'higher'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
                         }
+                        const channel = 'pl'
+                        if (songDetail.jm && songPlWeight >= 7) { const desc = `${Math.round(songDetail.jm.br / 1000)}k\t${fileSizeDesc(songDetail.jm.size)}\t${songDetail.jm.sr / 1000}kHz`; const level = 'jymaster'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                        if (songDetail.sk && songPlWeight >= 7) { const desc = `${Math.round(songDetail.sk.br / 1000)}k\t${fileSizeDesc(songDetail.sk.size)}\t${songDetail.sk.sr / 1000}kHz`; const level = 'sky'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                        if (songDetail.hr && songPlWeight >= 4) { const desc = `${Math.round(songDetail.hr.br / 1000)}k\t${fileSizeDesc(songDetail.hr.size)}\t${songDetail.hr.sr / 1000}kHz `; const level = 'hires'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                        if (songDetail.je && songPlWeight >= 4) { const desc = `${Math.round(songDetail.je.br / 1000)}k\t${fileSizeDesc(songDetail.je.size)}\t${songDetail.je.sr / 1000}kHz`; const level = 'jyeffect'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                        if (songDetail.sq && songPlWeight >= 4) { const desc = `${Math.round(songDetail.sq.br / 1000)}k ${fileSizeDesc(songDetail.sq.size)}\t${songDetail.sq.sr / 1000}kHz`; const level = 'lossless'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                        if (songDetail.h && songPlWeight >= 3) { const desc = `${Math.round(songDetail.h.br / 1000)}k ${fileSizeDesc(songDetail.h.size)}`; const level = 'exhigh'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                        if (songDetail.m && songPlWeight >= 2) { const desc = `${Math.round(songDetail.m.br / 1000)}k ${fileSizeDesc(songDetail.m.size)}`; const level = 'higher'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
+                        if (songDetail.l && songPlWeight >= 1) { const desc = `${Math.round(songDetail.l.br / 1000)}k ${fileSizeDesc(songDetail.l.size)}`; const level = 'standard'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
                     }
 
                 }
+                this.createTitle('歌曲其他信息')
+                this.infoTableBody = this.createTable().querySelector('tbody')
                 //lyric
                 this.lyricObj = handleLyric(res["/api/song/lyric/v1"])
                 if (this.lyricObj.orilrc.parsedLyric.length > 0) {
-                    this.lyricBlock = this.createBlock('下载歌词')
+                    this.lyricBlock = this.createTableRow(this.infoTableBody, '下载歌词')
                     if (this.lyricObj.oritlrc) {
                         let btn = this.createButton('原歌词+翻译')
                         btn.addEventListener('click', () => {
@@ -80,58 +89,65 @@ export class SongDetail {
                     })
                     this.lyricBlock.appendChild(btn)
                 }
-                if (res["/api/v3/song/detail"].songs[0].al.picUrl) {
-                    let CoverBlock = this.createBlock('')
+                if (this.songDetailObj.al.picUrl) {
                     let btn = this.createButton('专辑封面原图')
-                    btn.href = res["/api/v3/song/detail"].songs[0].al.picUrl
+                    btn.href = this.songDetailObj.al.picUrl
                     btn.target = '_blank'
-                    CoverBlock.appendChild(btn)
+                    this.createButtonDescTableRow(this.infoTableBody, btn, null)
                 }
                 if (res["/api/song/red/count"].data.count > 0) {
-                    this.createBlock(`红心数量 ${res["/api/song/red/count"].data.count}`)
+                    let redBlock = this.createTableRow(this.infoTableBody, '红心数量')
+                    redBlock.innerHTML = `<span>${res["/api/song/red/count"].data.count}</span>`
                 }
-                if (res["/api/v3/song/detail"].songs[0].originCoverType > 0) {
-                    this.createBlock(`原唱翻唱类型 ${res["/api/v3/song/detail"].songs[0].originCoverType == 1 ? "原唱" : "翻唱"}`)
+                if (this.songDetailObj.originCoverType > 0) {
+                    let originCoverTypeBlock = this.createTableRow(this.infoTableBody, '原唱翻唱类型')
+                    originCoverTypeBlock.innerHTML = `<span>${this.songDetailObj.originCoverType == 1 ? "原唱" : "翻唱"}</span>`
                 }
                 //脏标
-                if ((res["/api/v3/song/detail"].songs[0].mark & songMark.explicit) == songMark.explicit) {
-                    this.createBlock('<b>🅴：</b>内容含有不健康因素')
+                if ((this.songDetailObj.mark & songMark.explicit) == songMark.explicit) {
+                    let explicitBlock = this.createTableRow(this.infoTableBody, '🅴')
+                    explicitBlock.innerHTML = `内容含有不健康因素`
                 }
                 //wiki
                 for (let block of res["/api/song/play/about/block/page"].data.blocks) {
                     if (block.code == 'SONG_PLAY_ABOUT_MUSIC_MEMORY' && block.creatives.length > 0) {
-                        let memoryBlock = this.createBlock('回忆坐标')
-                        let info = block.creatives[0].resources
-                        let firstTimeP = document.createElement('p');
-                        firstTimeP.innerHTML = `第一次听:${info[0].resourceExt.musicFirstListenDto.date}`
-                        firstTimeP.style.margin = '5px';
-                        memoryBlock.appendChild(firstTimeP)
-                        let recordP = document.createElement('p');
-                        recordP.innerHTML = `累计播放:${info[1].resourceExt.musicTotalPlayDto.playCount}次 ${info[1].resourceExt.musicTotalPlayDto.duration}分钟 ${info[1].resourceExt.musicTotalPlayDto.text}`
-                        recordP.style.margin = '5px';
-                        memoryBlock.appendChild(recordP)
+                        for (let creative of block.creatives) {
+                            for (let resource of creative.resources) {
+                                if (resource.resourceType == "FIRST_LISTEN") {
+                                    let firstTimeBlock = this.createTableRow(this.infoTableBody, '第一次听')
+                                    firstTimeBlock.innerHTML = resource.resourceExt.musicFirstListenDto.date
+                                }
+                                else if (resource.resourceType == "TOTAL_PLAY") {
+                                    let recordBlock = this.createTableRow(this.infoTableBody, '累计播放')
+                                    let recordText = ` ${resource.resourceExt.musicTotalPlayDto.playCount}次`
+                                    if (resource.resourceExt.musicTotalPlayDto.duration > 0) {
+                                        recordText += ` ${resource.resourceExt.musicTotalPlayDto.duration}分钟`
+                                    }
+                                    if (resource.resourceExt.musicTotalPlayDto.text.length > 0) {
+                                        recordText += ' ' + resource.resourceExt.musicTotalPlayDto.text
+                                    }
+                                    recordBlock.innerHTML = recordText
+                                }
+                            }
+                        }
                     }
                     if (block.code == 'SONG_PLAY_ABOUT_SONG_BASIC' && block.creatives.length > 0) {
                         for (let creative of block.creatives) {
                             if (creative.creativeType == 'sheet' && creative.resources.length == 0) continue
-                            let wikiItemBlock = this.createBlock()
-                            if (creative.uiElement) {
-                                if (creative.uiElement.mainTitle) {
-                                    wikiItemBlock.innerHTML = creative.uiElement.mainTitle.title
+                            if (!creative?.uiElement?.mainTitle) continue
+                            let wikiItemBlock = this.createTableRow(this.infoTableBody, creative.uiElement.mainTitle.title)
+                            if (creative.uiElement.descriptions) {
+                                let descriptionDiv = document.createElement('div')
+                                for (let description of creative.uiElement.descriptions) {
+                                    let descriptionP = this.createText(description.description)
+                                    descriptionDiv.appendChild(descriptionP)
                                 }
-                                if (creative.uiElement.descriptions) {
-                                    let descriptionDiv = document.createElement('div')
-                                    for (let description of creative.uiElement.descriptions) {
-                                        let descriptionP = this.createText(description.description)
-                                        descriptionDiv.appendChild(descriptionP)
-                                    }
-                                    wikiItemBlock.appendChild(descriptionDiv)
-                                }
-                                if (creative.uiElement.textLinks) {
-                                    for (let textLink of creative.uiElement.textLinks) {
-                                        let textLinkP = this.createText(textLink.text)
-                                        wikiItemBlock.appendChild(textLinkP)
-                                    }
+                                wikiItemBlock.appendChild(descriptionDiv)
+                            }
+                            if (creative.uiElement.textLinks) {
+                                for (let textLink of creative.uiElement.textLinks) {
+                                    let textLinkP = this.createText(textLink.text)
+                                    wikiItemBlock.appendChild(textLinkP)
                                 }
                             }
                             if (creative.resources) {
@@ -183,36 +199,57 @@ export class SongDetail {
             }
         })
     }
-    createBlock(innerHTML) {
-        let blockDiv = document.createElement('div');
-        blockDiv.className = "out s-fc3"
-        let blockP = document.createElement('p');
-        blockP.innerHTML = innerHTML
-        blockDiv.appendChild(blockP)
-        this.maindDiv.appendChild(blockDiv)
-        return blockP
+    createTitle(title) {
+        let h3 = document.createElement("h3")
+        h3.innerHTML = `<span class="f-fl" style="margin-top: 10px;margin-bottom: 10px;">${title}</span>`
+        this.maindDiv.appendChild(h3)
     }
+    createTable() {
+        let table = document.createElement("table")
+        table.className = "m-table"
+        let tbody = document.createElement("tbody")
+        table.appendChild(tbody)
+        this.maindDiv.appendChild(table)
+        return table
+    }
+    createTableRow(tbody, title) {
+        let row = document.createElement("tr");
+        if (tbody.children.length % 2 == 0) row.className = "even";
+        row.innerHTML = `<td><div><span>${title || ""}</span></div></td><td><div></div></td>`;
+        tbody.appendChild(row);
+        return row.querySelector("tr > td:nth-child(2) > div");
+    }
+    createButtonDescTableRow(tbody, btn, desc) {
+        let row = document.createElement("tr");
+        if (tbody.children.length % 2 == 0) row.className = "even";
+        row.innerHTML = `<td ${desc ? 'style="width: 25%;"' : ''}><div></div></td><td><div><span>${desc || ""}</span></div></td>`;
+        let firstArea = row.querySelector("tr > td:nth-child(1) > div")
+        firstArea.appendChild(btn)
+        tbody.appendChild(row);
+        return row
+    }
+
     createButton(desc) {
         let btn = document.createElement('a');
         btn.text = desc;
         btn.className = "s-fc7"
-        btn.style.margin = '5px'
+        btn.style.marginRight = '10px'
         return btn
     }
     createText(desc) {
         let btn = document.createElement('span');
         btn.innerHTML = desc
-        btn.style.margin = '5px'
+        btn.style.marginRight = '10px'
         return btn
     }
-    createDLButton(desc, level, channel) {
-        let btn = this.createButton(desc)
+    createDLRow(desc, level, channel) {
+        let btn = this.createButton(levelDesc(level))
         btn.addEventListener('click', () => {
             this.dwonloadSong(channel, level, btn)
         })
-        this.downLoadBlock.appendChild(btn)
+        this.createButtonDescTableRow(this.downLoadTableBody, btn, desc)
     }
-    createULButton(desc, level, channel) {
+    createULRow(desc, level, channel) {
         if (!unsafeWindow.GUser.userId) return
         let apiUrl = '/api/song/enhance/player/url/v1'
         if (channel == 'dl') apiUrl = '/api/song/enhance/download/url/v1'
@@ -220,47 +257,33 @@ export class SongDetail {
         if (channel == 'dl') data = { id: this.songId, level: level, encodeType: 'mp3' }
         let api = { url: apiUrl, data: data }
         let songItem = { api: api, id: this.songId, title: this.title, artist: this.artist, album: this.album }
-        let btn = this.createButton(desc)
+
+        let btn = this.createButton(levelDesc(level))
         btn.addEventListener('click', () => {
             let ULobj = new ncmDownUpload([songItem])
             ULobj.startUpload()
         })
-        this.upLoadBlock.appendChild(btn)
+        this.createButtonDescTableRow(this.upLoadTableBody, btn, desc)
     }
     dwonloadSong(channel, level, dlbtn) {
-        let api = '/api/song/enhance/player/url/v1'
-        if (channel == 'dl') api = '/api/song/enhance/download/url/v1'
+        let url = '/api/song/enhance/player/url/v1'
+        if (channel == 'dl') url = '/api/song/enhance/download/url/v1'
         let data = { ids: JSON.stringify([this.songId]), level: level, encodeType: 'mp3' }
         if (channel == 'dl') data = { id: this.songId, level: level, encodeType: 'mp3' }
-        weapiRequest(api, {
-            data: data,
-            onload: (content) => {
-                let resData = content.data[0] || content.data
-                if (resData.url != null) {
-                    //console.log(content)
-                    let fileFullName = this.filename + '.' + resData.type.toLowerCase()
-                    let url = resData.url
-                    let btntext = dlbtn.text
-                    GM_download({
-                        url: url,
-                        name: fileFullName,
-                        onprogress: function (e) {
-                            dlbtn.text = btntext + ` 正在下载(${fileSizeDesc(e.loaded)})`
-                        },
-                        onload: function () {
-                            dlbtn.text = btntext
-                        },
-                        onerror: function (e) {
-                            console.error(e)
-                            dlbtn.text = btntext + ' 下载失败'
-                        }
-                    });
-                }
-                else {
-                    showTips('下载失败', 2)
-                }
-            }
-        })
+        let songItem = {
+            id: this.songId,
+            title: this.songDetailObj.name,
+            artist: this.artist,
+            album: this.album,
+            song: this.songDetailObj,
+            privilege: this.songDetailObj,
+            api: { url, data, }
+        }
+        const config = {
+            out: 'artist-title',
+            threadCount: 1,
+        }
+        batchDownloadSongs([songItem], config)
     }
     downloadLyric(lrcKey) {
         saveContentAsFile(this.lyricObj[lrcKey].lyric, this.filename + '.lrc')

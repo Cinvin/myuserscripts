@@ -72,7 +72,7 @@ width: 10%;
                 threadList.push({ tableRowDOM: trDOM, working: true })
             }
             config.finnshCount = 0
-            config.errorSongTitles = []
+            config.errorSongs = []
             config.taskCount = songList.length
             config.threadList = threadList
             for (let i = 0; i < config.threadCount; i++) {
@@ -95,8 +95,8 @@ const downloadSongSub = (threadIndex, songList, config) => {
         }
         if (allFinnsh) {
             let finnshText = '下载完成'
-            if (config.errorSongTitles.length > 0) {
-                finnshText = `下载完成。以下${config.errorSongTitles.length}首歌曲下载失败: ${config.errorSongTitles.join()}`
+            if (config.errorSongs.length > 0) {
+                finnshText = `下载完成。以下${config.errorSongs.length}首歌曲下载失败: ${ config.errorSongs.map(song=>`<a href="https://music.163.com/#/song?id=${song.id}">${song.title}</a>`).join()}`
             }
             Swal.update({
                 allowOutsideClick: true,
@@ -118,14 +118,14 @@ const downloadSongSub = (threadIndex, songList, config) => {
             onload: (content) => {
                 let resData = content.data[0] || content.data
                 if (resData.url != null) {
-                    let fileName = nameFileWithoutExt(song.title, song.artist, config.out)
+                    let fileName = nameFileWithoutExt(song.title, song.artist, config.out).replace('/','／')
                     let fileFullName = fileName + '.' + resData.type.toLowerCase()
                     let folder = ''
                     if (config.folder != 'none' && song.artist.length > 0) {
-                        folder = song.artist + '/'
+                        folder = song.artist.replace('/','／') + '/'
                     }
                     if (config.folder == 'artist-album' && song.album.length > 0) {
-                        folder += song.album + '/'
+                        folder += song.album.replace('/','／') + '/'
                     }
                     fileFullName = folder + fileFullName
                     let dlUrl = resData.url
@@ -149,14 +149,14 @@ const downloadSongSub = (threadIndex, songList, config) => {
                         onerror: function (e) {
                             if (song.retry) {
                                 prText.innerHTML = `下载出错`
-                                config.errorSongTitles.push(song.title)
+                                config.errorSongs.push(song)
                             }
                             else {
                                 prText.innerHTML = `下载出错\t稍后重试`
                                 song.retry = true
                                 songList.push(song)
                             }
-                            console.error(e)
+                            console.error(e,dlUrl,fileFullName)
                             downloadSongSub(threadIndex, songList, config)
                         }
                     });
@@ -164,7 +164,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
                 else {
                     showTips(`${song.title}\t无法下载`, 2)
                     prText.innerHTML = `无法下载`
-                    config.errorSongTitles.push(song.title)
+                    config.errorSongs.push(song)
                     downloadSongSub(threadIndex, songList, config)
                 }
             },
@@ -172,7 +172,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
                 console.error(res)
                 if (song.retry) {
                     prText.innerHTML = `下载出错`
-                    config.errorSongTitles.push(song.title)
+                    config.errorSongs.push(song)
                 }
                 else {
                     prText.innerHTML = `下载出错\t稍后重试`
@@ -187,7 +187,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
         console.error(e);
         if (song.retry) {
             prText.innerHTML = `下载出错`
-            config.errorSongTitles.push(song.title)
+            config.errorSongs.push(song)
         }
         else {
             prText.innerHTML = `下载出错\t稍后重试`
