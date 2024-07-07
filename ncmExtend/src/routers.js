@@ -12,6 +12,7 @@ import { registerMenuCommand } from './registerMenuCommand'
 import { InfoFirstPage } from './commentBox'
 
 export const onStart = () => {
+    console.log('[ncmExtend] onStart()')
     const url = unsafeWindow.location.href
     if (unsafeWindow.self === unsafeWindow.top) {
         unsafeWindow.GUserScriptObjects = {}
@@ -26,6 +27,7 @@ export const onStart = () => {
     }
 }
 export const onDomReady = () => {
+    console.log('[ncmExtend] onDomReady()')
     const url = unsafeWindow.location.href
     const params = new URLSearchParams(unsafeWindow.location.search)
     if (url.includes('/user/home')) {
@@ -49,5 +51,5 @@ export const onDomReady = () => {
     registerMenuCommand()
 }
 export const onPageLoaded = () => {
-
+    console.log('[ncmExtend] onPageLoaded()')
 }
