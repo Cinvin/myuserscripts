@@ -39,7 +39,7 @@ export class SongDetail {
                     let songDlWeight = levelWeight[dlLevel] || 0
                     let songDetail = res["/api/song/music/detail/get"].data
                     if (res["/api/v3/song/detail"].privileges[0].cs) {
-                        this.createDLRow('云盘文件', plLevel, 'pl')
+                        this.createDLRow(`云盘文件 ${res["/api/v3/song/detail"].songs[0].pc.br}k`, plLevel, 'pl')
                     }
                     else {
                         this.createTitle('转存云盘')

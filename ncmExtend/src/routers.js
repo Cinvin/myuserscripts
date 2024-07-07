@@ -4,17 +4,32 @@ import { myHomeMain } from './home/main'
 import { playlistMain } from './playlist/main'
 import { albumMain } from './album/main'
 import { songMain } from './song/main'
-import { commentInfo } from './commentBox'
-export const router = () => {
-    if (unsafeWindow.self == unsafeWindow.top) {
+
+import { hookWindowForCommentBox } from './commentBox'
+import { observerCommentBox } from './commentBox'
+
+import { registerMenuCommand } from './registerMenuCommand'
+import { InfoFirstPage } from './commentBox'
+
+export const onStart = () => {
+    const url = unsafeWindow.location.href
+    if (unsafeWindow.self === unsafeWindow.top) {
+        unsafeWindow.GUserScriptObjects = {}
         hookTopWindow()
+        const iframes = document.getElementsByTagName("iframe")
+        for (let iframe of iframes) {
+            hookWindowForCommentBox(iframe.contentWindow)
+        }
     }
+    else if (unsafeWindow.name === 'contentFrame') {
+        hookWindowForCommentBox(unsafeWindow)
+    }
+}
+export const onDomReady = () => {
     const url = unsafeWindow.location.href
     const params = new URLSearchParams(unsafeWindow.location.search)
     if (url.includes('/user/home')) {
-        if (Number(params.get('id')) === unsafeWindow.GUser.userId) {
-            myHomeMain()
-        }
+        myHomeMain(Number(params.get('id')))
     }
     else if (url.includes('/playlist') && !url.includes('/my/m/music/playlist')) {
         playlistMain(Number(params.get('id')))
@@ -28,6 +43,11 @@ export const router = () => {
 
     const commentBox = document.querySelector('#comment-box')
     if (commentBox) {
-        commentInfo(commentBox)
+        observerCommentBox(commentBox)
+        InfoFirstPage(commentBox)
     }
+    registerMenuCommand()
+}
+export const onPageLoaded = () => {
+
 }

@@ -1,8 +1,8 @@
 import { downloadSongBatch } from "./downloadSongBatch"
 import { uploadSongBatch } from "./uploadSongBatch"
 import { sortSongs } from "./sortSongs"
-let operationArea = document.querySelector('#content-operation')
 export const playlistMain = (playlistId) => {
+    let operationArea = document.querySelector('#content-operation')
     if (operationArea) {
         downloadSongBatch(playlistId, operationArea)
         uploadSongBatch(playlistId, operationArea)

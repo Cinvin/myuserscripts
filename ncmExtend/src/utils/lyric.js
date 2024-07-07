@@ -19,7 +19,7 @@ const parseLyric = (lrc) => {
         for (const timestamp of lyricTimestamps.matchAll(extractTimestampRegex)) {
             const { min, sec, ms } = timestamp.groups;
             const rawTime = timestamp[0];
-            const time = Number(min) * 60 + Number(sec) + Number(ms ?? 0) * 0.001;
+            const time = Number(min) * 60 + Number(sec) + Number((ms ?? '000').padEnd(3,'0')) * 0.001;
             const parsedLyric = { rawTime, time, content: trimLyricContent(content), line: line[0] };
             parsedLyrics.splice(parsedLyricsBinarySearch(parsedLyric, parsedLyrics), 0, parsedLyric);
         }
