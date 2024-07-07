@@ -5,6 +5,9 @@ import { playlistMain } from './playlist/main'
 import { albumMain } from './album/main'
 import { songMain } from './song/main'
 
+import { songDetailObj } from './song/songDetail'
+import { albumDetailObj } from './album/albumDetail'
+
 import { hookWindowForCommentBox } from './commentBox'
 import { observerCommentBox } from './commentBox'
 
@@ -14,6 +17,7 @@ import { InfoFirstPage } from './commentBox'
 export const onStart = () => {
     console.log('[ncmExtend] onStart()')
     const url = unsafeWindow.location.href
+    const params = new URLSearchParams(unsafeWindow.location.search)
     if (unsafeWindow.self === unsafeWindow.top) {
         unsafeWindow.GUserScriptObjects = {}
         hookTopWindow()
@@ -24,23 +28,29 @@ export const onStart = () => {
     }
     else if (unsafeWindow.name === 'contentFrame') {
         hookWindowForCommentBox(unsafeWindow)
+        if (url.includes('/song?')) {
+            songDetailObj.fetchSongData(Number(params.get('id')))
+        }
+        else if(url.includes('/album?')){
+            albumDetailObj.fetchAlbumData(Number(params.get('id')))
+        }
     }
 }
 export const onDomReady = () => {
     console.log('[ncmExtend] onDomReady()')
     const url = unsafeWindow.location.href
     const params = new URLSearchParams(unsafeWindow.location.search)
-    if (url.includes('/user/home')) {
+    if (url.includes('/user/home?')) {
         myHomeMain(Number(params.get('id')))
     }
-    else if (url.includes('/playlist') && !url.includes('/my/m/music/playlist')) {
+    else if (url.includes('/song?')) {
+        songMain(Number(params.get('id')))
+    }
+    else if (url.includes('/playlist?') && !url.includes('/my/m/music/playlist')) {
         playlistMain(Number(params.get('id')))
     }
-    else if (url.includes('/album')) {
+    else if (url.includes('/album?')) {
         albumMain(Number(params.get('id')))
-    }
-    else if (url.includes('/song')) {
-        songMain(Number(params.get('id')))
     }
 
     const commentBox = document.querySelector('#comment-box')

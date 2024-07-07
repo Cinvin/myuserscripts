@@ -1,6 +1,6 @@
 import { downloadSongBatch } from "./downloadSongBatch"
 import { uploadSongBatch } from "./uploadSongBatch"
-import { albumDetail } from "./albumDetail"
+import { albumDetailObj } from "./albumDetail"
 export const albumMain = (albumId) => {
     let descriptionArea = document.querySelector('.topblk')
     let operationArea = document.querySelector('#content-operation')
@@ -9,6 +9,6 @@ export const albumMain = (albumId) => {
         uploadSongBatch(albumId, operationArea)
     }
     if (descriptionArea) {
-        albumDetail(albumId, descriptionArea)
+        albumDetailObj.setFillNode(descriptionArea)
     }
 }
