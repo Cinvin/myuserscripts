@@ -1,5 +1,7 @@
-import { getPlaylistAllSongs } from "../playlist/getPlaylistAllSongs"
-import { getAlbumAllSongs } from "../album/getAlbumAllSongs"
+import { playlistDetailObj } from "../playlist/playlistDetail"
+import { albumDetailObj } from "../album/albumDetail"
+import { filterSongs } from "../song/filterSongs"
+import { createSongsUrlApi } from "../song/createSongsUrlApi"
 export const ShowBatchDLULPopUp = (config) => {
     Swal.fire({
         title: '批量转存云盘',
@@ -20,7 +22,7 @@ export const ShowBatchDLULPopUp = (config) => {
         showCloseButton: true,
         footer: '<span></span><a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
         focusConfirm: false,
-        preConfirm: (level) => {
+        preConfirm: () => {
             return {
                 free: document.getElementById('cb-fee0').checked,
                 VIP: document.getElementById('cb-fee1').checked,
@@ -35,11 +37,15 @@ export const ShowBatchDLULPopUp = (config) => {
             }
         }
     }).then(res => {
-        if (res.value.listType == 'playlist') {
-            getPlaylistAllSongs(res.value)
-        }
-        else if (res.value.listType == 'album') {
-            getAlbumAllSongs(res.value)
+        if (res.isConfirmed) {
+            if (res.value.listType == 'playlist') {
+                let filtedSongList = filterSongs(playlistDetailObj.playlistSongList, res.value)
+                createSongsUrlApi(filtedSongList, res.value)
+            }
+            else if (res.value.listType == 'album') {
+                let filtedSongList = filterSongs(albumDetailObj.albumSongList, res.value)
+                createSongsUrlApi(filtedSongList, res.value)
+            }
         }
     })
 }

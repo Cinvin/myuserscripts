@@ -4,10 +4,12 @@ import { levelDesc, fileSizeDesc, nameFileWithoutExt, getAlbumTextInSongDetail, 
 import { levelWeight, songMark } from "../utils/constant"
 import { handleLyric } from "../utils/lyric"
 import { ncmDownUpload } from "../ncmDownUpload"
-import { showTips, saveContentAsFile } from "../utils/common"
+import { saveContentAsFile } from "../utils/common"
 import { batchDownloadSongs } from "./batchDownloadSongs"
 class SongDetail {
     constructor() {
+        this.domReady = false
+        this.dataFetched = false
         this.flag = true
     };
     fetchSongData(songId) {
@@ -22,16 +24,18 @@ class SongDetail {
             },
             onload: (res) => {
                 this.SongRes = res
+                this.dataFetched = true
                 this.checkStartCreateDom()
             }
         })
     }
-    setFillNode(node) {
-        this.maindDiv = node
+    onDomReady() {
+        this.maindDiv = document.querySelector(".cvrwrap")
+        this.domReady = true
         this.checkStartCreateDom()
     }
     checkStartCreateDom() {
-        if (this.maindDiv && this.SongRes && this.flag) {
+        if (this.domReady && this.dataFetched && this.flag) {
             this.flag = false
             this.createDoms()
         }

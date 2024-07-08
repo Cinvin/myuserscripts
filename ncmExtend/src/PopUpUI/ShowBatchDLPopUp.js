@@ -1,5 +1,7 @@
-import { getAlbumAllSongs } from "../album/getAlbumAllSongs"
-import { getPlaylistAllSongs } from "../playlist/getPlaylistAllSongs"
+import { playlistDetailObj } from "../playlist/playlistDetail"
+import { albumDetailObj } from "../album/albumDetail"
+import { filterSongs } from "../song/filterSongs"
+import { createSongsUrlApi } from "../song/createSongsUrlApi"
 export const ShowBatchDLPopUp = (config) => {
     Swal.fire({
         title: '批量下载',
@@ -35,7 +37,7 @@ export const ShowBatchDLPopUp = (config) => {
         showCloseButton: true,
         footer: '<span>请将 <b>TamperMonkey</b> 插件设置中的 <b>下载模式</b> 设置为 <b>浏览器 API</b> 并将 <b>/\.(mp3|flac|lrc)$/</b> 添加进 <b>文件扩展名白名单</b> 以保证能正常下载。</span><a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
         focusConfirm: false,
-        preConfirm: (level) => {
+        preConfirm: () => {
             let container = Swal.getHtmlContainer()
             return {
                 free: container.querySelector('#cb-fee0').checked,
@@ -54,11 +56,15 @@ export const ShowBatchDLPopUp = (config) => {
             }
         }
     }).then(res => {
-        if (res.value.listType == 'playlist') {
-            getPlaylistAllSongs(res.value)
-        }
-        else if (res.value.listType == 'album') {
-            getAlbumAllSongs(res.value)
+        if (res.isConfirmed) {
+            if (res.value.listType == 'playlist') {
+                let filtedSongList = filterSongs(playlistDetailObj.playlistSongList, res.value)
+                createSongsUrlApi(filtedSongList, res.value)
+            }
+            else if (res.value.listType == 'album') {
+                let filtedSongList = filterSongs(albumDetailObj.albumSongList, res.value)
+                createSongsUrlApi(filtedSongList, res.value)
+            }
         }
     })
 }
