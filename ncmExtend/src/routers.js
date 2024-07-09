@@ -63,8 +63,9 @@ export const onDomReady = () => {
         observerCommentBox(commentBox)
         InfoFirstPage(commentBox)
     }
-    
-    registerMenuCommand()
+    if (unsafeWindow.name === 'contentFrame') {
+        registerMenuCommand()
+    }
 }
 export const onPageLoaded = () => {
     console.log('[ncmExtend] onPageLoaded()')

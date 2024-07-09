@@ -14,6 +14,6 @@ unsafeWindow.addEventListener(DOM_READY, (() => {
     onDomReady()
 }));
 
-unsafeWindow.addEventListener(PAGE_LOADED, (() => {
-    onPageLoaded()
-}));
+// unsafeWindow.addEventListener(PAGE_LOADED, (() => {
+//     onPageLoaded()
+// }));

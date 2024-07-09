@@ -62,3 +62,16 @@ export const nameFileWithoutExt = (title, artist, out) => {
         return `${title} - ${artist}`
     }
 }
+export const escapeHTML = string => (
+    string.replace(
+        /[&<>'"]/g,
+        word =>
+        ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;',
+        })[word] || word
+    )
+)
