@@ -7,11 +7,11 @@ const publicKey = `-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7clFSs6sXqHauqKWqdtLkF2KexO40H1YTX8z2lSgBBOAxLsvaklV8k4cBFK9snQXE9/DDaFt6Rr7iVZMldczhC0JNgTz+SHXT6CBHuX3e9SdB1Ua44oncaTWz7OBGLbCiK45wIDAQAB
 -----END PUBLIC KEY-----`
 export const aesEncrypt = (text, key, iv) => {
-  var cipher = forge.cipher.createCipher('AES-CBC', forge.util.encodeUtf8(key));
-  cipher.start({ iv: forge.util.encodeUtf8(iv) });
+  let cipher = forge.cipher.createCipher('AES-CBC', key);
+  cipher.start({ iv: iv });
   cipher.update(forge.util.createBuffer(forge.util.encodeUtf8(text)));
   cipher.finish();
-  var encrypted = cipher.output;
+  let encrypted = cipher.output;
   return forge.util.encode64(encrypted.getBytes())
 }
 export const rsaEncrypt = (str, key) => {
