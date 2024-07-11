@@ -185,7 +185,29 @@ class PlaylistDetail {
         const table = document.querySelector('.m-table')
         if (table) {
             const tableStyles = `
+            .m-table .ncmextend-playlist-playbtn {
+                display: none;
+            }
+            .m-table tr:hover .ncmextend-playlist-playbtn {
+                display: block;
+            }
+            .m-table .ncmextend-playlist-playbtn:has(.ply-z-slt) {
+                display: block;
+            }
+            .m-table .ncmextend-playlist-songindex:has(+ div > .ply-z-slt) {
+                display: none;
+            }
             .m-table .ncmextend-playlist-songindex {
+                color: #999;
+                float: left;
+                margin-left: -8px;
+                width: 40px;
+                text-align: center;
+            }
+            .m-table tr:hover .ncmextend-playlist-songindex {
+                display: none;
+            }
+            .m-table .ncmextend-playlist-viponly {
                 color: #999;
                 float: left;
                 margin-left: -8px;
@@ -225,9 +247,9 @@ class PlaylistDetail {
             //设置当前播放的歌曲
             const playing = unsafeWindow.top.player.getPlaying()
             if (playing.track) {
-                const plybtn = document.querySelector(`[id="${playing.track.id}${timestamp}"] > td:nth-child(1) > div > span`)
+                const plybtn = document.querySelector(`[id="${playing.track.id}${timestamp}"] > td:nth-child(1) > div > div.ncmextend-playlist-playbtn > span`)
                 if (plybtn) {
-                    plybtn.className = plybtn.className + ' ply-z-slt'
+                    plybtn.className = plybtn.className.trimEnd() + ' ply-z-slt'
                 }
             }
             //定位到url中的目标歌曲
@@ -249,7 +271,7 @@ class PlaylistDetail {
         const albumName = escapeHTML(songItem.album)
         const songName = escapeHTML(songItem.title)
         let playBtnHTML = `<span data-res-id="${songItem.id}" data-res-type="18" data-res-action="play" data-res-from="13" data-res-data="${this.playlist.id}" class="ply "></span>`
-        if (needVIP) playBtnHTML = `<span class='ncmextend-playlist-songindex'>需要VIP</span>`
+        if (needVIP) playBtnHTML = `<span class='ncmextend-playlist-viponly'>需要VIP</span>`
         let artistContent = ''
         songItem.song.ar.forEach((ar) => {
             if (ar.name) {
@@ -265,7 +287,12 @@ class PlaylistDetail {
 				<tr id="${songItem.id}${timestamp}" class="${index % 2 ? '' : 'even'} ${status ? 'js-dis' : ''}">
 					<td>
 						<div class="hd ">
-                            ${playBtnHTML}
+                            <div class="ncmextend-playlist-songindex">
+                                <span>${index + 1}</span>
+                            </div>
+                            <div class="ncmextend-playlist-playbtn">
+                                ${playBtnHTML}
+                            </div>
                         </div>
 					</td>
 					<td class="rank">
