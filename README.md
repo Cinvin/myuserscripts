@@ -25,7 +25,9 @@
   - 在鼠标右键菜单中可进行优先试听音质的设置。
   - 脚本通过重新请求的方式获取更高音质的url替换掉原来的url。
 - 歌单页加载全部歌曲
+- 专辑页加载Disc信息
 - 评论区显示IP属地
+- 使用指定的IP地址发送评论
 - 歌单歌曲排序
   - 歌单内歌曲按发行时间、红心数、评论数进行排序。
 - 限免vip歌曲下载与上传
@@ -50,6 +52,8 @@
 <img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/ncmHomePage.png" width="60%">
 
 <img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/ncmPlaylist.png" width="60%">
+
+<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/ncmCommentIP.png" width="60%">
 
 ### 参考
 网易云音乐API来自[Binaryify/NeteaseCloudMusicApi](https://gitlab.com/Binaryify/NeteaseCloudMusicApi)  
