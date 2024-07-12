@@ -1,7 +1,7 @@
+import { showConfirmBox } from "./utils/common"
 import { weapiRequest } from "./utils/request"
 //评论区增加IP信息
-
-export const hookWindowForCommentBox= (window) => {
+export const hookWindowForCommentBox = (window) => {
     ah.proxy({
         onResponse: (response, handler) => {
             if (response.config.url.includes('/weapi/comment/resource/comments/get')) {
@@ -56,4 +56,55 @@ export const InfoFirstPage = (commentBox) => {
     for (const commentItem of commentItems) {
         commentItemAddInfo(commentItem)
     }
+}
+export const addCommentWithCumstomIP = (commentBox) => {
+    const commentTextarea = commentBox.querySelector('textarea')
+    const threadId = commentBox.getAttribute('data-tid')
+    const btnsArea = commentBox.querySelector('.btns')
+    let ipBtn = document.createElement('a')
+    ipBtn.className = 's-fc7'
+    ipBtn.innerHTML = '使用指定IP地址评论'
+    ipBtn.addEventListener('click', () => {
+        const content = commentTextarea.value.trim()
+        if (content.length == 0) {
+            showConfirmBox('评论内容不能为空')
+            return
+        }
+        const lastIPValue = GM_getValue('lastIPValue', '')
+        Swal.fire({
+            input: 'text',
+            inputLabel: 'IP地址',
+            inputValue: GM_getValue('lastIPValue', ''),
+            inputValidator: (value) => {
+                if (!/((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))/.test(value)) {
+                    return "IP格式不正确";
+                }
+            },
+            confirmButtonText: '发送评论',
+            showCloseButton: true,
+            footer: `<div>可参考:<a href="https://zh-hans.ipshu.com/country-list" target="_blank">IP 国家/地区列表</a></div>`,
+        })
+            .then(result => {
+                if (result.isConfirmed) {
+                    GM_setValue('lastIPValue', result.value)
+                    weapiRequest('/api/resource/comments/add', {
+                        data:{
+                            threadId: threadId,
+                            content:content,
+                        },
+                        ip:result.value,
+                        onload: (res)=> {
+                            console.log(res)
+                            if(res.code == 200){
+                                showConfirmBox('评论成功，请刷新网页查看')
+                            }
+                            else{
+                                showConfirmBox('评论失败，'+ JSON.stringify(res))
+                            }
+                        }
+                    })
+                }
+            })
+    })
+    btnsArea.appendChild(ipBtn)
 }

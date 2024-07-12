@@ -6,8 +6,7 @@ import { songDetailObj } from './song/songDetail'
 import { albumDetailObj } from './album/albumDetail'
 import { playlistDetailObj } from './playlist/playlistDetail'
 
-import { hookWindowForCommentBox } from './commentBox'
-import { observerCommentBox } from './commentBox'
+import { hookWindowForCommentBox, observerCommentBox, addCommentWithCumstomIP } from './commentBox'
 
 import { registerMenuCommand } from './registerMenuCommand'
 import { InfoFirstPage } from './commentBox'
@@ -62,6 +61,7 @@ export const onDomReady = () => {
     if (commentBox) {
         observerCommentBox(commentBox)
         InfoFirstPage(commentBox)
+        addCommentWithCumstomIP(commentBox)
     }
     if (unsafeWindow.name === 'contentFrame') {
         registerMenuCommand()
