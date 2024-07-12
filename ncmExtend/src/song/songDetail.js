@@ -90,7 +90,7 @@ class SongDetail {
 
         if (!this.SongRes["/api/song/lyric/v1"].pureMusic) {
             this.lyricObj = handleLyric(this.SongRes["/api/song/lyric/v1"])
-            if (this.lyricObj.orilrc.parsedLyric.length > 0) {
+            if (this.lyricObj.orilrc.lyric.length > 0) {
                 this.lyricBlock = this.createTableRow(this.infoTableBody, '下载歌词')
                 if (this.lyricObj.oritlrc) {
                     let btn = this.createButton('原歌词+翻译')
