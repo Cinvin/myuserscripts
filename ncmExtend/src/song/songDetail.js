@@ -331,6 +331,7 @@ class SongDetail {
         const config = {
             out: 'artist-title',
             threadCount: 1,
+            folder: 'none',
         }
         batchDownloadSongs([songItem], config)
     }
