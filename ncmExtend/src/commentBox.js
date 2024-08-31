@@ -82,24 +82,28 @@ export const addCommentWithCumstomIP = (commentBox) => {
             },
             confirmButtonText: '发送评论',
             showCloseButton: true,
-            footer: `<div>可参考:<a href="https://zh-hans.ipshu.com/country-list" target="_blank">IP 国家/地区列表</a></div>`,
+            footer: `
+            <div>可参考:<a href="https://zh-hans.ipshu.com/country-list" target="_blank">IP 国家/地区列表</a></div>
+            <div>需不显示属地请填 <b>127.0.0.1</b></div>
+            `,
         })
             .then(result => {
                 if (result.isConfirmed) {
                     GM_setValue('lastIPValue', result.value)
                     weapiRequest('/api/resource/comments/add', {
-                        data:{
+                        data: {
                             threadId: threadId,
-                            content:content,
+                            content: content,
                         },
-                        ip:result.value,
-                        onload: (res)=> {
+                        ip: result.value,
+                        cookie: true,
+                        onload: (res) => {
                             console.log(res)
-                            if(res.code == 200){
+                            if (res.code == 200) {
                                 showConfirmBox('评论成功，请刷新网页查看')
                             }
-                            else{
-                                showConfirmBox('评论失败，'+ JSON.stringify(res))
+                            else {
+                                showConfirmBox('评论失败，' + JSON.stringify(res))
                             }
                         }
                     })

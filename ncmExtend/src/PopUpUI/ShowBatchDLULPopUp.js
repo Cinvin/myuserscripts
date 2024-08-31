@@ -12,7 +12,7 @@ export const ShowBatchDLULPopUp = (config) => {
 <labe><input class="form-check-input" type="checkbox" value="" id="cb-fee0">免费歌曲</label>
 </div>
 <div id="my-level">
-<label>优先转存音质<select id="level-select" class="swal2-select"><option value="lossless">无损</option><option value="hires">Hi-Res</option><option value="jymaster" selected="">超清母带</option><option value="exhigh">极高</option></select></label>
+<label>优先转存音质<select id="level-select" class="swal2-select"><option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option></select></label>
 </div>
 <div id="my-out">
 <label>文件命名格式<select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手 - 歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名-歌手</option></select></label>

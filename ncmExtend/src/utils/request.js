@@ -1,6 +1,6 @@
 import { weapi } from "./crypto";
-const appendCookie = 'os=android;appver=9.1.10'
-
+const androidCookie = 'os=android;appver=9.1.10;channel=netease;osver=14;buildver=240628144636'
+const pcCookie ='os=pc;appver=3.0.13'
 export const weapiRequest = (url, config) => {
     let data = config.data || {}
     let csrfToken = document.cookie.match(/_csrf=([^(;|$)]+)/)
@@ -16,7 +16,7 @@ export const weapiRequest = (url, config) => {
         method: "POST",
         responseType: "json",
         headers: headers,
-        cookie: config.cookie || appendCookie,
+        cookie: config.cookie || pcCookie,
         data: `params=${encodeURIComponent(encRes.params)}&encSecKey=${encodeURIComponent(encRes.encSecKey)}`,
         onload: res => { config.onload(res.response) },
         onerror: config.onerror,
