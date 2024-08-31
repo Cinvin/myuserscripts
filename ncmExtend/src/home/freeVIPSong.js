@@ -14,6 +14,7 @@ export const freeVIPSong = (uiArea) => {
                 refresh: true,
                 extInfo: JSON.stringify({ refreshType: 1, abInfo: { 'hp-new-homepageV3.1': 't3' }, netstate: 1 }),
             },
+            cookie: 'os=android;appver=9.1.10',
             onload: (res) => {
                 //console.log(res)
                 let songList = res.data.blocks[0].resourceIdList.map(item => {
