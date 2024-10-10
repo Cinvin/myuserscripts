@@ -1,6 +1,6 @@
 import { createBigButton, showTips } from "../utils/common"
 import { weapiRequest } from "../utils/request"
-import { fileSizeDesc, duringTimeDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail,nameFileWithoutExt } from '../utils/descHelper'
+import { fileSizeDesc, duringTimeDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail, nameFileWithoutExt } from '../utils/descHelper'
 import { ncmDownUpload } from '../ncmDownUpload'
 
 export const freeVIPSong = (uiArea) => {
@@ -14,7 +14,7 @@ export const freeVIPSong = (uiArea) => {
                 refresh: true,
                 extInfo: JSON.stringify({ refreshType: 1, abInfo: { 'hp-new-homepageV3.1': 't3' }, netstate: 1 }),
             },
-            cookie: 'os=android;appver=9.1.10',
+            clientType: 'android',
             onload: (res) => {
                 //console.log(res)
                 let songList = res.data.blocks[0].resourceIdList.map(item => {

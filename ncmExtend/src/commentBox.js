@@ -96,7 +96,7 @@ export const addCommentWithCumstomIP = (commentBox) => {
                             content: content,
                         },
                         ip: result.value,
-                        cookie: true,
+                        clientType: 'web',
                         onload: (res) => {
                             console.log(res)
                             if (res.code == 200) {
