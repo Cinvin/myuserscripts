@@ -338,5 +338,15 @@ class PlaylistDetail {
         const seeMore = document.querySelector('.m-playlist-see-more')
         if (seeMore) seeMore.parentNode.removeChild(seeMore)
     }
+    updateSongsCloudStatus(songIds) {
+        songIds.forEach(songId => {
+            for (let i = 0; i < this.playlistSongList.length; i++) {
+                if (this.playlistSongList[i].id == songId) {
+                    this.playlistSongList[i].privilege.cs = true
+                    break
+                }
+            }
+        })
+    }
 }
 export let playlistDetailObj = new PlaylistDetail()

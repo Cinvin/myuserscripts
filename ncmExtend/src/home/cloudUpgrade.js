@@ -3,7 +3,7 @@ import { weapiRequest } from "../utils/request"
 import { duringTimeDesc, levelDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail } from '../utils/descHelper'
 import { levelWeight } from '../utils/constant'
 import { unsafeWindow } from "$"
-import { ncmDownUpload } from '../ncmDownUpload'
+import { ncmDownUpload } from '../components/ncmDownUpload'
 
 export const cloudUpgrade = (uiArea) => {
     //音质升级

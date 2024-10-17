@@ -4,12 +4,16 @@ import { filterSongs } from "../song/filterSongs"
 import { createSongsUrlApi } from "../song/createSongsUrlApi"
 export const ShowBatchDLULPopUp = (config) => {
     Swal.fire({
+        width: 600,
         title: '批量转存云盘',
         html: `<div id="my-cbs">
 <label><input class="form-check-input" type="checkbox" value="" id="cb-fee1" checked>VIP歌曲</label>
 <label><input class="form-check-input" type="checkbox" value="" id="cb-fee4" checked>付费专辑歌曲</label>
 <label><input class="form-check-input" type="checkbox" value="" id="cb-fee8">低音质免费歌曲</label>
 <labe><input class="form-check-input" type="checkbox" value="" id="cb-fee0">免费歌曲</label>
+</div>
+<div id="my-cbs2">
+<label><input class="form-check-input" type="checkbox" value="" id="cb-targetLevelOnly">仅获取到目标音质时上传</label>
 </div>
 <div id="my-level">
 <label>优先转存音质<select id="level-select" class="swal2-select"><option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option></select></label>
@@ -28,6 +32,7 @@ export const ShowBatchDLULPopUp = (config) => {
                 VIP: document.getElementById('cb-fee1').checked,
                 pay: document.getElementById('cb-fee4').checked,
                 lowFree: document.getElementById('cb-fee8').checked,
+                targetLevelOnly: document.getElementById('cb-targetLevelOnly').checked,
                 skipCloud: true,
                 level: document.getElementById('level-select').value,
                 out: document.getElementById('out-select').value,

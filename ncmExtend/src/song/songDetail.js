@@ -3,7 +3,7 @@ import { weapiRequest } from "../utils/request"
 import { levelDesc, fileSizeDesc, nameFileWithoutExt, getAlbumTextInSongDetail, getArtistTextInSongDetail } from "../utils/descHelper"
 import { levelWeight, songMark } from "../utils/constant"
 import { handleLyric } from "../utils/lyric"
-import { ncmDownUpload } from "../ncmDownUpload"
+import { ncmDownUpload } from "../components/ncmDownUpload"
 import { saveContentAsFile } from "../utils/common"
 import { batchDownloadSongs } from "./batchDownloadSongs"
 class SongDetail {

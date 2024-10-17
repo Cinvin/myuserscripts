@@ -1,7 +1,7 @@
 import { createBigButton, showTips } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail, nameFileWithoutExt } from '../utils/descHelper'
-import { ncmDownUpload } from '../ncmDownUpload'
+import { ncmDownUpload } from '../components/ncmDownUpload'
 
 export const freeVIPSong = (uiArea) => {
     //限免VIP歌曲

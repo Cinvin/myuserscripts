@@ -1,7 +1,8 @@
-import { showTips, showConfirmBox,sleep } from "./utils/common"
-import { weapiRequest } from "./utils/request"
-import { uploadChunkSize } from "./utils/constant"
-import { nameFileWithoutExt, fileSizeDesc } from "./utils/descHelper"
+//歌曲转存云盘 单曲页
+import { showTips, showConfirmBox,sleep } from "../utils/common"
+import { weapiRequest } from "../utils/request"
+import { uploadChunkSize } from "../utils/constant"
+import { nameFileWithoutExt, fileSizeDesc } from "../utils/descHelper"
 export class ncmDownUpload {
     constructor(songs, showfinishBox = true, onSongDUSuccess = null, onSongDUFail = null, out = 'artist-title') {
         this.songs = songs
@@ -24,7 +25,7 @@ export class ncmDownUpload {
             weapiRequest(song.api.url, {
                 data: song.api.data,
                 onload: (content) => {
-                    showTips(`(1/6)${song.title} 获取文件信息完成`, 1)
+                    showTips(`(1/3)${song.title} 获取文件信息完成`, 1)
                     //console.log(content)
                     let resData = content.data[0] || content.data
                     if (resData.url != null) {
@@ -52,7 +53,7 @@ export class ncmDownUpload {
                                     this.uploadSongFail(song)
                                     return
                                 }
-                                showTips(`(2/6)${song.title} 检查资源`, 1)
+                                showTips(`(2/3)${song.title} 检查资源`, 1)
                                 song.cloudId = res1.data[0].songId
                                 if (res1.data[0].upload == 1) {
                                     this.uploadSongWay1Part1(song)
@@ -108,7 +109,7 @@ export class ncmDownUpload {
                         this.uploadSongFail(song)
                         return
                     }
-                    showTips(`(2/6)${song.title} 2.导入文件完成`, 1)
+                    showTips(`(3/3)${song.title} 2.导入文件完成`, 1)
                     song.cloudSongId = res.data.successSongs[0].song.songId
                     this.uploadSongMatch(song)
                 },

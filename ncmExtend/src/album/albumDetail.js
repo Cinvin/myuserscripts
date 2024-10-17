@@ -60,7 +60,7 @@ class AlbumDetail {
             this.flag = false
             this.AppendInfos()
             this.AppendBtns()
-            if(this.albumDiscList.length>1) this.createDiscTable()
+            if (this.albumDiscList.length > 1) this.createDiscTable()
         }
     }
     AppendInfos() {
@@ -91,7 +91,7 @@ class AlbumDetail {
             </table>
             `
             let tbody = tableParent.querySelector(`#ncmextend-disc-${index}`)
-            disc.songs.forEach((songItem,songIndex) => {
+            disc.songs.forEach((songItem, songIndex) => {
                 tableRows.forEach(tableRow => {
                     if (Number(tableRow.id.slice(0, -13)) === songItem.id) {
                         tableRow.querySelector('.num').innerHTML = songItem.song.no
@@ -113,6 +113,16 @@ class AlbumDetail {
             const tr = document.querySelector(`[id="${this._hash.slice(9)}${timestamp}"]`)
             if (tr) tr.scrollIntoView();
         }
+    }
+    updateSongsCloudStatus(songIds) {
+        songIds.forEach(songId => {
+            for (let i = 0; i < this.albumSongList.length; i++) {
+                if (this.albumSongList[i].id == songId) {
+                    this.albumSongList[i].privilege.cs = true
+                    break
+                }
+            }
+        })
     }
 }
 export let albumDetailObj = new AlbumDetail()
