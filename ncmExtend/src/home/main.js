@@ -1,4 +1,3 @@
-import { scrobble } from "./scrobble"
 import { cloudUpload } from "./cloudUpload"
 import { cloudMatch } from "./cloudMatch"
 import { cloudUpgrade } from "./cloudUpgrade"
@@ -10,7 +9,6 @@ export const myHomeMain = (userId) => {
     const isUserHome = userId === unsafeWindow.GUser.userId
     let editArea = document.querySelector('#head-box > dd > div.name.f-cb > div > div.edit')
     if (isUserHome && editArea) {
-        scrobble(editArea)
         cloudUpload(editArea)
         cloudMatch(editArea)
         cloudUpgrade(editArea)
