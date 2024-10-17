@@ -4,21 +4,18 @@ import { filterSongs } from "../song/filterSongs"
 import { createSongsUrlApi } from "../song/createSongsUrlApi"
 export const ShowBatchDLPopUp = (config) => {
     Swal.fire({
+        width: 650,
         title: '批量下载',
-        customClass: {
-            input: 'f-rdi',
-        },
         html: `<div id="my-cbs">
 <label><input class="form-check-input" type="checkbox" value="" id="cb-fee1" checked>VIP歌曲</label>
 <label><input class="form-check-input" type="checkbox" value="" id="cb-fee4" checked>付费专辑歌曲</label>
-</div>
-<div id="my-cbs2">
 <label><input class="form-check-input" type="checkbox" value="" id="cb-fee8" checked>低音质免费歌曲</label>
 <label><input class="form-check-input" type="checkbox" value="" id="cb-fee0" checked>免费和云盘未匹配歌曲</label>
 </div>
-<div id="my-cbs3">
+<div id="my-cbs2">
 <label><input class="form-check-input" type="checkbox" value="" id="cb-skipcloud">跳过云盘歌曲</label>
 <label><input class="form-check-input" type="checkbox" value="" id="cb-dlLyric">下载歌词文件(.lrc)</label>
+<label><input class="form-check-input" type="checkbox" value="" id="cb-targetLevelOnly">仅获取到目标音质时下载</label>
 </div>
 <div id="my-level">
 <label>优先下载音质<select id="level-select" class="swal2-select"><option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option></select></label>
@@ -46,6 +43,7 @@ export const ShowBatchDLPopUp = (config) => {
                 lowFree: container.querySelector('#cb-fee8').checked,
                 skipCloud: container.querySelector('#cb-skipcloud').checked,
                 downloadLyric: container.querySelector('#cb-dlLyric').checked,
+                targetLevelOnly: container.querySelector('#cb-targetLevelOnly').checked,
                 level: container.querySelector('#level-select').value,
                 out: container.querySelector('#out-select').value,
                 folder: container.querySelector('#folder-select').value,

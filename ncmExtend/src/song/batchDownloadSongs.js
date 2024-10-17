@@ -73,6 +73,7 @@ width: 10%;
             }
             config.finnshCount = 0
             config.errorSongs = []
+            config.skipSongs = []
             config.taskCount = songList.length
             config.threadList = threadList
             for (let i = 0; i < config.threadCount; i++) {
@@ -95,8 +96,11 @@ const downloadSongSub = (threadIndex, songList, config) => {
         }
         if (allFinnsh) {
             let finnshText = '下载完成'
+            if (config.skipSongs.length > 0) {
+                finnshText += '\n' + `有${config.skipSongs.length}首歌曲不是目标音质，未进行下载。`
+            }
             if (config.errorSongs.length > 0) {
-                finnshText = `下载完成。以下${config.errorSongs.length}首歌曲下载失败: ${config.errorSongs.map(song => `<a href="https://music.163.com/#/song?id=${song.id}">${song.title}</a>`).join()}`
+                finnshText += '\n' + `以下${config.errorSongs.length}首歌曲下载失败: ${config.errorSongs.map(song => `<a href="https://music.163.com/#/song?id=${song.id}">${song.title}</a>`).join()}`
             }
             Swal.update({
                 allowOutsideClick: true,
@@ -118,6 +122,13 @@ const downloadSongSub = (threadIndex, songList, config) => {
             onload: (content) => {
                 let resData = content.data[0] || content.data
                 if (resData.url != null) {
+                    //跳过未到达音质的歌曲
+                    if (config.targetLevelOnly && config.level != resData.level) {
+                        prText.innerHTML = `跳过下载`
+                        config.skipSongs.push(song)
+                        downloadSongSub(threadIndex, songList, config)
+                        return
+                    }
                     let fileName = nameFileWithoutExt(song.title, song.artist, config.out).replace('/', '／')
                     let fileFullName = fileName + '.' + resData.type.toLowerCase()
                     let folder = ''
