@@ -106,13 +106,17 @@ export class ncmDownUploadBatch {
                             this.skipSongs.push(this.songs[songIndex].title)
                         }
                     }
-                    else {
+                    else if(songFileData.md5){
                         this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, this.config.out) + '.' + songFileData.type.toLowerCase()
                         this.songs[songIndex].md5 = songFileData.md5
                         this.songs[songIndex].size = songFileData.size
                         this.songs[songIndex].level = songFileData.level
                         this.songs[songIndex].ext = songFileData.type.toLowerCase()
                         this.songs[songIndex].bitrate = Math.floor(songFileData.br / 1000)
+                    }
+                    else {
+                        console.error('试听接口',this.songs[songIndex].title, songFileData)
+                        this.failSongs.push(this.songs[songIndex].title + '：通过试听接口获取文件信息失败')
                     }
                 });
                 this.fetchFileDetailByPlayerApi(offset + PlayAPIDataLimit)
@@ -177,7 +181,7 @@ export class ncmDownUploadBatch {
                 if (this.config.targetLevelOnly && this.config.level != content.data.level) {
                     this.skipSongs.push(this.songs[songIndex].title)
                 }
-                else if (content.data.url) {
+                else if (content.data.md5) {
                     this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, this.config.out) + '.' + content.data.type.toLowerCase()
                     this.songs[songIndex].md5 = content.data.md5
                     this.songs[songIndex].size = content.data.size
