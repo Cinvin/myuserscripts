@@ -433,7 +433,7 @@ width: 8%;
         let importSongData = [{
             songId: song.cloudId,
             bitrate: song.bitrate,
-            song: song.needMatch ? nameFileWithoutExt(song.name, song.artists, 'artist-title') : song.name,
+            song: song.filename,
             artist: song.artists,
             album: song.album,
             fileName: song.filename,

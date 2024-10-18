@@ -90,7 +90,7 @@ export class ncmDownUpload {
         let importSongData = [{
             songId: song.cloudId,
             bitrate: song.bitrate,
-            song: nameFileWithoutExt(song.title, song.artist, this.out),
+            song: song.fileFullName,
             artist: song.artist,
             album: song.album,
             fileName: song.fileFullName

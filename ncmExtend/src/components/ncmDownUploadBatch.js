@@ -44,6 +44,7 @@ export class ncmDownUploadBatch {
             inputAttributes: {
                 "readonly": true
             },
+            footer: '浏览器F12控制台中可查看所有的接口返回内容，出错时可进行检查。',
             didOpen: () => {
                 this.textarea = Swal.getInput()
                 this.textarea.style = 'height: 300px;'
@@ -97,6 +98,7 @@ export class ncmDownUploadBatch {
                     }
                     return
                 }
+                console.log('试听接口', content)
                 content.data.forEach(songFileData => {
                     let songIndex = this.songIdIndexsMap[songFileData.id]
                     if (this.config.targetLevelOnly && this.config.level != songFileData.level) {
@@ -151,14 +153,10 @@ export class ncmDownUploadBatch {
         let songId = this.downloadApiSongIds[offset]
         let songIndex = this.songIdIndexsMap[songId]
         weapiRequest('/api/song/enhance/download/url/v1', {
-            data: {
-                id: songId,
-                level: this.config.level,
-                encodeType: 'mp3'
-            },
+            data: this.songs[songIndex].api.data,
             onload: (content) => {
                 if (content.code != 200) {
-                    console.error('下载api', content)
+                    console.error('下载接口', content)
                     if (!retry) {
                         this.addLog('接口调用失败，1秒后重试')
                         sleep(1000).then(() => {
@@ -166,7 +164,8 @@ export class ncmDownUploadBatch {
                         })
                     }
                     else {
-                        this.addLog('接口调用失败，将跳过出错歌曲')
+                        this.addLog(`歌曲 ${this.songs[songIndex].title} 下载接口调用失败，跳过`)
+                        this.failSongs.push(this.songs[songIndex].title + '：通过下载接口获取文件信息失败')
                         this.hasError = true
                         sleep(1000).then(() => {
                             this.fetchFileDetailByDownloadApiSub(offset + 1)
@@ -174,6 +173,7 @@ export class ncmDownUploadBatch {
                     }
                     return
                 }
+                console.log('下载接口', content)
                 if (this.config.targetLevelOnly && this.config.level != content.data.level) {
                     this.skipSongs.push(this.songs[songIndex].title)
                 }
@@ -186,6 +186,9 @@ export class ncmDownUploadBatch {
                     this.songs[songIndex].bitrate = Math.floor(content.data.br / 1000)
                     this.addLog(`${this.songs[songIndex].title} 通过下载接口获取到 ${levelDesc(content.data.level)} 音质文件信息`)
                 }
+                else {
+                    this.failSongs.push(this.songs[songIndex].title + '：通过下载接口获取文件信息失败')
+                }
                 this.fetchFileDetailByDownloadApiSub(offset + 1)
             },
             onerror: (content) => {
@@ -197,7 +200,8 @@ export class ncmDownUploadBatch {
                     })
                 }
                 else {
-                    this.addLog('下载接口调用时报错，将跳过出错歌曲')
+                    this.addLog(`歌曲 ${this.songs[songIndex].title} 下载接口调用失败，跳过`)
+                    this.failSongs.push(this.songs[songIndex].title + '：通过下载接口获取文件信息失败')
                     this.hasError = true
                     sleep(1000).then(() => {
                         this.fetchFileDetailByDownloadApiSub(offset + 1)
@@ -245,7 +249,7 @@ export class ncmDownUploadBatch {
             },
             onload: (content) => {
                 if (content.code != 200 || content.data.length == 0) {
-                    console.error('获取文件云盘ID', content)
+                    console.error('获取文件云盘ID接口', content)
                     if (!retry) {
                         this.addLog('接口调用失败，1秒后重试')
                         sleep(1000).then(() => {
@@ -261,6 +265,7 @@ export class ncmDownUploadBatch {
                     }
                     return
                 }
+                console.log('获取文件云盘ID接口', content)
                 let hasFail = false
                 content.data.forEach(fileData => {
                     const songId = songMD5Map[fileData.md5]
@@ -279,7 +284,7 @@ export class ncmDownUploadBatch {
                 this.fetchCloudIdSub(index)
             },
             onerror: (content) => {
-                console.error('获取文件云盘ID', content)
+                console.error('获取文件云盘ID接口', content)
                 if (!retry) {
                     this.addLog('调用接口时报错，1秒后重试')
                     sleep(1000).then(() => {
@@ -315,7 +320,7 @@ export class ncmDownUploadBatch {
                 importSongDatas.push({
                     songId: song.cloudId,
                     bitrate: song.bitrate,
-                    song: nameFileWithoutExt(song.title, song.artist, this.out),
+                    song: song.fileFullName,
                     artist: song.artist,
                     album: song.album,
                     fileName: song.fileFullName
@@ -335,7 +340,7 @@ export class ncmDownUploadBatch {
             },
             onload: (content) => {
                 if (content.code != 200) {
-                    console.error('歌曲导入云盘', content)
+                    console.error('歌曲导入云盘接口', content)
                     if (!retry) {
                         this.addLog('接口调用失败，1秒后重试')
                         sleep(1000).then(() => {
@@ -350,20 +355,25 @@ export class ncmDownUploadBatch {
                         })
                     }
                 }
+                console.log('歌曲导入云盘接口', content)
                 if (content.data.successSongs.length > 0) {
                     let successSongs = []
-                    content.data.successSongs.forEach(song => {
-                        let songId = songCloudIdMap[song.songId]
+                    content.data.successSongs.forEach(successSong => {
+                        let songId = songCloudIdMap[successSong.songId]
                         this.successSongsId.push(songId)
                         successSongs.push(this.songs[this.songIdIndexsMap[songId]].title)
                     })
                     this.addLog(`以下歌曲上传成功：${successSongs.join()}`)
                 }
                 if (content.data.failed.length > 0) {
-                    console.error('导入歌曲接口', content)
+                    console.error('导入歌曲接口，存在上传失败歌曲。', content.data.failed)
                     content.data.failed.forEach(failSong => {
-                        let songId = songCloudIdMap[song.songId]
-                        this.failSongs.push(this.songs[this.songIdIndexsMap[songId]].title)
+                        let songId = songCloudIdMap[failSong.songId]
+                        let songTItle = this.songs[this.songIdIndexsMap[songId]].title
+                        if (failSong.msg) {
+                            songTItle += '：' + failSong.msg
+                        }
+                        this.failSongs.push(songTItle)
                     })
                 }
                 this.importSongsSub(index)
