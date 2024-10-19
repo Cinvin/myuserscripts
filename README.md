@@ -34,6 +34,7 @@
  ### 问题说明
 - 云盘快传:不保证内容的准确性、完整性。部分音质为算法升频。
 - 上传失败时，浏览器控制台(F12)有输出具体错误内容。大多数时候重试一次就好了。
+- 脚本不支持ViolentMonkey插件安装，使用ViolentMonkey会导致上传报错、获取不到`超清母带`、用不了SVIP的6T空间等问题。
 ### 截图
 <img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/ncmHomePage.png" width="60%">
 
