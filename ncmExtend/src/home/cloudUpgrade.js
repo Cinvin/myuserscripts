@@ -17,7 +17,7 @@ export const cloudUpgrade = (uiArea) => {
             inputPlaceholder: '选择目标音质',
             confirmButtonText: '下一步',
             showCloseButton: true,
-            footer: '寻找网易云音源比云盘音质好的歌曲,然后进行替换<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
+            footer: '<div>寻找网易云音源比云盘音质好的歌曲,然后进行删除并重新上传</div><div>⚠️可能出现删除了歌曲但上传失败的情况</div><div>部分歌曲无法判断是否能提升</div>',
             inputValidator: (value) => {
                 if (!value) {
                     return '请选择目标音质'
@@ -186,19 +186,20 @@ width: 16%;
                     offset: offset,
                 },
                 onload: (res) => {
+                    //console.log(res)
                     upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲`
                     res.data.forEach(song => {
                         if (song.simpleSong.privilege.toast) return
+                        if (song.simpleSong.privilege.fee == 0 && song.simpleSong.privilege.flLevel == "none") return
                         if (song.simpleSong.privilege.fee == 4) return
-                        if (song.simpleSong.privilege.playMaxBrLevel != "lossless") return
+                        if (song.simpleSong.privilege.playMaxBrLevel == "none") return
                         let cloudWeight = levelWeight[song.simpleSong.privilege.plLevel] || 0
-                        let ncmMaxWeight = levelWeight[song.simpleSong.privilege.playMaxBrLevel]
                         if (cloudWeight >= this.targetWeight) return
                         songIds.push({ 'id': song.simpleSong.id })
                         upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲 找到${songIds.length}首可能有提升的歌曲`
                     })
                     if (res.hasMore) {
-                        //if(offset<2000){//testing
+                    //if (offset < 2000) {//testing
                         res = {}
                         upgrader.fetchCloudSongInfoSub(offset + 1000, songIds)
                     } else {
@@ -239,11 +240,15 @@ width: 16%;
                                 let cloudBr = content.songs[i].pc.br
                                 if (upgrader.targetLevel == 'lossless' && content.songs[i].sq) {
                                     songItem.fileinfo = { originalLevel: content.privileges[j].plLevel, originalBr: content.songs[i].pc.br, tagetBr: Math.round(content.songs[i].sq.br / 1000) }
-                                    upgrader.songs.push(songItem)
+                                    if(songItem.fileinfo.originalBr+10<=songItem.fileinfo.tagetBr){
+                                        upgrader.songs.push(songItem)
+                                    }
                                 }
                                 else if (upgrader.targetLevel == 'hires' && content.songs[i].hr) {
                                     songItem.fileinfo = { originalLevel: content.privileges[j].plLevel, originalBr: content.songs[i].pc.br, tagetBr: Math.round(content.songs[i].hr.br / 1000) }
-                                    upgrader.songs.push(songItem)
+                                    if(songItem.fileinfo.originalBr+10<=songItem.fileinfo.tagetBr){
+                                        upgrader.songs.push(songItem)
+                                    }
                                 }
                                 break
                             }
@@ -346,83 +351,38 @@ width: 16%;
             let song = this.songs[songIndex]
             let upgrade = this
             try {
-                weapiRequest("/api/cloud/user/song/match", {
+                weapiRequest("/api/cloud/del", {
                     data: {
-                        songId: song.id,
-                        adjustSongId: 0,
+                        songIds: [song.id],
                     },
-                    onload: (res) => {
-                        console.log(res)
-                        if (res.code == 200) {
-                            showTips(`${song.name}解绑成功`, 1)
-                            song.originalId = res.matchData.songId
-                            let songItem = { api: { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([song.id]), level: upgrade.targetLevel, encodeType: 'mp3' } }, id: song.id, title: song.name, artist: song.artists, album: song.album, songIndex: songIndex, Upgrader: this }
-                            let ULobj = new ncmDownUpload([songItem], false, this.onUploadSuccess, this.onUploadFail)
-                            ULobj.startUpload()
-                        } else {
-                            showTips(`${song.name}解绑失败`, 2)
-                            upgrade.onUpgradeFail(songIndex)
+                    onload: (content) => {
+                        console.log(content)
+                        if (content.code == 200) {
+                            showTips(`${song.name}删除成功`, 1)
                         }
+                        let songItem = { api: { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([song.id]), level: upgrade.targetLevel, encodeType: 'mp3' } }, id: song.id, title: song.name, artist: song.artists, album: song.album, songIndex: songIndex, Upgrader: this }
+                        let ULobj = new ncmDownUpload([songItem], false, this.onUpgradeSucess, this.onUpgradeFail)
+                        ULobj.startUpload()
                     },
                 })
-
             } catch (e) {
                 console.error(e);
                 upgrade.onUpgradeFail(songIndex)
             }
         }
-        onUploadFail(ULsong) {
+        onUpgradeFail(ULsong) {
             let song = ULsong.Upgrader.songs[ULsong.songIndex]
-            try {
-                weapiRequest("/api/cloud/user/song/match", {
-                    data: {
-                        songId: song.originalId,
-                        adjustSongId: song.id,
-                    },
-                    onload: (res) => {
-                        console.log(res)
-                        if (res.code != 200) {
-                            showTips(`${song.name} 重新关联失败`, 2)
-                        }
-                        ULsong.Upgrader.onUpgradeFail(ULsong.songIndex)
-                    },
-                })
-
-            } catch (e) {
-                console.error(e);
-                ULsong.Upgrader.onUpgradeFail(ULsong.songIndex)
-            }
-        }
-        onUploadSuccess(ULsong) {
-            let song = ULsong.Upgrader.songs[ULsong.songIndex]
-            try {
-                weapiRequest("/api/cloud/del", {
-                    data: {
-                        songIds: [song.originalId],
-                    },
-                    onload: (responses) => {
-                        ULsong.Upgrader.onUpgradeSucess(ULsong.songIndex)
-                    },
-                })
-
-            } catch (e) {
-                console.error(e);
-                ULsong.Upgrader.onUpgradeFail(ULsong.songIndex)
-            }
-        }
-        onUpgradeFail(songIndex) {
-            let song = this.songs[songIndex]
             showTips(`${song.name} 音质提升失败`, 2)
-            this.onUpgradeFinnsh(songIndex)
+            ULsong.Upgrader.onUpgradeFinnsh(ULsong.songIndex)
         }
-        onUpgradeSucess(songIndex) {
-            let song = this.songs[songIndex]
+        onUpgradeSucess(ULsong) {
+            let song = ULsong.Upgrader.songs[ULsong.songIndex]
             showTips(`${song.name} 音质提升成功`, 1)
             song.upgraded = true
             let btnUpgrade = song.tablerow.querySelector('button')
             btnUpgrade.innerHTML = '已提升'
             btnUpgrade.disabled = 'disabled'
-            this.onUpgradeFinnsh(songIndex)
+            ULsong.Upgrader.onUpgradeFinnsh(ULsong.songIndex)
         }
         onUpgradeFinnsh(songIndex) {
             if (this.batchUpgrade.working) {

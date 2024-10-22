@@ -23,6 +23,7 @@ class SongDetail {
                 '/api/song/play/about/block/page': JSON.stringify({ 'songId': this.songId }),
             },
             onload: (res) => {
+                console.log(res)
                 this.SongRes = res
                 this.dataFetched = true
                 this.checkStartCreateDom()

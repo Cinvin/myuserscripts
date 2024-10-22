@@ -365,7 +365,7 @@ export class ncmDownUpload {
         } else {
             console.log(song.title, '完成')
             //完成
-            showTips(`(6/6)${song.title} 上传完成`, 1)
+            showTips(`${song.title} 上传完成`, 1)
             this.uploadSongSuccess(song)
         }
     }
