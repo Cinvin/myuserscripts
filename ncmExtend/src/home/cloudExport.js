@@ -1,7 +1,6 @@
 import { createBigButton, showTips } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { getAlbumTextInSongDetail } from "../utils/descHelper"
-import { sleep } from "../utils/common"
 
 export const cloudExport = (uiArea) => {
     //云盘导出
@@ -48,13 +47,18 @@ export const cloudExport = (uiArea) => {
         }
     }
     function exportCloudSub(filter, config, offset) {
+        showTips(`正在获取第${offset + 1}到${offset + 1000}首云盘歌曲信息`, 1)
         weapiRequest('/api/v1/cloud/get', {
             data: {
                 limit: 1000,
                 offset: offset,
             },
             onload: (res) => {
-                showTips(`正在获取第${offset + 1}到${Math.min(offset + 1000, res.count)}首云盘歌曲信息`, 1)
+                if (res.code != 200 || !res.data) {
+                    //重试
+                    setTimeout(exportCloudSub(filter, config, offset), 1000)
+                    return
+                }
                 let matchSongs = []
                 res.data.forEach(song => {
                     if (song.simpleSong.al && song.simpleSong.al.id > 0) {
@@ -124,11 +128,9 @@ export const cloudExport = (uiArea) => {
                         },
                         onload: (res2) => {
                             //console.log(res2)
-                            if (res2.code != 200) {
+                            if (res2.code != 200 || !res2.data) {
                                 //重试
-                                sleep(1000).then(() => {
-                                    exportCloudSub(filter, config, offset)
-                                })
+                                setTimeout(exportCloudSub(filter, config, offset), 1000)
                                 return
                             }
                             matchSongs.forEach(song => {

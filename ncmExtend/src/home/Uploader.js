@@ -1,6 +1,6 @@
 import { weapiRequest } from "../utils/request"
 import { getArtistTextInSongDetail, getAlbumTextInSongDetail, duringTimeDesc, nameFileWithoutExt, fileSizeDesc } from "../utils/descHelper"
-import { sleep,showTips } from "../utils/common"
+import { sleep, showTips } from "../utils/common"
 export class Uploader {
     constructor(config, showAll = false) {
         this.songs = []
@@ -206,11 +206,9 @@ width: 8%;
             },
             onload: function (content) {
                 //console.log(content)
-                if (content.code != 200) {
+                if (content.code != 200 || !content.songs) {
                     //重试
-                    sleep(1000).then(() => {
-                        fetchSongInfoSub(ids, startIndex) 
-                    })
+                    setTimeout(uploader.fetchSongInfoSub(ids, startIndex), 1000)
                     return
                 }
                 let songslen = content.songs.length

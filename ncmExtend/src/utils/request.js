@@ -12,12 +12,12 @@ const UserAgentMap = {
 
 const requestQueue = []
 // 定时器，每200毫秒执行一次，从队列中取出一个请求执行
-const REQUEST_INTERVAL = 200; // 每200毫秒执行一个请求
+const REQUEST_INTERVAL = 334; // 每200毫秒执行一个请求
 setInterval(() => {
-  if (requestQueue.length > 0) {
-    const requestFn = requestQueue.shift();
-    requestFn();
-  }
+    if (requestQueue.length > 0) {
+        const requestFn = requestQueue.shift();
+        requestFn();
+    }
 }, REQUEST_INTERVAL);
 
 export const weapiRequest = (url, config) => {
@@ -48,14 +48,12 @@ export const weapiRequest = (url, config) => {
 }
 function enqueueAPIRequest(data) {
     return new Promise((resolve, reject) => {
-      // 把一个函数推入队列，这个函数负责执行 API 请求并传递结果
-      requestQueue.push(() => {
-        callAPI(data)
-          .then(response => resolve(response))
-          .catch(error => reject(error));
-      });
+        // 把一个函数推入队列，这个函数负责执行 API 请求并传递结果
+        requestQueue.push(() => {
+            callAPI(data)
+        });
     });
-  }
+}
 function callAPI(data) {
     GM_xmlhttpRequest(data)
-  }
+}
