@@ -206,6 +206,13 @@ width: 8%;
             },
             onload: function (content) {
                 //console.log(content)
+                if (content.code != 200) {
+                    //重试
+                    sleep(1000).then(() => {
+                        fetchSongInfoSub(ids, startIndex) 
+                    })
+                    return
+                }
                 let songslen = content.songs.length
                 let privilegelen = content.privileges.length
                 for (let i = 0; i < privilegelen; i++) {

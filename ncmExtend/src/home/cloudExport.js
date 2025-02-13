@@ -1,6 +1,7 @@
 import { createBigButton, showTips } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { getAlbumTextInSongDetail } from "../utils/descHelper"
+import { sleep } from "../utils/common"
 
 export const cloudExport = (uiArea) => {
     //云盘导出
@@ -125,7 +126,9 @@ export const cloudExport = (uiArea) => {
                             //console.log(res2)
                             if (res2.code != 200) {
                                 //重试
-                                exportCloudSub(filter, config, offset)
+                                sleep(1000).then(() => {
+                                    exportCloudSub(filter, config, offset)
+                                })
                                 return
                             }
                             matchSongs.forEach(song => {
