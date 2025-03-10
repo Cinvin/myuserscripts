@@ -17,7 +17,7 @@ export const cloudUpgrade = (uiArea) => {
             inputPlaceholder: '选择目标音质',
             confirmButtonText: '下一步',
             showCloseButton: true,
-            footer: '<div>寻找网易云音源比云盘音质好的歌曲,然后进行删除并重新上传</div><div>⚠️可能出现删除了歌曲但上传失败的情况</div><div>部分歌曲无法判断是否能提升</div>',
+            footer: '<div>寻找网易云音源比云盘音质好的歌曲,然后进行删除并重新上传</div><div>⚠️可能会出现删除了歌曲但上传失败的情况</div><div>因此请自行做好备份</div>',
             inputValidator: (value) => {
                 if (!value) {
                     return '请选择目标音质'

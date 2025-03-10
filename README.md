@@ -35,12 +35,11 @@
 - 云盘快传:不保证内容的准确性、完整性。部分音质为算法升频。
 - 上传失败时，浏览器控制台(F12)有输出具体错误内容。大多数时候重试一次就好了。
 - 脚本不支持ViolentMonkey插件安装，使用ViolentMonkey会导致上传报错、获取不到`超清母带`、用不了SVIP的6T空间等问题。
-### 截图
-<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/ncmHomePage.png" width="60%">
 
-<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/ncmPlaylist.png" width="60%">
-
-<img src="https://raw.githubusercontent.com/Cinvin/myuserscripts/main/screenshot/ncmCommentIP.png" width="60%">
+ ### 免责声明
+- **非商业用途声明**：本脚本仅供学习和研究使用，严禁用于任何形式的商业用途。
+- **法律法规与版权遵守**：请在使用本脚本前确保遵守所在地所有相关法律法规，并尊重所有适用的版权及知识产权。
+- **风险及责任声明**：因用户使用本脚本从事任何违法、犯罪或违反[网易云音乐《音乐网盘服务协议》](https://music.163.com/static/cloudservice.html)所产生的一切后果及责任均由用户自行承担。 
 
 ### 参考
 网易云音乐API来自[Binaryify/NeteaseCloudMusicApi](https://gitlab.com/Binaryify/NeteaseCloudMusicApi)  

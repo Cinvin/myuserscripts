@@ -20,8 +20,8 @@ export class Uploader {
             limitCount: 50
         }
         this.batchUpload = {
-            threadMax: 2,
-            threadCount: 2,
+            threadMax: 1,
+            threadCount: 1,
             working: false,
             finnishThread: 0,
             songIndexs: []

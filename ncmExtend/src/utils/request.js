@@ -1,5 +1,5 @@
 import { weapi } from "./crypto";
-const CookieMap = {
+var CookieMap = {
     web: true,
     android: 'os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;',
     pc: 'os=pc;appver=3.0.18.203152;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;',
@@ -19,6 +19,8 @@ setInterval(() => {
         requestFn();
     }
 }, REQUEST_INTERVAL);
+
+setDeviceId()
 
 export const weapiRequest = (url, config) => {
     let data = config.data || {}
@@ -56,4 +58,17 @@ function enqueueAPIRequest(data) {
 }
 function callAPI(data) {
     GM_xmlhttpRequest(data)
+}
+function setDeviceId() {
+    GM_cookie.list({name:'sDeviceId'}, function(cookies, error) {
+        if (!error) {
+            console.log(cookies);
+            if(cookies.length>0){
+                CookieMap['android']+=`deviceId=${cookies[0].value};`
+                CookieMap['pc']+=`deviceId=${cookies[0].value};`
+            }
+        } else {
+            console.error(error);
+        }
+    });
 }

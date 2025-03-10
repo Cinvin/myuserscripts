@@ -5,29 +5,7 @@ import { ncmDownUpload } from '../components/ncmDownUpload'
 
 export const freeVIPSong = (uiArea) => {
     //限免VIP歌曲
-    let btnVIPfreeA = createBigButton('限免VIP歌曲A', uiArea, 2)
-    btnVIPfreeA.addEventListener('click', VIPfreeA)
-    function VIPfreeA() {
-        weapiRequest('/api/homepage/block/page', {
-            data: {
-                cursor: JSON.stringify({ offset: 0, blockCodeOrderList: ['HOMPAGE_BLOCK_VIP_RCMD'] }),
-                refresh: true,
-                extInfo: JSON.stringify({ refreshType: 1, abInfo: { 'hp-new-homepageV3.1': 't3' }, netstate: 1 }),
-            },
-            clientType: 'android',
-            onload: (res) => {
-                //console.log(res)
-                let songList = res.data.blocks[0].resourceIdList.map(item => {
-                    return {
-                        'id': Number(item)
-                    }
-                })
-                openVIPDownLoadPopup(songList, 'APP发现页「免费听VIP歌曲」的内容', 23)
-            }
-        })
-    }
-
-    let btnVIPfreeB = createBigButton('限免VIP歌曲B', uiArea, 2)
+    let btnVIPfreeB = createBigButton('限免VIP歌曲', uiArea, 2)
     btnVIPfreeB.addEventListener('click', VIPfreeB)
     function VIPfreeB() {
         weapiRequest('/api/v6/playlist/detail', {
@@ -89,7 +67,7 @@ tr td:nth-child(2){
 width: 10%;
 }
 tr td:nth-child(3){
-width: 30%;
+width: 38%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
 width: 28%;
@@ -124,9 +102,10 @@ width: 8%;
                                         //移除云盘已存在歌曲
                                         break
                                     }
-                                    let songArtist = content.songs[i].ar ? content.songs[i].ar.map(ar => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>`).join() : ''
+                                    let songArtist = getArtistTextInSongDetail(content.songs[i])
                                     let songTitle = content.songs[i].name
                                     let filename = nameFileWithoutExt(songTitle, songArtist, 'artist-title')
+                                    songArtist = content.songs[i].ar ? content.songs[i].ar.map(ar => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>`).join() : ''
                                     let tablerow = document.createElement('tr')
                                     tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${getAlbumTextInSongDetail(content.songs[i])}"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${content.songs[i].name}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`
                                     let btnDL = tablerow.querySelector('.mydl')
