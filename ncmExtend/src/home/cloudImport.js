@@ -14,7 +14,7 @@ export const cloudImport= (uiArea) => {
                 'aria-label': '选择文件'
             },
             confirmButtonText: '导入',
-            footer: '<div>请勿多个标签页同时操作，网易云有频率限制，若短时间内有大量请求，会请求失败。</div><div><a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a></div>',
+            footer: '<div>建议先设置好请求头，以避免上传失败</div><div><a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a></div>',
         })
             .then((result) => {
                 if (result.isConfirmed) {

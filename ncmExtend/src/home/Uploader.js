@@ -1,6 +1,7 @@
 import { weapiRequest } from "../utils/request"
 import { getArtistTextInSongDetail, getAlbumTextInSongDetail, duringTimeDesc, nameFileWithoutExt, fileSizeDesc } from "../utils/descHelper"
 import { sleep, showTips } from "../utils/common"
+import { CheckAPIDataLimit, importAPIDataLimit } from "../components/ncmDownUploadBatch"
 export class Uploader {
     constructor(config, showAll = false) {
         this.songs = []
@@ -20,11 +21,12 @@ export class Uploader {
             limitCount: 50
         }
         this.batchUpload = {
-            threadMax: 1,
-            threadCount: 1,
             working: false,
-            finnishThread: 0,
-            songIndexs: []
+            stopFlag: false,
+            songIndexs: [],
+            checkOffset: 0,
+            importOffset: 0,
+            matchOffset: 0,
         }
     };
     start() {
@@ -34,6 +36,8 @@ export class Uploader {
     showPopup() {
         Swal.fire({
             showCloseButton: true,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
             showConfirmButton: false,
             width: 800,
             html: `<style>
@@ -147,11 +151,13 @@ width: 8%;
                 this.btnUploadBatch = container.querySelector('#btn-upload-batch')
                 this.btnUploadBatch.addEventListener('click', () => {
                     if (this.batchUpload.working) {
+                        this.batchUpload.stopFlag = true
                         return
                     }
                     this.batchUpload.songIndexs = []
                     this.filter.songIndexs.forEach(idx => {
-                        if (!uploader.songs[idx].uploaded) {
+                        const song = uploader.songs[idx]
+                        if (!song.uploaded && song.uploadType != 0) {
                             uploader.batchUpload.songIndexs.push(idx)
                         }
                     })
@@ -160,13 +166,17 @@ width: 8%;
                         return
                     }
                     this.batchUpload.working = true
-                    this.batchUpload.finnishThread = 0
-                    this.batchUpload.threadCount = Math.min(this.batchUpload.songIndexs.length, this.batchUpload.threadMax)
-                    for (let i = 0; i < this.batchUpload.threadCount; i++) {
-                        this.uploadSong(this.batchUpload.songIndexs[i])
-                    }
+                    this.batchUpload.stopFlag = false
+                    this.batchUpload.checkOffset = 0
+                    this.batchUpload.importOffset = 0
+                    this.batchUpload.matchOffset = 0
+                    this.btnUploadBatch.innerHTML = "停止"
+                    this.uploadSongBatch()
                 })
                 this.fetchSongInfo()
+            },
+            willClose: () => {
+                this.batchUpload.stopFlag = true
             },
         })
     }
@@ -270,7 +280,7 @@ width: 8%;
         for (let i = 0; i < this.songs.length; i++) {
             let song = this.songs[i]
             let tablerow = document.createElement('tr')
-            tablerow.innerHTML = `<td><button type="button" class="swal2-styled">上传</button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`
+            tablerow.innerHTML = `<td><button type="button" class="swal2-styled uploadbtn">上传</button><button type="button" class="swal2-styled reuploadbtn" style="display: none">文件已在云盘，点击关联到此歌曲</button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`
             let songTitle = tablerow.querySelector('.song-remark')
             if (song.isNoCopyright) {
                 songTitle.innerHTML = '无版权'
@@ -279,12 +289,19 @@ width: 8%;
             } else if (song.isPay) {
                 songTitle.innerHTML = '数字专辑'
             }
-            let btn = tablerow.querySelector('button')
-            btn.addEventListener('click', () => {
+            let uploadbtn = tablerow.querySelector('.uploadbtn')
+            uploadbtn.addEventListener('click', () => {
                 if (this.batchUpload.working) {
                     return
                 }
                 this.uploadSong(i)
+            })
+            let reuploadbtn = tablerow.querySelector('.reuploadbtn')
+            reuploadbtn.addEventListener('click', () => {
+                if (this.batchUpload.working) {
+                    return
+                }
+                this.uploadSongWay2Part1(i)
             })
             song.tablerow = tablerow
         }
@@ -367,7 +384,7 @@ width: 8%;
         let countCanUpload = 0
         this.filter.songIndexs.forEach(idx => {
             let song = this.songs[idx]
-            if (!song.uploaded) {
+            if (!song.uploaded && song.uploadType != 0) {
                 countCanUpload += 1
                 sizeTotal += song.size
             }
@@ -377,8 +394,23 @@ width: 8%;
             this.btnUploadBatch.innerHTML += ` (${countCanUpload}首 ${fileSizeDesc(sizeTotal)})`
         }
     }
+    setReUploadButtonViewable(songIndex) {
+        let uploadbtn = this.songs[songIndex].tablerow.querySelector('.uploadbtn')
+        uploadbtn.style.display = 'none'
+        let reuploadbtn = this.songs[songIndex].tablerow.querySelector('.reuploadbtn')
+        reuploadbtn.style.display = ''
+    }
     uploadSong(songIndex) {
         let song = this.songs[songIndex]
+        if (song.cloudId) {
+            if (song.uploadType == 1) {
+                this.uploadSongImport(songIndex)
+            }
+            else if (song.uploadType == 0) {
+                this.uploadSongWay2Part1(songIndex)
+            }
+            return
+        }
         let uploader = this
         try {
             let songCheckData = [{
@@ -412,13 +444,25 @@ width: 8%;
                     }
 
                     console.log(song.name, '1.检查资源', res1)
-                    song.cloudId = res1.data[0].songId
-                    showTips(`(2/6)${song.name} 检查资源`, 1)
+                    song.uploadType = fileData.upload
                     if (res1.data[0].upload == 1) {
-                        uploader.uploadSongWay1Part1(songIndex)
+                        console.log(song.name, '1.检查资源', res1)
+                        showTips(`(1/3)${song.name} 检查资源`, 1)
+                        song.cloudId = res1.data[0].songId
+                        uploader.uploadSongImport(songIndex)
+                    }
+                    else if (res1.data[0].upload == 0) {
+                        setReUploadButtonViewable(songIndex)
+                        uploader.onUploadFinnsh()
                     }
                     else {
-                        uploader.uploadSongWay2Part1(songIndex)
+                        console.error(song.name, '1.检查资源', res1)
+                        showTips(`(1/3)${song.name} 文件无法上传`, 2)
+                        song.uploaded = true
+                        let btnUpload = song.tablerow.querySelector('.uploadbtn')
+                        btnUpload.innerHTML = '无法上传'
+                        btnUpload.disabled = 'disabled'
+                        uploader.onUploadFinnsh()
                     }
                 },
                 onerror: function (res) {
@@ -432,8 +476,12 @@ width: 8%;
             uploader.onUploadFail(songIndex)
         }
     }
-    uploadSongWay1Part1(songIndex) {
+    uploadSongImport(songIndex) {
         let song = this.songs[songIndex]
+        if (song.cloudSongId) {
+            this.uploadSongMatch(songIndex)
+            return
+        }
         let uploader = this
         let importSongData = [{
             songId: song.cloudId,
@@ -469,6 +517,37 @@ width: 8%;
         catch (e) {
             console.error(e);
             uploader.onUploadFail(songIndex)
+        }
+    }
+    uploadSongMatch(songIndex) {
+        let song = this.songs[songIndex]
+        let uploader = this
+        if (song.cloudSongId != song.id && song.id > 0) {
+            weapiRequest("/api/cloud/user/song/match", {
+                data: {
+                    songId: song.cloudSongId,
+                    adjustSongId: song.id,
+                },
+                onload: (res5) => {
+                    if (res5.code != 200) {
+                        console.error(song.name, '5.匹配歌曲', res5)
+                        uploader.onUploadFail(songIndex)
+                        return
+                    }
+                    console.log(song.name, '5.匹配歌曲', res5)
+                    console.log(song.name, '完成')
+                    //完成
+                    uploader.onUploadSucess(songIndex)
+                },
+                onerror: function (res) {
+                    console.error(song.name, '5.匹配歌曲', res)
+                    uploader.onUploadFail(songIndex)
+                }
+            })
+        } else {
+            console.log(song.name, '完成')
+            //完成
+            uploader.onUploadSucess(songIndex)
         }
     }
     uploadSongWay2Part1(songIndex) {
@@ -562,66 +641,253 @@ width: 8%;
             }
         });
     }
-    uploadSongMatch(songIndex) {
-        let song = this.songs[songIndex]
-        let uploader = this
-        if (song.cloudSongId != song.id && song.id > 0) {
-            weapiRequest("/api/cloud/user/song/match", {
-                data: {
-                    songId: song.cloudSongId,
-                    adjustSongId: song.id,
-                },
-                onload: (res5) => {
-                    if (res5.code != 200) {
-                        console.error(song.name, '5.匹配歌曲', res5)
-                        uploader.onUploadFail(songIndex)
-                        return
-                    }
-                    console.log(song.name, '5.匹配歌曲', res5)
-                    console.log(song.name, '完成')
-                    //完成
-                    uploader.onUploadSucess(songIndex)
-                },
-                onerror: function (res) {
-                    console.error(song.name, '5.匹配歌曲', res)
-                    uploader.onUploadFail(songIndex)
-                }
-            })
-        } else {
-            console.log(song.name, '完成')
-            //完成
-            uploader.onUploadSucess(songIndex)
-        }
-    }
     onUploadFail(songIndex) {
         let song = this.songs[songIndex]
         showTips(`${song.name} - ${song.artists} - ${song.album} 上传失败`, 2)
-        this.onUploadFinnsh(songIndex)
+        this.onUploadFinnsh()
     }
     onUploadSucess(songIndex) {
         let song = this.songs[songIndex]
         showTips(`${song.name} - ${song.artists} - ${song.album} 上传成功`, 1)
+        this.setSongUploaded(song)
+        this.onUploadFinnsh()
+    }
+    onUploadFinnsh() {
+        this.renderFilterInfo()
+    }
+
+    setSongUploaded(song) {
         song.uploaded = true
-        let btnUpload = song.tablerow.querySelector('button')
+        let btnUpload = song.tablerow.querySelector('.uploadbtn')
         btnUpload.innerHTML = '已上传'
         btnUpload.disabled = 'disabled'
-        this.onUploadFinnsh(songIndex)
     }
-    onUploadFinnsh(songIndex) {
-        if (this.batchUpload.working) {
-            let batchSongIdx = this.batchUpload.songIndexs.indexOf(songIndex)
-            if (batchSongIdx + this.batchUpload.threadCount < this.batchUpload.songIndexs.length) {
-                this.uploadSong(this.batchUpload.songIndexs[batchSongIdx + this.batchUpload.threadCount])
-            } else {
-                this.batchUpload.finnishThread += 1
-                if (this.batchUpload.finnishThread == this.batchUpload.threadCount) {
-                    this.batchUpload.working = false
-                    this.renderFilterInfo()
-                    showTips('上传完成', 1)
+
+    uploadSongBatch(retry = false) {
+        if (this.batchUpload.checkOffset >= this.batchUpload.songIndexs.length) {
+            this.onBatchUploadFinnsh()
+            showTips('批量上传完成', 1)
+            return
+        }
+        if (this.batchUpload.stopFlag) {
+            this.onBatchUploadFinnsh()
+            return
+        }
+        let songMD5IndexMap = {}
+        let songCheckDatas = []
+        let indexOfSongIndexs = this.batchUpload.checkOffset
+        let endIndex = Math.min(this.batchUpload.songIndexs.length, this.batchUpload.checkOffset + CheckAPIDataLimit)
+        while (indexOfSongIndexs < endIndex) {
+            let songIndex = this.batchUpload.songIndexs[indexOfSongIndexs]
+            let song = this.songs[songIndex]
+            songCheckDatas.push({
+                md5: song.md5,
+                songId: song.id,
+                bitrate: song.bitrate,
+                fileSize: song.size,
+            })
+            songMD5IndexMap[song.md5] = songIndex
+
+            indexOfSongIndexs += 1
+        }
+
+        weapiRequest("/api/cloud/upload/check/v2", {
+            data: {
+                uploadType: 0,
+                songs: JSON.stringify(songCheckDatas),
+            },
+            onload: (content) => {
+                if (content.code != 200 || content.data.length == 0) {
+                    console.error('获取文件云盘ID接口', content)
+                    if (!retry) {
+                        showTips('接口调用失败，1秒后重试', 2)
+                        this.addLog('接口调用失败，1秒后重试')
+                        sleep(1000).then(() => {
+                            this.uploadSongBatch(retry = true)
+                        })
+                    }
+                    else {
+                        //跳过
+                        this.batchUpload.checkOffset = endIndex
+                        this.uploadSongBatch()
+                    }
+                    return
+                }
+                showTips(`获取第 ${this.batchUpload.checkOffset + 1} 到 第 ${indexOfSongIndexs} 首歌曲云盘ID`, 1)
+                console.log('获取文件云盘ID接口', content)
+                content.data.forEach(fileData => {
+                    const songIndex = songMD5IndexMap[fileData.md5]
+                    this.songs[songIndex].uploadType = fileData.upload
+                    if (fileData.upload == 1) {
+                        this.songs[songIndex].cloudId = fileData.songId
+                    }
+                    else if (fileData.upload == 0) {
+                        setReUploadButtonViewable(songIndex)
+                    }
+                    else {
+                        this.songs[songIndex].uploaded = true
+                        let btnUpload = this.songs[songIndex].tablerow.querySelector('.uploadbtn')
+                        btnUpload.innerHTML = '无法上传'
+                        btnUpload.disabled = 'disabled'
+                    }
+                })
+                this.batchUpload.checkOffset = endIndex
+                this.uploadSongImportBatch()
+            },
+            onerror: (content) => {
+                console.error('获取文件云盘ID接口', content)
+                if (!retry) {
+                    showTips('接口调用失败，1秒后重试', 2)
+                    sleep(1000).then(() => {
+                        this.uploadSongBatch(retry = true)
+                    })
+                }
+                else {
+                    //跳过
+                    this.batchUpload.checkOffset = endIndex
+                    this.uploadSongBatch()
                 }
             }
-        } else {
-            this.renderFilterInfo()
+        })
+    }
+    uploadSongImportBatch(retry = false) {
+        if (this.batchUpload.importOffset >= this.batchUpload.checkOffset) {
+            this.uploadSongBatch()
+            return
         }
+        if (this.batchUpload.stopFlag) {
+            this.onBatchUploadFinnsh()
+            return
+        }
+        let songCloudIdIndexMap = {}
+        let importSongDatas = []
+        let indexOfSongIndexs = this.batchUpload.importOffset
+        let maxIndex = Math.min(this.batchUpload.checkOffset, this.batchUpload.importOffset + importAPIDataLimit)
+        while (indexOfSongIndexs < maxIndex) {
+            let songIndex = this.batchUpload.songIndexs[indexOfSongIndexs]
+            let song = this.songs[songIndex]
+            if ('cloudId' in song) {
+                importSongDatas.push({
+                    songId: song.cloudId,
+                    bitrate: song.bitrate,
+                    song: song.filename,
+                    artist: song.artists,
+                    album: song.album,
+                    fileName: song.filename
+                })
+                songCloudIdIndexMap[song.cloudId] = songIndex
+            }
+            indexOfSongIndexs += 1
+        }
+        weapiRequest("/api/cloud/user/song/import", {
+            data: {
+                uploadType: 0,
+                songs: JSON.stringify(importSongDatas),
+            },
+            onload: (content) => {
+                if (content.code != 200) {
+                    console.error('歌曲导入云盘接口', content)
+                    if (!retry) {
+                        showTips('接口调用失败，1秒后重试', 1)
+                        sleep(1000).then(() => {
+                            this.uploadSongImportBatch(retry = true)
+                        })
+                    }
+                    else {
+                        //跳过
+                        this.batchUpload.importOffset = indexOfSongIndexs
+                        this.uploadSongImportBatch()
+                    }
+                }
+                console.log('歌曲导入云盘接口', content)
+                if (content.data.successSongs.length > 0) {
+                    let successSongNames = []
+                    content.data.successSongs.forEach(successSong => {
+                        let song = this.songs[songCloudIdIndexMap[successSong.songId]]
+                        song.cloudSongId = successSong.song.songId
+                        if (song.cloudSongId == song.id) {
+                            this.setSongUploaded(song)
+                            successSongNames.push(song.name)
+                        }
+                    })
+                    showTips(`成功上传${successSongNames.length}首:${successSongNames.join('、')}`, 1)
+                }
+                this.batchUpload.importOffset = indexOfSongIndexs
+                this.uploadSongMatchBatch()
+            },
+            onerror: (content) => {
+                console.error('歌曲导入云盘', content)
+                if (!retry) {
+                    showTips('接口调用失败，1秒后重试', 1)
+                    sleep(1000).then(() => {
+                        this.uploadSongImportBatch(retry = true)
+                    })
+                }
+                else {
+                    //跳过
+                    this.batchUpload.importOffset = indexOfSongIndexs
+                    this.uploadSongImportBatch()
+                }
+            }
+        })
+    }
+    uploadSongMatchBatch(retry = false) {
+        if (this.batchUpload.matchOffset >= this.batchUpload.importOffset) {
+            this.uploadSongImportBatch()
+            return
+        }
+        let songIndex = this.batchUpload.songIndexs[this.batchUpload.matchOffset]
+        let song = this.songs[songIndex]
+        if (!('cloudSongId' in song) || song.cloudSongId == song.id || song.id <= 0) {
+            this.batchUpload.matchOffset += 1
+            this.uploadSongMatchBatch()
+            return
+        }
+        weapiRequest("/api/cloud/user/song/match", {
+            data: {
+                songId: song.cloudSongId,
+                adjustSongId: song.id,
+            },
+            onload: (res5) => {
+                if (res5.code != 200) {
+                    console.error(song.name, '匹配歌曲', res5)
+                    if (!retry) {
+                        showTips('接口调用失败，1秒后重试', 1)
+                        sleep(1000).then(() => {
+                            this.uploadSongMatchBatch(retry = true)
+                        })
+                    }
+                    else {
+                        //跳过
+                        this.batchUpload.matchOffset += 1
+                        this.uploadSongMatchBatch()
+                    }
+                    return
+                }
+                console.log(song.name, '匹配歌曲', res5)
+                this.setSongUploaded(song)
+                showTips(`成功上传1首歌曲`, 1)
+                this.batchUpload.matchOffset += 1
+                this.uploadSongMatchBatch()
+            },
+            onerror: function (res) {
+                console.error(song.name, '匹配歌曲', res)
+                if (!retry) {
+                    showTips('接口调用失败，1秒后重试', 1)
+                    sleep(1000).then(() => {
+                        this.uploadSongMatchBatch(retry = true)
+                    })
+                }
+                else {
+                    //跳过
+                    this.batchUpload.matchOffset += 1
+                    this.uploadSongMatchBatch()
+                }
+            }
+        })
+    }
+    onBatchUploadFinnsh() {
+        this.batchUpload.working = false
+        this.renderFilterInfo()
     }
 }

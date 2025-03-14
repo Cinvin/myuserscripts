@@ -7,8 +7,8 @@ import { albumDetailObj } from '../album/albumDetail'
 import { playlistDetailObj } from '../playlist/playlistDetail'
 
 const PlayAPIDataLimit = 1000
-const CheckAPIDataLimit = 100
-const importAPIDataLimit = 10
+export const CheckAPIDataLimit = 100
+export const importAPIDataLimit = 10
 export class ncmDownUploadBatch {
     constructor(songs, config) {
         this.hasError = false
@@ -44,7 +44,7 @@ export class ncmDownUploadBatch {
             inputAttributes: {
                 "readonly": true
             },
-            footer: '<div>请勿多个标签页同时操作，网易云有频率限制，若短时间内有大量请求，会请求失败。</div><div>浏览器F12控制台中可查看所有的接口返回内容，出错时可进行检查。</div>',
+            footer: '<div>建议先在个人主页先设置好请求头，以避免上传失败</div><div>浏览器F12控制台中可查看所有的接口返回内容，出错时可进行检查。</div>',
             didOpen: () => {
                 this.textarea = Swal.getInput()
                 this.textarea.style = 'height: 300px;'

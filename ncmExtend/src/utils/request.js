@@ -4,7 +4,7 @@ var CookieMap = {
     android: 'os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;',
     pc: 'os=pc;appver=3.0.18.203152;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;',
 }
-const UserAgentMap = {
+var UserAgentMap = {
     web: undefined,
     android: 'NeteaseMusic/9.1.78.241009150147(9001078);Dalvik/2.1.0 (Linux; U; Android 14; V2318A Build/TP1A.220624.014)',
     pc: 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/3.0.18.203152',
@@ -12,7 +12,7 @@ const UserAgentMap = {
 
 const requestQueue = []
 // 定时器，每200毫秒执行一次，从队列中取出一个请求执行
-const REQUEST_INTERVAL = 334; // 每200毫秒执行一个请求
+const REQUEST_INTERVAL = 50; // 每200毫秒执行一个请求
 setInterval(() => {
     if (requestQueue.length > 0) {
         const requestFn = requestQueue.shift();
@@ -60,15 +60,21 @@ function callAPI(data) {
     GM_xmlhttpRequest(data)
 }
 function setDeviceId() {
-    GM_cookie.list({name:'sDeviceId'}, function(cookies, error) {
-        if (!error) {
-            console.log(cookies);
-            if(cookies.length>0){
-                CookieMap['android']+=`deviceId=${cookies[0].value};`
-                CookieMap['pc']+=`deviceId=${cookies[0].value};`
+    const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
+    if ('appendCookie' in requestHeader) {
+        CookieMap['pc'] = requestHeader.appendCookie
+        UserAgentMap['pc'] = requestHeader.userAgent
+    }
+    else {
+        GM_cookie.list({ name: 'sDeviceId' }, function (cookies, error) {
+            if (!error) {
+                if (cookies.length > 0) {
+                    CookieMap['android'] += `deviceId=${cookies[0].value};`
+                    CookieMap['pc'] += `deviceId=${cookies[0].value};`
+                }
+            } else {
+                console.error(error);
             }
-        } else {
-            console.error(error);
-        }
-    });
+        });
+    }
 }
