@@ -444,15 +444,16 @@ width: 8%;
                     }
 
                     console.log(song.name, '1.检查资源', res1)
-                    song.uploadType = fileData.upload
-                    if (res1.data[0].upload == 1) {
+                    song.uploadType = res1.data[0].upload
+                    if (song.uploadType == 1) {
                         console.log(song.name, '1.检查资源', res1)
                         showTips(`(1/3)${song.name} 检查资源`, 1)
                         song.cloudId = res1.data[0].songId
                         uploader.uploadSongImport(songIndex)
                     }
-                    else if (res1.data[0].upload == 0) {
-                        setReUploadButtonViewable(songIndex)
+                    else if (song.uploadType == 0) {
+                        uploader.setReUploadButtonViewable(songIndex)
+                        song.cloudId = res1.data[0].songId
                         uploader.onUploadFinnsh()
                     }
                     else {
@@ -658,7 +659,11 @@ width: 8%;
 
     setSongUploaded(song) {
         song.uploaded = true
-        let btnUpload = song.tablerow.querySelector('.uploadbtn')
+        let btnSelect = '.uploadbtn'
+        if (song.uploadType == 0) {
+            btnSelect = '.reuploadbtn'
+        }
+        let btnUpload = song.tablerow.querySelector(btnSelect)
         btnUpload.innerHTML = '已上传'
         btnUpload.disabled = 'disabled'
     }
@@ -718,13 +723,11 @@ width: 8%;
                 content.data.forEach(fileData => {
                     const songIndex = songMD5IndexMap[fileData.md5]
                     this.songs[songIndex].uploadType = fileData.upload
-                    if (fileData.upload == 1) {
-                        this.songs[songIndex].cloudId = fileData.songId
+                    this.songs[songIndex].cloudId = fileData.songId
+                    if (fileData.upload == 0) {
+                        this.setReUploadButtonViewable(songIndex)
                     }
-                    else if (fileData.upload == 0) {
-                        setReUploadButtonViewable(songIndex)
-                    }
-                    else {
+                    else if (fileData.upload > 1) {
                         this.songs[songIndex].uploaded = true
                         let btnUpload = this.songs[songIndex].tablerow.querySelector('.uploadbtn')
                         btnUpload.innerHTML = '无法上传'
