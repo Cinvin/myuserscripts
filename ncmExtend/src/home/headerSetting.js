@@ -38,13 +38,17 @@ export const headerSetting = (uiArea) => {
             })
     }
     function setHeader(config) {
-        const cookieObject = JSON.isRawJSON(config.cookie) || parseCookie(config.cookie)
+        const cookieObject = tryParseJSON(config.cookie) || parseCookie(config.cookie)
         if (config.userAgent.length == 0) {
             showConfirmBox('请填写UserAgent')
             return
         }
+        if(Object.keys(cookieObject).length == 0){
+            showConfirmBox('cookie格式不正确，支持标准的cookie格式和JSON格式')
+            return
+        }
         if (!(cookieObject.MUSIC_U && cookieObject.deviceId && cookieObject.clientSign)) {
-            showConfirmBox('cookie内容不正确或不完整，cookie中一定会有MUSIC_U、deviceId等字段')
+            showConfirmBox('cookie内容不完整，cookie中一定会有MUSIC_U、deviceId等字段')
             return
         }
 
@@ -102,5 +106,15 @@ export const headerSetting = (uiArea) => {
                 cookies[key.trim()] = value ? value.trim() : "";
                 return cookies;
             }, {});
+    }
+    function tryParseJSON(jsonString){
+        try {
+            var o = JSON.parse(jsonString)
+            if (o && typeof o === "object") {
+                return o
+            }
+        }
+        catch (e) { }
+        return false;
     }
 }
