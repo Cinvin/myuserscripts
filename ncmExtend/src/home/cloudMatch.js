@@ -364,9 +364,10 @@ tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;
 }
 </style>
-<input id="target-id" class="swal2-input" placeholder="目标歌曲ID" type="number" style="display: flex;">
+<div><label>目标歌曲ID<input class="swal2-input" id="target-id" placeholder="目标歌曲ID" type="text"></label></div>
+<div><input class="swal2-input" id="search-text" placeholder="搜索" type="text"><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
-<table border="1" frame="hsides" rules="rows" style="display: none;"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
 </div>
 `,
                 footer: 'ID为0时解除匹配 歌曲页面网址里的数字就是ID',
@@ -377,10 +378,12 @@ width: 8%;
                 },
                 didOpen: () => {
                     const container = Swal.getHtmlContainer()
-                    const inputDOM = document.getElementById("target-id")
-                    const titleDOM = Swal.getTitle()
-                    const table = container.querySelector('table')
-                    const tbody = container.querySelector('tbody')
+                    this.targetIdDom = container.querySelector("#target-id")
+                    this.searchDom = container.querySelector("#search-text")
+                    this.searchBtn = container.querySelector("#btn-search")
+                    this.titleDOM = Swal.getTitle()
+                    this.tbody = container.querySelector('tbody')
+                    this.fileDuringTime = 0
 
                     let songTitle = song.songName
                     let songAlbum = song.album
@@ -397,6 +400,7 @@ width: 8%;
                     if (songArtist === '未知' || songArtist === '未知歌手') songArtist = ''
                     if (songAlbum === '未知' || songAlbum === '未知专辑') songAlbum = ''
                     const keyword = `${songTitle}   ${songArtist}   ${songAlbum}`.trim()
+                    this.searchDom.value = keyword
 
                     weapiRequest("/api/batch", {
                         data: {
@@ -421,31 +425,31 @@ width: 8%;
                             }
                             const playerContent = content["/api/song/enhance/player/url/v1"]
                             const searchContent = content["/api/cloudsearch/get/web"]
-                            const fileDuringTime = playerContent.data[0].time
-                            titleDOM.innerHTML += ' 文件时长' + duringTimeDesc(fileDuringTime)
+                            this.fileDuringTime = playerContent.data[0].time
+                            this.titleDOM.innerHTML += ' 文件时长' + duringTimeDesc(this.fileDuringTime)
 
-                            if (searchContent.result.songs.length > 0) {
-                                searchContent.result.songs.forEach(matchSong => {
-                                    let tablerow = document.createElement('tr')
-                                    let songName = matchSong.name
-                                    if ('pc' in matchSong) {
-                                        songName += ' ☁️'
-                                    }
-                                    const artists = matchSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
-                                    const needHighLight = Math.abs(matchSong.dt - fileDuringTime) < 1000
-                                    const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
-
-                                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${matchSong.al.id}" target="_blank"><img src="${matchSong.al.picUrl}?param=50y50&quality=100" title="${matchSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${matchSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(matchSong.dt)}</td>`
-                                    let selectbtn = tablerow.querySelector('.selectbtn')
-                                    selectbtn.addEventListener('click', () => {
-                                        inputDOM.value = matchSong.id
-                                    })
-
-                                    tbody.appendChild(tablerow)
-                                })
-                                table.style.display = ''
-                            }
+                            this.fiilSearchTable(searchContent)
                         }
+                    })
+
+                    this.searchBtn.addEventListener('click',()=>{
+                        const searchWord = this.searchDom.value.trim()
+                        weapiRequest("/api/cloudsearch/get/web", {
+                            data:{
+                                s: searchWord,
+                                type: 1,
+                                limit: 30,
+                                offset: 0,
+                                total: true,
+                            },
+                            onload: (searchContent) => {
+                                //console.log(searchContent)
+                                if (searchContent.code != 200) {
+                                    return
+                                }
+                                this.fiilSearchTable(searchContent)
+                            }
+                        })
                     })
                 },
             })
@@ -490,6 +494,29 @@ width: 8%;
                         matcher.openCloudList()
                     }
                 })
+        }
+        fiilSearchTable(searchContent) {
+            this.tbody.innerHTML=''
+            if (searchContent.result.songs.length > 0) {
+                searchContent.result.songs.forEach(matchSong => {
+                    let tablerow = document.createElement('tr')
+                    let songName = matchSong.name
+                    if ('pc' in matchSong) {
+                        songName += ' ☁️'
+                    }
+                    const artists = matchSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
+                    const needHighLight = Math.abs(matchSong.dt - this.fileDuringTime) < 1000
+                    const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
+
+                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${matchSong.al.id}" target="_blank"><img src="${matchSong.al.picUrl}?param=50y50&quality=100" title="${matchSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${matchSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(matchSong.dt)}</td>`
+                    let selectbtn = tablerow.querySelector('.selectbtn')
+                    selectbtn.addEventListener('click', () => {
+                        this.targetIdDom.value = matchSong.id
+                    })
+
+                    this.tbody.appendChild(tablerow)
+                })
+            }
         }
     }
 }

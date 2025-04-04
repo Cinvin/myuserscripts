@@ -188,7 +188,7 @@ width: 8%;
             }
         })
         //获取需上传的song
-        this.popupObj.tbody.innerHTML = '正在获取歌曲信息...'
+        this.popupObj.tbody.innerHTML = '<div>正在获取歌曲信息</div><div>并排除已上传的歌曲</div>'
         this.fetchSongInfoSub(ids, 0)
     }
     fetchSongInfoSub(ids, startIndex) {
@@ -208,7 +208,7 @@ width: 8%;
             this.applyFilter()
             return
         }
-        this.popupObj.tbody.innerHTML = `正在获取第${startIndex + 1}到${Math.min(ids.length, startIndex + 1000)}首歌曲信息...`
+        this.popupObj.tbody.innerHTML = `<div>正在获取第${startIndex + 1}到${Math.min(ids.length, startIndex + 1000)}首歌曲信息</div><div>并排除已上传的歌曲</div>`
         let uploader = this
         weapiRequest("/api/v3/song/detail", {
             data: {
