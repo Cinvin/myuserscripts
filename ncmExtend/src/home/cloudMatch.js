@@ -1,4 +1,4 @@
-import { createBigButton,showTips } from "../utils/common"
+import { createBigButton, showTips } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc } from '../utils/descHelper'
 
@@ -311,32 +311,146 @@ width: 15%;
             let matcher = this
             Swal.fire({
                 showCloseButton: true,
-                title: `歌曲 ${song.simpleSong.name} 匹配纠正`,
-                input: 'number',
-                inputLabel: '目标歌曲ID',
+                title: `${song.simpleSong.name} 匹配纠正`,
+                width: 800,
+                confirmButtonText: '匹配',
+                html: `<style>
+    .table-wrapper {
+        height: 200px; 
+        overflow: auto; 
+    }
+    table {
+        width: 100%;
+        height: 400; 
+        border-spacing: 0px;
+        border-collapse: collapse;
+    }
+    table th, table td {
+        text-align: left;
+        text-overflow: ellipsis;
+    }
+    table tbody {
+        display: block;
+        width: 100%;
+        max-height: 400px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    table thead tr, table tbody tr, table tfoot tr {
+        box-sizing: border-box;
+        table-layout: fixed;
+        display: table;
+        width: 100%;
+    }
+    table tbody tr td{
+        border-bottom: none;
+    }
+tr th:nth-child(1),tr td:nth-child(1){
+width: 8%;
+}
+tr th:nth-child(2){
+width: 52%;
+}
+tr td:nth-child(2){
+width: 10%;
+}
+tr td:nth-child(3){
+width: 42%;
+}
+tr th:nth-child(3),tr td:nth-child(4){
+width: 32%;
+}
+tr th:nth-child(4),tr td:nth-child(5){
+width: 8%;
+}
+</style>
+<input id="target-id" class="swal2-input" placeholder="目标歌曲ID" type="number" style="display: flex;">
+<div class="table-wrapper">
+<table border="1" frame="hsides" rules="rows" style="display: none;"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
+</div>
+`,
                 footer: 'ID为0时解除匹配 歌曲页面网址里的数字就是ID',
-                inputValidator: (value) => {
-                    if (!value) {
-                        return '内容为空'
-                    }
+
+                preConfirm: () => {
+                    const targetId = document.getElementById("target-id").value
+                    return targetId
                 },
                 didOpen: () => {
-                    let titleDOM = Swal.getTitle()
-                    weapiRequest("/api/song/enhance/player/url/v1", {
+                    const container = Swal.getHtmlContainer()
+                    const inputDOM = document.getElementById("target-id")
+                    const titleDOM = Swal.getTitle()
+                    const table = container.querySelector('table')
+                    const tbody = container.querySelector('tbody')
+
+                    let songTitle = song.songName
+                    let songAlbum = song.album
+                    let songArtist = song.artist
+                    const pointIndex = songTitle.lastIndexOf('.')
+                    if (pointIndex > 0) {
+                        songTitle = songTitle.substring(0, pointIndex)
+                    }
+                    const hyphenIndex = songTitle.lastIndexOf('-')
+                    if (hyphenIndex > 0) {
+                        songArtist = songTitle.substring(0, hyphenIndex).trim()
+                        songTitle = songTitle.substring(hyphenIndex + 1).trim()
+                    }
+                    if (songArtist === '未知' || songArtist === '未知歌手') songArtist = ''
+                    if (songAlbum === '未知' || songAlbum === '未知专辑') songAlbum = ''
+                    const keyword = `${songTitle}   ${songArtist}   ${songAlbum}`.trim()
+
+                    weapiRequest("/api/batch", {
                         data: {
-                            immerseType: 'ste',
-                            ids: JSON.stringify([song.simpleSong.id]),
-                            level: 'standard',
-                            encodeType: 'mp3'
+                            "/api/song/enhance/player/url/v1": JSON.stringify({
+                                immerseType: 'ste',
+                                ids: JSON.stringify([song.simpleSong.id]),
+                                level: 'standard',
+                                encodeType: 'mp3'
+                            }),
+                            "/api/cloudsearch/get/web": JSON.stringify({
+                                s: keyword,
+                                type: 1,
+                                limit: 30,
+                                offset: 0,
+                                total: true,
+                            })
                         },
                         onload: (content) => {
-                            titleDOM.innerHTML += ' 文件时长' + duringTimeDesc(content.data[0].time)
+                            //console.log(content)
+                            if (content.code != 200) {
+                                return
+                            }
+                            const playerContent = content["/api/song/enhance/player/url/v1"]
+                            const searchContent = content["/api/cloudsearch/get/web"]
+                            const fileDuringTime = playerContent.data[0].time
+                            titleDOM.innerHTML += ' 文件时长' + duringTimeDesc(fileDuringTime)
+
+                            if (searchContent.result.songs.length > 0) {
+                                searchContent.result.songs.forEach(matchSong => {
+                                    let tablerow = document.createElement('tr')
+                                    let songName = matchSong.name
+                                    if ('pc' in matchSong) {
+                                        songName += ' ☁️'
+                                    }
+                                    const artists = matchSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
+                                    const needHighLight = Math.abs(matchSong.dt - fileDuringTime) < 1000
+                                    const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
+
+                                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${matchSong.al.id}" target="_blank"><img src="${matchSong.al.picUrl}?param=50y50&quality=100" title="${matchSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${matchSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(matchSong.dt)}</td>`
+                                    let selectbtn = tablerow.querySelector('.selectbtn')
+                                    selectbtn.addEventListener('click', () => {
+                                        inputDOM.value = matchSong.id
+                                    })
+
+                                    tbody.appendChild(tablerow)
+                                })
+                                table.style.display = ''
+                            }
                         }
                     })
-                }
+                },
             })
                 .then(result => {
-                    if (result.isConfirmed) {
+                    if (result.isConfirmed && result.value.length > 0) {
                         let fromId = song.simpleSong.id
                         let toId = result.value
                         weapiRequest("/api/cloud/user/song/match", {
