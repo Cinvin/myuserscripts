@@ -17,7 +17,7 @@ export const cloudUpgrade = (uiArea) => {
             inputPlaceholder: '选择目标音质',
             confirmButtonText: '下一步',
             showCloseButton: true,
-            footer: '<div>寻找网易云音源比云盘音质好的歌曲,然后进行删除并重新上传</div><div>⚠️可能会出现删除了歌曲但上传失败的情况</div><div>因此请自行做好备份</div><div>建议先设置好请求头，以避免上传失败</div>',
+            footer: '<div>寻找网易云音源比云盘音质好的歌曲,然后进行删除并重新上传</div><div>⚠️可能会出现删除了歌曲但上传失败的情况</div><div>因此请自行做好备份</div><div>建议先设置好请求头，以避免上传失败但是文件被删除的情况。</div>',
             inputValidator: (value) => {
                 if (!value) {
                     return '请选择目标音质'
@@ -122,7 +122,7 @@ tr th:nth-child(5),tr td:nth-child(6){
 width: 16%;
 }
 </style>
-<input id="text-filter" class="swal2-input" type="text" placeholder="歌曲过滤">
+<input id="text-filter" class="swal2-input" placeholder="歌曲过滤">
 <button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upgrade-batch">全部提升音质</button>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>云盘音源</th><th>目标音源</th> </tr></thead><tbody></tbody></table>
 `,

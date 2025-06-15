@@ -158,9 +158,9 @@ width: 27%;
         showEditInforBox(songIndex) {
             Swal.fire({
                 title: this.task[songIndex].fileFullName,
-                html: `<div><label for="text-title">歌名</label><input class="swal2-input" id="text-title" type="text" value="${this.task[songIndex].title}"></div>
-            <div><label for="text-artist">歌手</label><input class="swal2-input" id="text-artist" type="text"  value="${this.task[songIndex].artist}"></div>
-            <div><label for="text-album">专辑</label><input class="swal2-input" id="text-album" type="text"  value="${this.task[songIndex].album}"></div>`,
+                html: `<div><label for="text-title">歌名</label><input class="swal2-input" id="text-title" value="${this.task[songIndex].title}"></div>
+            <div><label for="text-artist">歌手</label><input class="swal2-input" id="text-artist"  value="${this.task[songIndex].artist}"></div>
+            <div><label for="text-album">专辑</label><input class="swal2-input" id="text-album" value="${this.task[songIndex].album}"></div>`,
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 showCloseButton: false,

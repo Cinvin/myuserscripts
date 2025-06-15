@@ -10,9 +10,9 @@ export const cloudExport = (uiArea) => {
         Swal.fire({
             title: '云盘导出',
             showCloseButton: true,
-            html: `<div><label>歌手<input class="swal2-input" id="text-artist" placeholder="选填" type="text"></label></div>
-            <div><label>专辑<input class="swal2-input" id="text-album" placeholder="选填" type="text"></label></div>
-            <div><label>歌名<input class="swal2-input" id="text-song" placeholder="选填" type="text"></label></div>
+            html: `<div><label>歌手<input class="swal2-input" id="text-artist" placeholder="选填"></label></div>
+            <div><label>专辑<input class="swal2-input" id="text-album" placeholder="选填"></label></div>
+            <div><label>歌名<input class="swal2-input" id="text-song" placeholder="选填"></label></div>
             <div><label>歌单ID<input class="swal2-input" id="text-playlistid" placeholder="选填" type="number"></label></div>`,
             footer: '过滤条件取交集',
             confirmButtonText: '导出',

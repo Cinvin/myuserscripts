@@ -91,7 +91,7 @@ tr th:nth-child(6),tr td:nth-child(7){
 width: 8%;
 }
 </style>
-<input id="text-filter" class="swal2-input" type="text" placeholder="歌曲过滤">
+<input id="text-filter" class="swal2-input" placeholder="歌曲过滤">
 <div id="my-cbs">
 <input class="form-check-input" type="checkbox" value="" id="cb-copyright" checked><label class="form-check-label" for="cb-copyright">无版权</label>
 <input class="form-check-input" type="checkbox" value="" id="cb-vip" checked><label class="form-check-label" for="cb-vip">VIP</label>

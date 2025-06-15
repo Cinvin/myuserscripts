@@ -83,7 +83,7 @@ tr th:nth-child(6),tr td:nth-child(7){
 width: 15%;
 }
 </style>
-<input class="swal2-input" type="text" value="${this.filter.text}" id="text-filter" placeholder="歌曲过滤">
+<input class="swal2-input" value="${this.filter.text}" id="text-filter" placeholder="歌曲过滤">
 <input class="form-check-input" type="checkbox" value="" id="cb-notmatch" ${this.filter.notMatch ? 'checked' : ''}><label class="form-check-label" for="cb-notmatch">未匹配歌曲</label>
 `,
                 footer: `<div id="page-area"></div><br><div id="cloud-desc">${this.controls.cloudDesc ? this.controls.cloudDesc.innerHTML : ''}</div>`,
@@ -364,8 +364,8 @@ tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;
 }
 </style>
-<div><label>目标歌曲ID<input class="swal2-input" id="target-id" placeholder="目标歌曲ID" type="text"></label></div>
-<div><input class="swal2-input" id="search-text" placeholder="搜索" type="text"><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
+<div><label>目标歌曲ID<input class="swal2-input" id="target-id" placeholder="目标歌曲ID" ></label></div>
+<div><input class="swal2-input" id="search-text" placeholder="搜索"><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
 </div>

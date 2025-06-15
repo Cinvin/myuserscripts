@@ -8,9 +8,9 @@ export const headerSetting = (uiArea) => {
         Swal.fire({
             title: '设置客户端请求头（Header）',
             showCloseButton: true,
-            html: `<div><label>Cookie<input class="swal2-input" id="text-cookie" type="text"></label></div>
-            <div><label>UserAgent<input class="swal2-input" id="text-userAgent" type="text"></label></div>`,
-            footer: '<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div><div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。</div>',
+            html: `<div><label>Cookie<input class="swal2-input" id="text-cookie"></label></div>
+            <div><label>UserAgent<input class="swal2-input" id="text-userAgent"></label></div>`,
+            footer: '<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div><div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>',
             confirmButtonText: '设置',
             preConfirm: () => {
                 return {
