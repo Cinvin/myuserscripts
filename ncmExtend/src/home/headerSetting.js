@@ -47,7 +47,7 @@ export const headerSetting = (uiArea) => {
             showConfirmBox('cookie格式不正确，支持标准的cookie格式和JSON格式')
             return
         }
-        if (!(cookieObject.MUSIC_U && cookieObject.deviceId && cookieObject.clientSign)) {
+        if (!(cookieObject.MUSIC_U && cookieObject.deviceId)) {
             showConfirmBox('cookie内容不完整，cookie中一定会有MUSIC_U、deviceId等字段')
             return
         }

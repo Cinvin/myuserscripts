@@ -1,5 +1,5 @@
 ## 网易云音乐脚本
-[点击此处安装](https://update.greasyfork.org/scripts/459633/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%3A%E4%BA%91%E7%9B%98%E5%BF%AB%E4%BC%A0%28%E5%90%AB%E5%91%A8%E6%9D%B0%E4%BC%A6%29%7C%E6%AD%8C%E6%9B%B2%E4%B8%8B%E8%BD%BD%E8%BD%AC%E5%AD%98%E4%BA%91%E7%9B%98%7C%E4%BA%91%E7%9B%98%E5%8C%B9%E9%85%8D%E7%BA%A0%E6%AD%A3%7C%E9%AB%98%E9%9F%B3%E8%B4%A8%E8%AF%95%E5%90%AC.user.js) (请确保浏览器已经安装了[TamperMonkey](https://www.tampermonkey.net/))
+[点击此处安装](https://update.greasyfork.org/scripts/459633/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%3A%E4%BA%91%E7%9B%98%E5%BF%AB%E4%BC%A0%28%E5%90%AB%E5%91%A8%E6%9D%B0%E4%BC%A6%29%7C%E6%AD%8C%E6%9B%B2%E4%B8%8B%E8%BD%BD%E8%BD%AC%E5%AD%98%E4%BA%91%E7%9B%98%7C%E4%BA%91%E7%9B%98%E5%8C%B9%E9%85%8D%E7%BA%A0%E6%AD%A3%7C%E9%AB%98%E9%9F%B3%E8%B4%A8%E8%AF%95%E5%90%AC.user.js) (请确保浏览器已经安装了[篡改猴](https://www.tampermonkey.net/)，并将浏览器的`开发者模式`打开。若是Chrome，`管理扩展程序`->`篡改猴`->`允许运行用户脚本`也要打开。)
 
  [![Greasy Fork](https://img.shields.io/greasyfork/dt/459633?label=greasyfork%20installs)](https://greasyfork.org/zh-CN/scripts/459633)
 
@@ -8,7 +8,7 @@
   - 无需文件快速上传云盘歌曲,三分钟解锁周杰伦。
 - 歌曲下载
   - 不消耗vip下载次数,不是ncm加密文件。
-  - 请将 `TamperMonkey` 插件设置中的 `下载模式` 设置为 `浏览器 API` 并将 `/.(mp3|flac|lrc)$/` 添加进`文件扩展名白名单` 以保证能正常下载。
+  - 请将 `篡改猴` 插件设置中的 `下载模式` 设置为 `浏览器 API` 并将 `/.(mp3|flac|lrc)$/` 添加进`文件扩展名白名单` 以保证能正常下载。
 - 歌曲转存云盘
   - 用网易云自身音源将歌曲快速上传到云盘，不需要完整的文件下载和上传过程。
 - 高音质试听：
@@ -32,10 +32,6 @@
 
 ### 使用说明
 - 脚本安装完成后，登陆网易云音乐网页端。在右上角用户头像的 `我的主页` 中，使用云盘相关功能。在单曲、专辑、歌单（并非`我的音乐`的歌单，而是 `我的主页` 的歌单）页面使用下载、转存云盘功能。
-- 脚本仅支持[TamperMonkey](https://www.tampermonkey.net/)插件下使用。如果是其他插件下使用，会导致上传报错、获取不到`超清母带`、用不了SVIP的6T空间等问题。
-- 安装后脚本似乎没有运行？可排查以下问题：
-  - 当前浏览器下TamperMonkey是否能正常运行其他脚本？
-  - 浏览器的其他扩展程序或TamperMonkey的其他脚本是否与本脚本造成冲突？
 
  ### 问题说明
 - 云盘快传:不保证内容的准确性、完整性。部分音质为算法升频。
@@ -47,4 +43,4 @@
 - **风险及责任声明**：因用户使用本脚本从事任何违法、犯罪或违反[网易云音乐《音乐网盘服务协议》](https://music.163.com/static/cloudservice.html)所产生的一切后果及责任均由用户自行承担。 
 
 ### 参考
-网易云音乐API来自[Binaryify/NeteaseCloudMusicApi](https://gitlab.com/Binaryify/NeteaseCloudMusicApi)  
+网易云音乐API来自[Binaryify/NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)  
