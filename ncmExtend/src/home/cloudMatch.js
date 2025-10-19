@@ -6,8 +6,8 @@ export const cloudMatch = (uiArea) => {
     //匹配纠正
     let btnMatch = createBigButton('云盘匹配纠正', uiArea, 2)
     btnMatch.addEventListener('click', () => {
-        let matcher = new Matcher()
-        matcher.start()
+        let matccher = new Matcher()
+        matccher.start()
     })
     class Matcher {
         start() {
@@ -107,16 +107,15 @@ width: 15%;
                     let notMatchCb = cloudListContainer.querySelector('#cb-notmatch')
                     this.filter.filterInput = filterInput
                     this.filter.notMatchCb = notMatchCb
-                    let matcher = this
                     filterInput.addEventListener('change', () => {
-                        if (matcher.filter.text == filterInput.value.trim()) {
+                        if (this.filter.text == filterInput.value.trim()) {
                             return
                         }
-                        matcher.filter.text = filterInput.value.trim()
+                        this.filter.text = filterInput.value.trim()
                         this.onCloudInfoFilterChange()
                     })
                     notMatchCb.addEventListener('change', () => {
-                        matcher.filter.notMatch = notMatchCb.checked
+                        this.filter.notMatch = notMatchCb.checked
                         this.onCloudInfoFilterChange()
                     })
                     cloudListContainer.appendChild(songtb)
@@ -130,7 +129,7 @@ width: 15%;
         }
         fetchCloudInfoForMatchTable(offset) {
             this.controls.tbody.innerHTML = '正在获取...'
-            let matcher = this
+
             weapiRequest('/api/v1/cloud/get', {
                 data: {
                     limit: this.cloudCountLimit,
@@ -138,44 +137,43 @@ width: 15%;
                 },
                 onload: (res) => {
                     //console.log(res)
-                    matcher.currentPage = (offset / this.cloudCountLimit) + 1
+                    this.currentPage = (offset / this.cloudCountLimit) + 1
                     let maxPage = Math.ceil(res.count / this.cloudCountLimit)
                     this.controls.cloudDesc.innerHTML = `云盘容量 ${fileSizeDesc(res.size)}/${fileSizeDesc(res.maxSize)} 共${res.count}首歌曲`
                     let pageIndexs = [1]
-                    let floor = Math.max(2, matcher.currentPage - 2);
-                    let ceil = Math.min(maxPage - 1, matcher.currentPage + 2);
+                    let floor = Math.max(2, this.currentPage - 2);
+                    let ceil = Math.min(maxPage - 1, this.currentPage + 2);
                     for (let i = floor; i <= ceil; i++) {
                         pageIndexs.push(i)
                     }
                     if (maxPage > 1) {
                         pageIndexs.push(maxPage)
                     }
-                    matcher.controls.pageArea.innerHTML = ''
+                    this.controls.pageArea.innerHTML = ''
                     pageIndexs.forEach(pageIndex => {
                         let pageBtn = document.createElement('button')
                         pageBtn.setAttribute("type", "button")
                         pageBtn.className = "swal2-styled"
                         pageBtn.innerHTML = pageIndex
-                        if (pageIndex != matcher.currentPage) {
+                        if (pageIndex != this.currentPage) {
                             pageBtn.addEventListener('click', () => {
-                                matcher.fetchCloudInfoForMatchTable(matcher.cloudCountLimit * (pageIndex - 1))
+                                this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (pageIndex - 1))
                             })
                         } else {
                             pageBtn.style.background = 'white'
                         }
-                        matcher.controls.pageArea.appendChild(pageBtn)
+                        this.controls.pageArea.appendChild(pageBtn)
                     })
                     this.fillCloudListTable(res.data)
                 }
             })
         }
         fillCloudListTable(songs) {
-            let matcher = this
-            matcher.controls.tbody.innerHTML = ''
+            this.controls.tbody.innerHTML = ''
             if (songs.length == 0) {
-                matcher.controls.tbody.innerHTML = '空空如也'
+                this.controls.tbody.innerHTML = '空空如也'
             }
-            songs.forEach(function (song) {
+            songs.forEach((song) => {
                 let album = song.album
                 let picUrl = 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
                 if (song.simpleSong.al && song.simpleSong.al.picUrl) {
@@ -210,9 +208,9 @@ width: 15%;
                 }
                 let btn = tablerow.querySelector('button')
                 btn.addEventListener('click', () => {
-                    matcher.openMatchPopup(song)
+                    this.openMatchPopup(song)
                 })
-                matcher.controls.tbody.appendChild(tablerow)
+                this.controls.tbody.appendChild(tablerow)
             })
         }
         onCloudInfoFilterChange() {
@@ -226,7 +224,6 @@ width: 15%;
             this.cloudInfoFilterFetchData(0)
         }
         cloudInfoFilterFetchData(offset) {
-            let matcher = this
             if (offset == 0) {
                 this.filter.songs = []
             }
@@ -236,19 +233,19 @@ width: 15%;
                     offset: offset,
                 },
                 onload: (res) => {
-                    matcher.controls.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲`
+                    this.controls.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲`
                     res.data.forEach(song => {
-                        if (matcher.filter.text.length > 0) {
+                        if (this.filter.text.length > 0) {
                             let matchFlag = false
-                            if (song.album.includes(matcher.filter.text) ||
-                                song.artist.includes(matcher.filter.text) ||
-                                song.simpleSong.name.includes(matcher.filter.text) ||
-                                (song.simpleSong.al && song.simpleSong.al.id > 0 && song.simpleSong.al.name && song.simpleSong.al.name.includes(matcher.filter.text))) {
+                            if (song.album.includes(this.filter.text) ||
+                                song.artist.includes(this.filter.text) ||
+                                song.simpleSong.name.includes(this.filter.text) ||
+                                (song.simpleSong.al && song.simpleSong.al.id > 0 && song.simpleSong.al.name && song.simpleSong.al.name.includes(this.filter.text))) {
                                 matchFlag = true
                             }
                             if (!matchFlag && song.simpleSong.ar) {
                                 song.simpleSong.ar.forEach(ar => {
-                                    if (ar.name && ar.name.includes(matcher.filter.text)) {
+                                    if (ar.name && ar.name.includes(this.filter.text)) {
                                         matchFlag = true
                                     }
                                 })
@@ -257,26 +254,25 @@ width: 15%;
                                 }
                             }
                         }
-                        if (matcher.filter.notMatch && song.simpleSong.cd) {
+                        if (this.filter.notMatch && song.matchType === "matched") {
                             return
                         }
-                        matcher.filter.songs.push(song)
+                        this.filter.songs.push(song)
                     })
                     if (res.hasMore) {
                         //if(offset<2001){//testing
                         res = {}
-                        matcher.cloudInfoFilterFetchData(offset + 1000)
+                        this.cloudInfoFilterFetchData(offset + 1000)
                     } else {
-                        matcher.sepreateFilterCloudListPage(1)
-                        matcher.filter.filterInput.removeAttribute("disabled")
-                        matcher.filter.notMatchCb.removeAttribute("disabled")
+                        this.sepreateFilterCloudListPage(1)
+                        this.filter.filterInput.removeAttribute("disabled")
+                        this.filter.notMatchCb.removeAttribute("disabled")
                     }
                 }
             })
         }
         sepreateFilterCloudListPage(currentPage) {
             this.currentPage = currentPage
-            let matcher = this
             let count = this.filter.songs.length
             let maxPage = Math.ceil(count / this.cloudCountLimit)
             this.controls.pageArea.innerHTML = ''
@@ -289,7 +285,7 @@ width: 15%;
             if (maxPage > 1) {
                 pageIndexs.push(maxPage)
             }
-            matcher.controls.pageArea.innerHTML = ''
+            this.controls.pageArea.innerHTML = ''
             pageIndexs.forEach(pageIndex => {
                 let pageBtn = document.createElement('button')
                 pageBtn.setAttribute("type", "button")
@@ -297,31 +293,25 @@ width: 15%;
                 pageBtn.innerHTML = pageIndex
                 if (pageIndex != currentPage) {
                     pageBtn.addEventListener('click', () => {
-                        matcher.sepreateFilterCloudListPage(pageIndex)
+                        this.sepreateFilterCloudListPage(pageIndex)
                     })
                 } else {
                     pageBtn.style.background = 'white'
                 }
-                matcher.controls.pageArea.appendChild(pageBtn)
+                this.controls.pageArea.appendChild(pageBtn)
             })
             let songindex = (currentPage - 1) * this.cloudCountLimit
-            matcher.fillCloudListTable(matcher.filter.songs.slice(songindex, songindex + this.cloudCountLimit))
+            this.fillCloudListTable(this.filter.songs.slice(songindex, songindex + this.cloudCountLimit))
         }
         openMatchPopup(song) {
-            let matcher = this
             Swal.fire({
                 showCloseButton: true,
-                title: `${song.simpleSong.name} 匹配纠正`,
                 width: 800,
                 confirmButtonText: '匹配',
                 html: `<style>
-    .table-wrapper {
-        height: 200px; 
-        overflow: auto; 
-    }
     table {
         width: 100%;
-        height: 400; 
+        height: 400px; 
         border-spacing: 0px;
         border-collapse: collapse;
     }
@@ -364,26 +354,33 @@ tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;
 }
 </style>
-<div><label>目标歌曲ID<input class="swal2-input" id="target-id" placeholder="目标歌曲ID" ></label></div>
 <div><input class="swal2-input" id="search-text" placeholder="搜索"><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
 </div>
 `,
-                footer: 'ID为0时解除匹配 歌曲页面网址里的数字就是ID',
+                footer: '',
 
-                preConfirm: () => {
-                    const targetId = document.getElementById("target-id").value
-                    return targetId
-                },
                 didOpen: () => {
                     const container = Swal.getHtmlContainer()
+                    const actions = Swal.getActions()
+                    const footer = Swal.getFooter()
+                    actions.innerHTML = `<div class="swal2-loader"></div>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-unmatch" style="display: none;">取消网易云关联</button>`
                     this.targetIdDom = container.querySelector("#target-id")
                     this.searchDom = container.querySelector("#search-text")
                     this.searchBtn = container.querySelector("#btn-search")
+                    this.unMatchBtn = actions.querySelector("#btn-unmatch")
                     this.titleDOM = Swal.getTitle()
                     this.tbody = container.querySelector('tbody')
                     this.fileDuringTime = 0
+
+                    if (song.matchType === "matched") {
+                        this.unMatchBtn.style.display = 'inline-block'
+                        this.unMatchBtn.addEventListener('click', () => {
+                            this.matchSong(song.simpleSong.id, 0)
+                        })
+                    }
 
                     let songTitle = song.songName
                     let songAlbum = song.album
@@ -426,16 +423,20 @@ width: 8%;
                             const playerContent = content["/api/song/enhance/player/url/v1"]
                             const searchContent = content["/api/cloudsearch/get/web"]
                             this.fileDuringTime = playerContent.data[0].time
-                            this.titleDOM.innerHTML += ' 文件时长' + duringTimeDesc(this.fileDuringTime)
-
-                            this.fiilSearchTable(searchContent)
+                            let songDetailText = '文件时长：' + duringTimeDesc(this.fileDuringTime)
+                            if (song.matchType === "unmatched") {
+                                songDetailText += '，目前未关联到网易云。'
+                            }
+                            footer.innerHTML = `<div>${songDetailText}</div>` + footer.innerHTML
+                            this.fiilSearchTable(searchContent, song.simpleSong.id)
                         }
                     })
 
-                    this.searchBtn.addEventListener('click',()=>{
+                    this.searchBtn.addEventListener('click', () => {
                         const searchWord = this.searchDom.value.trim()
+                        this.tbody.innerHTML = '正在搜索...'
                         weapiRequest("/api/cloudsearch/get/web", {
-                            data:{
+                            data: {
                                 s: searchWord,
                                 type: 1,
                                 limit: 30,
@@ -447,75 +448,83 @@ width: 8%;
                                 if (searchContent.code != 200) {
                                     return
                                 }
-                                this.fiilSearchTable(searchContent)
+                                this.fiilSearchTable(searchContent, song.simpleSong.id)
                             }
                         })
                     })
+
+                },
+                didClose: () => {
+                    this.openCloudList()
+                }
+            })
+        }
+        matchSong(fromId, toId) {
+            weapiRequest("/api/cloud/user/song/match", {
+                data: {
+                    songId: fromId,
+                    adjustSongId: toId,
+                },
+                onload: (res) => {
+                    if (res.code != 200) {
+                        showTips(res.message || res.msg || '匹配失败', 2)
+                    } else {
+                        let msg = '解除匹配成功'
+                        if (toId > 0) {
+                            msg = '匹配成功'
+                            if (res.matchData) {
+                                msg = `${res.matchData.songName} 成功匹配到 ${res.matchData.simpleSong.name} `
+                            }
+                        }
+                        showTips(msg, 1)
+                        if (this.filter.songs.length > 0 && res.matchData) {
+                            for (let i = 0; i < this.filter.songs.length; i++) {
+                                if (this.filter.songs[i].simpleSong.id == fromId) {
+                                    //matchData里无privilege
+                                    res.matchData.simpleSong.privilege = this.filter.songs[i].simpleSong.privilege
+                                    this.filter.songs[i] = res.matchData
+                                    break
+                                }
+                            }
+                        }
+                        this.openCloudList()
+                    }
                 },
             })
-                .then(result => {
-                    if (result.isConfirmed && result.value.length > 0) {
-                        let fromId = song.simpleSong.id
-                        let toId = result.value
-                        weapiRequest("/api/cloud/user/song/match", {
-                            data: {
-                                songId: fromId,
-                                adjustSongId: toId,
-                            },
-                            onload: (res) => {
-                                //console.log(res)
-                                if (res.code != 200) {
-                                    showTips(res.message || res.msg || '匹配失败', 2)
-                                } else {
-                                    let msg = '解除匹配成功'
-                                    if (toId > 0) {
-                                        msg = '匹配成功'
-                                        if (res.matchData) {
-                                            msg = `${res.matchData.songName} 成功匹配到 ${res.matchData.simpleSong.name} `
-                                        }
-                                    }
-                                    showTips(msg, 1)
-
-                                    if (matcher.filter.songs.length > 0 && res.matchData) {
-                                        for (let i = 0; i < matcher.filter.songs.length; i++) {
-                                            if (matcher.filter.songs[i].simpleSong.id == fromId) {
-                                                //matchData里无privilege
-                                                res.matchData.simpleSong.privilege = matcher.filter.songs[i].simpleSong.privilege
-                                                matcher.filter.songs[i] = res.matchData
-                                                break
-                                            }
-                                        }
-                                    }
-                                }
-                                matcher.openCloudList()
-                            },
-                        })
-                    } else {
-                        matcher.openCloudList()
-                    }
-                })
         }
-        fiilSearchTable(searchContent) {
-            this.tbody.innerHTML=''
-            if (searchContent.result.songs.length > 0) {
-                searchContent.result.songs.forEach(matchSong => {
+        fiilSearchTable(searchContent, cloudSongId) {
+            if (searchContent.result.songCount > 0) {
+                this.tbody.innerHTML = ''
+
+                const timeMatchSongs = []
+                const timeNoMatchSongs = []
+                searchContent.result.songs.forEach(resultSong => {
+                    if (Math.abs(resultSong.dt - this.fileDuringTime) < 1000)
+                        timeMatchSongs.push(resultSong)
+                    else
+                        timeNoMatchSongs.push(resultSong)
+                })
+                const resultSongs = timeMatchSongs.concat(timeNoMatchSongs)
+                resultSongs.forEach(resultSong => {
                     let tablerow = document.createElement('tr')
-                    let songName = matchSong.name
-                    if ('pc' in matchSong) {
+                    let songName = resultSong.name
+                    if ('pc' in resultSong) {
                         songName += ' ☁️'
                     }
-                    const artists = matchSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
-                    const needHighLight = Math.abs(matchSong.dt - this.fileDuringTime) < 1000
+                    const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
+                    const needHighLight = Math.abs(resultSong.dt - this.fileDuringTime) < 1000
                     const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
 
-                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${matchSong.al.id}" target="_blank"><img src="${matchSong.al.picUrl}?param=50y50&quality=100" title="${matchSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${matchSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(matchSong.dt)}</td>`
+                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">关联</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
                     let selectbtn = tablerow.querySelector('.selectbtn')
                     selectbtn.addEventListener('click', () => {
-                        this.targetIdDom.value = matchSong.id
+                        this.matchSong(cloudSongId, resultSong.id)
                     })
 
                     this.tbody.appendChild(tablerow)
                 })
+            } else {
+                this.tbody.innerHTML = '搜索结果为空'
             }
         }
     }

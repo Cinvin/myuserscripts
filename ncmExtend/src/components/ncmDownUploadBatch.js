@@ -324,7 +324,7 @@ export class ncmDownUploadBatch {
                 importSongDatas.push({
                     songId: song.cloudId,
                     bitrate: song.bitrate,
-                    song: song.fileFullName,
+                    song: song.title,
                     artist: song.artist,
                     album: song.album,
                     fileName: song.fileFullName

@@ -26,6 +26,32 @@ const parseLyric = (lrc) => {
     }
     return parsedLyrics;
 }
+
+const parseNotLyricLines = (lrc) => {
+    const notLyricLines = {before: '', after: ''};
+    const lines = lrc.trim().split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.match(extractTimestampRegex)) {
+            break;
+        }
+        else {
+            notLyricLines.before += line + '\n';
+        }
+    }
+    for (let i =  lines.length-1; i >= 0; i--) {
+        const line = lines[i];
+        if (line.match(extractTimestampRegex)) {
+            break;
+        }
+        else {
+            notLyricLines.after = line + '\n'+notLyricLines.after ;
+        }
+    }
+    notLyricLines.after = notLyricLines.after.trim();
+    return notLyricLines;
+}
+
 const parsedLyricsBinarySearch = (lyric, lyrics) => {
     let time = lyric.time;
 
@@ -74,11 +100,15 @@ export const handleLyric = (lyricRes) => {
             parsedLyric: parseLyric(tlrc),
         },
     }
+    const notLyricLines = parseNotLyricLines(lrc);
+    console.log(LyricObj,notLyricLines);
     if (LyricObj.orilrc.parsedLyric.length > 0 && LyricObj.tlyriclrc.parsedLyric.length > 0) {
-        LyricObj.oritlrc = combineLyric(LyricObj.tlyriclrc, LyricObj.orilrc)
+        LyricObj.oritlrc = combineLyric(LyricObj.tlyriclrc, LyricObj.orilrc);
+        LyricObj.oritlrc.lyric = notLyricLines.before + LyricObj.oritlrc.lyric + notLyricLines.after;
     }
     if (LyricObj.orilrc.parsedLyric.length > 0 && LyricObj.romalrc.parsedLyric.length > 0) {
-        LyricObj.oriromalrc = combineLyric(LyricObj.orilrc, LyricObj.romalrc)
+        LyricObj.oriromalrc = combineLyric(LyricObj.orilrc, LyricObj.romalrc);
+        LyricObj.oriromalrc.lyric = notLyricLines.before + LyricObj.oriromalrc.lyric + notLyricLines.after;
     }
     return LyricObj
 }

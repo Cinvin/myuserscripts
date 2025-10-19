@@ -47,3 +47,14 @@ export const createBigButton = (desc, parent, appendWay) => {
     }
     return btn
 }
+
+export const downloadFileSync = (url, fileName) => {
+        return new Promise((resolve, reject) => {
+            GM_download({
+                url,
+                name: fileName,
+                onload: () => resolve(`下载 ${fileName} 完成`),
+                onerror: (error) => reject(`下载 ${fileName} 失败: ${error}`)
+            });
+        });
+    }

@@ -48,6 +48,15 @@ export const weapiRequest = (url, config) => {
     }
     enqueueAPIRequest(details)
 }
+export function weapiRequestSync(url, config) {
+    return new Promise((resolve, reject) => {
+        weapiRequest(url, {
+            ...config,
+            onload: resolve,
+            onerror: reject
+        });
+    });
+}
 function enqueueAPIRequest(data) {
     return new Promise((resolve, reject) => {
         // 把一个函数推入队列，这个函数负责执行 API 请求并传递结果

@@ -76,6 +76,8 @@ width: 10%;
             config.skipSongs = []
             config.taskCount = songList.length
             config.threadList = threadList
+            config.appendMeta = JSON.parse(GM_getValue('downloadSettings', '{"appendMeta":"notAppend"}')).appendMeta
+            console.log(config);
             for (let i = 0; i < config.threadCount; i++) {
                 downloadSongSub(i, songList, config)
             }
@@ -129,8 +131,8 @@ const downloadSongSub = (threadIndex, songList, config) => {
                         downloadSongSub(threadIndex, songList, config)
                         return
                     }
-                    let fileName = nameFileWithoutExt(song.title, song.artist, config.out).replace('/', '／')
-                    let fileFullName = fileName + '.' + resData.type.toLowerCase()
+                    song.fileNameWithOutExt = nameFileWithoutExt(song.title, song.artist, config.out).replace('/', '／')
+                    let fileFullName = song.fileNameWithOutExt + '.' + resData.type.toLowerCase()
                     let folder = ''
                     if (config.folder != 'none' && song.artist.length > 0) {
                         folder = song.artist.replace('/', '／') + '/'
@@ -138,39 +140,29 @@ const downloadSongSub = (threadIndex, songList, config) => {
                     if (config.folder == 'artist-album' && song.album.length > 0) {
                         folder += song.album.replace('/', '／') + '/'
                     }
-                    fileFullName = folder + fileFullName
-                    let dlUrl = resData.url
+                    song.fileFullName = folder + fileFullName
+                    song.dlUrl = resData.url
+                    song.ext = resData.type.toLowerCase()
                     levelText.innerHTML = levelDesc(resData.level)
                     sizeText.innerHTML = fileSizeDesc(resData.size)
-                    GM_download({
-                        url: dlUrl,
-                        name: fileFullName,
-                        onprogress: function (e) {
-                            prText.innerHTML = `${fileSizeDesc(e.loaded)}`
+
+                    song.download = {
+                        finnnsh: {
+                            music: false,
+                            lyric: false,
+                            cover: false,
                         },
-                        onload: function () {
-                            config.finnshCount += 1
-                            Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
-                            prText.innerHTML = `完成`
-                            if (config.downloadLyric) {
-                                downloadSongLyric(song.id, folder + fileName)
-                            }
-                            downloadSongSub(threadIndex, songList, config)
-                        },
-                        onerror: function (e) {
-                            if (song.retry) {
-                                prText.innerHTML = `下载出错`
-                                config.errorSongs.push(song)
-                            }
-                            else {
-                                prText.innerHTML = `下载出错\t稍后重试`
-                                song.retry = true
-                                songList.push(song)
-                            }
-                            console.error(e, dlUrl, fileFullName)
-                            downloadSongSub(threadIndex, songList, config)
-                        }
-                    });
+                        musicFile: null,
+                        lyricText: null,
+                        coverData: null,
+                        prText: prText,
+                        appendMeta: config.appendMeta == "allAppend" || (config.appendMeta == "skipCloud" && !song.privilege.cs)
+                    }
+                    song.download.prText.innerHTML = '正在下载'
+                    console.log(song, config);
+                    downloadSongFile(song, threadIndex, songList, config)
+                    downloadSongCover(song, threadIndex, songList, config)
+                    downloadSongLyric(song, threadIndex, songList, config)
                 }
                 else {
                     showTips(`${song.title}\t无法下载`, 2)
@@ -208,15 +200,163 @@ const downloadSongSub = (threadIndex, songList, config) => {
         downloadSongSub(threadIndex, songList, config)
     }
 }
-const downloadSongLyric = (songId, fileName) => {
+const downloadSongFile = (songItem, threadIndex, songList, config) => {
+    GM_xmlhttpRequest({
+        method: "GET",
+        url: songItem.dlUrl,
+        responseType: "arraybuffer",
+        onload: function (response) {
+            console.log(response);
+            const uint8 = new Uint8Array(response.response);
+            songItem.download.musicFile = uint8.buffer
+            songItem.download.finnnsh.music = true
+            comcombineFile(songItem, threadIndex, songList, config)
+        },
+        onprogress: function (progress) {
+            songItem.download.prText.innerHTML=fileSizeDesc(progress.loaded)
+        },
+        onerror: function (error) {
+            songItem.download.finnnsh.music = true
+            comcombineFile(songItem, threadIndex, songList, config)
+        }
+    });
+}
+const downloadSongCover = (songItem, threadIndex, songList, config) => {
+    if (!songItem.download.appendMeta) {
+        songItem.download.finnnsh.cover = true
+        comcombineFile(songItem, threadIndex, songList, config)
+        return
+    }
+
+    if (songItem.song.al.pic > 0) {
+        GM_xmlhttpRequest({
+            method: "GET",
+            url: songItem.song.al.picUrl,
+            responseType: "arraybuffer",
+            onload: function (response) {
+                const uint8 = new Uint8Array(response.response);
+                songItem.download.coverData = uint8.buffer
+                songItem.download.finnnsh.cover = true
+                comcombineFile(songItem, threadIndex, songList, config)
+            },
+            onerror: function (error) {
+                songItem.download.finnnsh.cover = true
+                comcombineFile(songItem, threadIndex, songList, config)
+            }
+        });
+    }
+    else {
+        songItem.download.finnnsh.cover = true
+        comcombineFile(songItem, threadIndex, songList, config)
+    }
+
+}
+const downloadSongLyric = (songItem, threadIndex, songList, config) => {
+    if (!songItem.download.appendMeta && !config.downloadLyric) {
+        songItem.download.finnnsh.lyric = true
+        comcombineFile(songItem, threadIndex, songList, config)
+        return
+    }
     weapiRequest('/api/song/lyric/v1', {
-        data: { id: songId, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, },
+        data: { id: songItem.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, },
         onload: (content) => {
-            if (content.pureMusic) return
+            songItem.download.finnnsh.lyric = true
+            if (content.pureMusic) comcombineFile(songItem, threadIndex, songList, config)
             const LyricObj = handleLyric(content)
-            if (LyricObj.orilrc.parsedLyric.length == 0) return
+            if (LyricObj.orilrc.parsedLyric.length == 0) comcombineFile(songItem, threadIndex, songList, config)
             const LyricItem = LyricObj.oritlrc || LyricObj.orilrc
-            saveContentAsFile(LyricItem.lyric, fileName + '.lrc')
+            songItem.download.lyricText = LyricItem.lyric
+            if(config.downloadLyric && LyricItem.lyric.length > 0){
+                saveContentAsFile(LyricItem.lyric, songItem.fileNameWithOutExt + '.lrc')
+            }
+            comcombineFile(songItem, threadIndex, songList, config)
         }
     })
+}
+const comcombineFile = async (songItem, threadIndex, songList, config) => {
+    if (songItem.download.finnnsh.music && songItem.download.finnnsh.cover && songItem.download.finnnsh.lyric) {
+        if (songItem.download.musicFile) {
+            console.log(songItem);
+            if (songItem.download.appendMeta && (songItem.ext == 'mp3' || songItem.ext == 'flac')) {
+                if (songItem.ext == 'mp3') {
+                    const mp3tag = new MP3Tag(songItem.download.musicFile);
+                    mp3tag.read();
+                    mp3tag.tags.title = songItem.title;
+                    mp3tag.tags.artist = songItem.artist;
+                    if (songItem.album.length > 0) mp3tag.tags.album = songItem.album;
+                    if (songItem.download.coverData) {
+                        mp3tag.tags.v2.APIC = [{
+                            description: "",
+                            data: songItem.download.coverData,
+                            type: 3,
+                            format: "image/jpeg",
+                        }];
+                    }
+                    if (songItem.download.lyricText.length > 0) {
+                        mp3tag.tags.v2.TXXX = [{
+                            description: "LYRICS",
+                            text: songItem.download.lyricText,
+                        }];
+                    }
+                    mp3tag.save();
+                    if (mp3tag.error) {
+                        console.error("mp3tag.error", mp3tag.error);
+                    }
+                    const blob = new Blob([mp3tag.buffer], { type: "audio/mp3" });
+                    const url = URL.createObjectURL(blob);
+
+                    GM_download({
+                        url: url,
+                        name: songItem.fileFullName,
+                        onload: function () {
+                            config.finnshCount += 1
+                            Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
+                            songItem.download.prText.innerHTML = `完成`
+                            downloadSongSub(threadIndex, songList, config)
+                        }
+                    });
+                }
+                else if (songItem.ext == 'flac') {
+                    const flac = new MetaFlac(songItem.download.musicFile);
+                    flac.removeAllTags();
+                    flac.setTag(`TITLE=${songItem.title}`);
+                    flac.setTag(`ARTIST=${songItem.artist}`);
+                    if (songItem.album.length > 0) flac.setTag(`ALBUM=${songItem.album}`);
+                    if (songItem.download.lyricText.length > 0) flac.setTag(`LYRICS=${songItem.download.lyricText}`);
+                    if (songItem.download.coverData) await flac.importPictureFromBuffer(songItem.download.coverData, "image/jpeg");
+                    const newBuffer = flac.save();
+                    const blob = new Blob([newBuffer], { type: "audio/flac" });
+                    const url = URL.createObjectURL(blob);
+                    GM_download({
+                        url: url,
+                        name: songItem.fileFullName,
+                        onload: function () {
+                            config.finnshCount += 1
+                            Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
+                            songItem.download.prText.innerHTML = `完成`
+                            downloadSongSub(threadIndex, songList, config)
+                        }
+                    });
+                }
+            }
+            else {
+                const blob = new Blob([songItem.download.musicFile], { type: `audio/${songItem.ext}` });
+                const url = URL.createObjectURL(blob);
+                GM_download({
+                    url: url,
+                    name: songItem.fileFullName,
+                    onload: function () {
+                        config.finnshCount += 1
+                        Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
+                        songItem.download.prText.innerHTML = `完成`
+                        downloadSongSub(threadIndex, songList, config)
+                    }
+                });
+            }
+        }
+        else {
+            songItem.download.prText.innerHTML = `下载失败`
+            downloadSongSub(threadIndex, songList, config)
+        }
+    }
 }

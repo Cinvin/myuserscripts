@@ -487,7 +487,7 @@ width: 8%;
         let importSongData = [{
             songId: song.cloudId,
             bitrate: song.bitrate,
-            song: song.filename,
+            song: song.name,
             artist: song.artists,
             album: song.album,
             fileName: song.filename,
@@ -523,6 +523,7 @@ width: 8%;
     uploadSongMatch(songIndex) {
         let song = this.songs[songIndex]
         let uploader = this
+
         if (song.cloudSongId != song.id && song.id > 0) {
             weapiRequest("/api/cloud/user/song/match", {
                 data: {
@@ -773,7 +774,7 @@ width: 8%;
                 importSongDatas.push({
                     songId: song.cloudId,
                     bitrate: song.bitrate,
-                    song: song.filename,
+                    song: song.name,
                     artist: song.artists,
                     album: song.album,
                     fileName: song.filename
@@ -841,6 +842,7 @@ width: 8%;
         }
         let songIndex = this.batchUpload.songIndexs[this.batchUpload.matchOffset]
         let song = this.songs[songIndex]
+
         if (!('cloudSongId' in song) || song.cloudSongId == song.id || song.id <= 0) {
             this.batchUpload.matchOffset += 1
             this.uploadSongMatchBatch()

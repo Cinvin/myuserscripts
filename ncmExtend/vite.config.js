@@ -16,6 +16,8 @@ export default defineConfig({
         match: ['https://music.163.com/*'],
         grant: ['unsafeWindow', 'GM_addStyle', 'GM_xmlhttpRequest', 'GM_download', 'GM_getValue', 'GM_setValue', 'GM_registerMenuCommand', 'GM_cookie'],
         'run-at': 'document-start',
+        require: ['https://fastly.jsdelivr.net/gh/Cinvin/cdn@master/js/metaflac-browser.js'],
+        connect: ['45.127.129.8','126.net']
       },
 
       build: {
@@ -24,7 +26,8 @@ export default defineConfig({
           sweetalert2: cdn.jsdelivrFastly('sweetalert2', 'dist/sweetalert2.all.min.js'),
           'ajax-hook': cdn.jsdelivrFastly('ajax-hook', 'dist/ajaxhook.min.js'),
           jsmediatags: cdn.jsdelivrFastly('jsmediatags', 'dist/jsmediatags.min.js'),
-          'node-forge': cdn.jsdelivrFastly('node-forge', 'dist/forge.min.js')
+          'node-forge': cdn.jsdelivrFastly('node-forge', 'dist/forge.min.js'),
+          'mp3tag.js': cdn.jsdelivrFastly('mp3tag.js', 'dist/mp3tag.min.js'),
         },
       }
     }),
