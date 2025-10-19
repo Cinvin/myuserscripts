@@ -1,5 +1,10 @@
 ## 网易云音乐脚本
-[点击此处安装](https://update.greasyfork.org/scripts/459633/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%3A%E4%BA%91%E7%9B%98%E5%BF%AB%E4%BC%A0%28%E5%90%AB%E5%91%A8%E6%9D%B0%E4%BC%A6%29%7C%E6%AD%8C%E6%9B%B2%E4%B8%8B%E8%BD%BD%E8%BD%AC%E5%AD%98%E4%BA%91%E7%9B%98%7C%E4%BA%91%E7%9B%98%E5%8C%B9%E9%85%8D%E7%BA%A0%E6%AD%A3%7C%E9%AB%98%E9%9F%B3%E8%B4%A8%E8%AF%95%E5%90%AC.user.js) (请确保浏览器已经安装了[篡改猴](https://www.tampermonkey.net/)，并将浏览器的`开发者模式`打开。若是Chrome，`管理扩展程序`->`篡改猴`->`允许运行用户脚本`也要打开。)
+
+| jsDelivr源 | GreasyFork源 |
+| ----------- | ----------- |
+|  [安装](https://fastly.jsdelivr.net/gh/Cinvin/myuserscripts@master/ncmExtend/publish/ncmExtend.user.js)      | [安装](https://update.greasyfork.org/scripts/459633/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%3A%E4%BA%91%E7%9B%98%E5%BF%AB%E4%BC%A0%28%E5%90%AB%E5%91%A8%E6%9D%B0%E4%BC%A6%29%7C%E6%AD%8C%E6%9B%B2%E4%B8%8B%E8%BD%BD%E8%BD%AC%E5%AD%98%E4%BA%91%E7%9B%98%7C%E4%BA%91%E7%9B%98%E5%8C%B9%E9%85%8D%E7%BA%A0%E6%AD%A3%7C%E9%AB%98%E9%9F%B3%E8%B4%A8%E8%AF%95%E5%90%AC.user.js)        |
+
+请确保浏览器已经安装了扩展程序[篡改猴](https://www.tampermonkey.net/)，并将浏览器的`开发者模式`打开。若是Chrome，`管理扩展程序`->`篡改猴`->`允许运行用户脚本`也要打开。
 
  [![Greasy Fork](https://img.shields.io/greasyfork/dt/459633?label=greasyfork%20installs)](https://greasyfork.org/zh-CN/scripts/459633)
 
