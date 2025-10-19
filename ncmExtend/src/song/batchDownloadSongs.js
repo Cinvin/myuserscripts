@@ -2,6 +2,8 @@ import { showTips, saveContentAsFile, showConfirmBox } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { fileSizeDesc, levelDesc, nameFileWithoutExt } from "../utils/descHelper"
 import { handleLyric } from "../utils/lyric"
+import { MetaFlac } from "../utils/metaflac"
+
 export const batchDownloadSongs = (songList, config) => {
     if (songList.length == 0) {
         showConfirmBox('没有可下载的歌曲')

@@ -16,7 +16,6 @@ export default defineConfig({
         match: ['https://music.163.com/*'],
         grant: ['unsafeWindow', 'GM_addStyle', 'GM_xmlhttpRequest', 'GM_download', 'GM_getValue', 'GM_setValue', 'GM_registerMenuCommand', 'GM_cookie'],
         'run-at': 'document-start',
-        require: ['https://fastly.jsdelivr.net/gh/Cinvin/cdn@master/js/metaflac-browser.js'],
         connect: ['45.127.129.8','126.net']
       },
 

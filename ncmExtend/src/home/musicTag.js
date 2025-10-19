@@ -2,6 +2,7 @@ import { showTips, createBigButton, downloadFileSync } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { duringTimeDesc } from '../utils/descHelper'
 import { handleLyric } from "../utils/lyric"
+import { MetaFlac } from "../utils/metaflac"
 export const musicTag = (uiArea) => {
     //音乐标签
     let btnImport = createBigButton('音乐标签', uiArea, 2)
