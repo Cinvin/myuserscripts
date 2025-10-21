@@ -54,7 +54,7 @@ export const downloadFileSync = (url, fileName) => {
                 url,
                 name: fileName,
                 onload: () => resolve(`下载 ${fileName} 完成`),
-                onerror: (error) => reject(`下载 ${fileName} 失败: ${error}`)
+                onerror: (error) => reject(`下载 ${fileName} 失败`)
             });
         });
     }

@@ -409,6 +409,12 @@ class MetaFlac {
         this.tags = [];
     }
 
+    removeAllPictures() {
+        this.pictures = [];
+        this.picturesSpecs = [];
+        this.picturesDatas = [];
+    }
+
     setTag(field) {
         if (field.indexOf('=') === -1) {
             throw new Error(`malformed vorbis comment field "${field}", field contains no '=' character`);

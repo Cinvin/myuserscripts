@@ -1,6 +1,6 @@
 import { showTips, createBigButton, downloadFileSync } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
-import { duringTimeDesc } from '../utils/descHelper'
+import { duringTimeDesc, nameFileWithoutExt } from '../utils/descHelper'
 import { handleLyric } from "../utils/lyric"
 import { MetaFlac } from "../utils/metaflac"
 export const musicTag = (uiArea) => {
@@ -10,14 +10,16 @@ export const musicTag = (uiArea) => {
     function openMusicTag() {
         Swal.fire({
             title: '音乐标签',
-            confirmButtonText: '添加元信息',
+            confirmButtonText: '添加元数据',
+            showCloseButton: true,
             html: `<div id="my-file">
             <input id='song-file' type="file" accept=".mp3,audio/mpeg,.flac,audio/flac"  aria-label='选择文件' multiple="multiple" class="swal2-file" placeholder="" style="display: flex;">
             </div>
             <div>
             <input class="form-check-input" type="checkbox" value="" id="cb-rename" checked><label class="form-check-label" for="cb-rename">完成时按《歌手 - 歌名》重命名文件</label>
             </div>`,
-            footer: '<div>为本地文件添加添加的封面歌词等音乐标签，使得文件上传网易云云盘后，不关联的情况下显示封面以及滚动歌词。</div>',
+            footer: `<div>为本地文件添加添加的封面歌词等音乐标签，使得文件上传网易云云盘后，不关联的情况下显示封面以及滚动歌词。</div>
+            <div>仅支持MP3/FLAC格式</div>`,
             preConfirm: () => {
                 let files = document.getElementById('song-file').files
                 if (files.length == 0) return Swal.showValidationMessage('请选择文件')
@@ -47,6 +49,7 @@ export const musicTag = (uiArea) => {
             let fileList = [];
             Swal.fire({
                 width: 800,
+                showCloseButton: true,
                 html: `<style>
 table {
     width: 100%;
@@ -94,7 +97,6 @@ width: 21%;
 </style>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>文件名</th><th>目标歌曲</th></tr></thead><tbody></tbody></table>
 `,
-                footer: '<div>为本地文件添加音乐标签，添加的封面歌词等信息上传网易云云盘后可以被识别。</div>',
                 didOpen: async () => {
                     const actions = Swal.getActions()
                     const container = Swal.getHtmlContainer()
@@ -104,7 +106,10 @@ width: 21%;
                         this.fileList = results.map(result => ({
                             file: result.file,
                             fileName: result.file.name,
+                            ext: result.file.name.split('.').pop().toLowerCase(),
                             duration: Math.round(result.duration * 1000),
+                            mode: 'unfill',
+                            songDescription: '</td><td>未设置</td><td>',
                         }));
                     }
 
@@ -135,7 +140,6 @@ width: 21%;
         openSongSelectionDialog(file) {
             Swal.fire({
                 showCloseButton: true,
-                showConfirmButton: false,
                 width: 800,
                 html: `<style>
     table {
@@ -191,9 +195,27 @@ width: 8%;
                 footer: `<div>文件时长 ${duringTimeDesc(file.duration)}</div>`,
                 didOpen: () => {
                     const container = Swal.getHtmlContainer()
+                    const actions = Swal.getActions()
+                    actions.innerHTML = `<div class="swal2-loader"></div>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-unset" style="display: none;">移除设置</button>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-custom" style="display: inline-block;">自定义标签内容</button>`
                     const tbody = container.querySelector('tbody')
                     const searchText = container.querySelector('#search-text');
                     const btnSearch = container.querySelector('#btn-search');
+                    const btnUnset = actions.querySelector('#btn-unset');
+                    const btnCustom = actions.querySelector('#btn-custom');
+
+                    if (file.mode != 'unfill') {
+                        btnUnset.style.display = 'inline-block';
+                        btnUnset.addEventListener('click', () => {
+                            this.unsetSong(file);
+                            this.openFilesDialog();
+                        });
+                    }
+
+                    btnCustom.addEventListener('click', () => {
+                        this.openSongCustomDialog(file);
+                    });
 
                     searchText.value = file.fileName.substring(0, file.fileName.lastIndexOf('.'));
                     btnSearch.addEventListener('click', () => {
@@ -208,12 +230,10 @@ width: 8%;
                                 total: true,
                             },
                             onload: (searchContent) => {
-                                //console.log(searchContent)
                                 if (searchContent.code != 200) {
                                     return
                                 }
                                 if (searchContent.result.songCount > 0) {
-                                    console.log(file, searchContent.result.songs)
                                     tbody.innerHTML = ''
                                     const timeMatchSongs = []
                                     const timeNoMatchSongs = []
@@ -235,6 +255,7 @@ width: 8%;
                                         let selectbtn = tablerow.querySelector('.selectbtn')
                                         selectbtn.addEventListener('click', () => {
                                             file.targetSong = resultSong
+                                            file.mode = 'netease'
                                             file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
                                             this.openFilesDialog()
                                         })
@@ -250,6 +271,79 @@ width: 8%;
                 },
                 didClose: () => {
                     // 处理模态框关闭事件
+                    this.openFilesDialog()
+                }
+            });
+        }
+
+        openSongCustomDialog(file) {
+            Swal.fire({
+                showCloseButton: true,
+                html: `
+                <div><label>歌名<input class="swal2-input" id="text-song"></label></div>
+                <div><label>歌手<input class="swal2-input" id="text-artist"></label></div>
+                <div><label>专辑<input class="swal2-input" id="text-album"></label></div>
+                <div><label>封面<input type="file" accept="image/jpeg,image/png" class="swal2-file"  id="text-cover"></label></div>
+                <div><label>歌词<textarea id="textarea-lyric" class="swal2-textarea" placeholder="[00:10.000] 第一行..."></textarea></label></div>
+                `,
+                didOpen: () => {
+                    const container = Swal.getHtmlContainer()
+                    const actions = Swal.getActions()
+                    actions.innerHTML = `<div class="swal2-loader"></div>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-unset" style="display: none;">移除设置</button>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-netease" style="display: inline-block;">使用网易云信息</button>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-confirm" style="display: inline-block;">设置</button>`
+                    const songInput = container.querySelector('#text-song')
+                    const artistInput = container.querySelector('#text-artist')
+                    const albumInput = container.querySelector('#text-album')
+                    const coverInput = container.querySelector('#text-cover')
+                    const lyricInput = container.querySelector('#textarea-lyric')
+                    const btnUnset = actions.querySelector('#btn-unset')
+                    const btnNetease = actions.querySelector('#btn-netease')
+                    const btnConfirm = actions.querySelector('#btn-confirm')
+
+                    if (file.mode != 'unfill') {
+                        btnUnset.style.display = 'inline-block';
+                        btnUnset.addEventListener('click', () => {
+                            this.unsetSong(file);
+                            this.openFilesDialog();
+                        });
+                    }
+
+                    if (file.customSong) {
+                        songInput.value = file.customSong.name;
+                        artistInput.value = file.customSong.artist;
+                        albumInput.value = file.customSong.album;
+                        if (file.customSong.cover) {
+                            const dt = new DataTransfer();
+                            dt.items.add(file.customSong.cover.file);
+                            coverInput.files = dt.files;
+                        }
+                        lyricInput.value = file.customSong.lyric;
+                    }
+
+                    btnNetease.addEventListener('click', () => {
+                        this.openSongSelectionDialog(file)
+                    })
+
+                    btnConfirm.addEventListener('click', () => {
+                        if (file.customSong?.cover) {
+                            URL.revokeObjectURL(file.customSong.cover.url);
+                        }
+                        file.customSong = {
+                            name: songInput.value,
+                            artist: artistInput.value,
+                            album: albumInput.value,
+                            cover: coverInput.files.length > 0 ? { file: coverInput.files[0], url: URL.createObjectURL(coverInput.files[0]) } : null,
+                            lyric: lyricInput.value
+                        }
+                        file.mode = 'custom'
+                        file.songDescription = file.customSong.cover ? `<img src="${file.customSong.cover.url}" height=50 title="${file.customSong.album}"></td><td>` : '';
+                        file.songDescription += `${file.customSong.name}</td><td>${file.customSong.artist}`;
+                        this.openFilesDialog()
+                    })
+                },
+                didClose: () => {
                     this.openFilesDialog()
                 }
             });
@@ -283,9 +377,9 @@ width: 8%;
             this.fileList.forEach(item => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                        <td><button type="button" class="swal2-styled">选择</button></td>
+                        <td><button type="button" class="swal2-styled">设置</button></td>
                         <td>${item.fileName}</td>
-                        <td class="target-song">${item.songDescription || '</td><td>未选择</td><td>'}</td>
+                        <td class="target-song">${item.songDescription}</td>
                     `;
                 const selectButton = tr.querySelector('.swal2-styled');
                 selectButton.addEventListener('click', () => {
@@ -293,7 +387,12 @@ width: 8%;
                         showTips('正在自动填充歌曲信息，请稍候...', 1);
                         return
                     }
-                    this.openSongSelectionDialog(item);
+                    if (item.mode === 'unfill' || item.mode === 'netease') {
+                        this.openSongSelectionDialog(item);
+                    }
+                    else {
+                        this.openSongCustomDialog(item);
+                    }
                 });
                 this.songListTbody.appendChild(tr);
             });
@@ -321,6 +420,7 @@ width: 8%;
                                 let songName = resultSong.name
                                 const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
                                 file.targetSong = resultSong;
+                                file.mode = 'netease'
                                 file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
                                 this.refreshSongListTable();
                                 break;
@@ -335,13 +435,14 @@ width: 8%;
 
         }
 
-        handleSongTag() {
-            this.selectedSongs = this.fileList.filter(item => item.targetSong);
-            if (this.selectedSongs.length === 0) {
-                showFinishBox(0)
-                return;
-            }
+        unsetSong(file) {
+            file.targetSong = null;
+            file.customSong = null;
+            file.songDescription = '</td><td>未设置</td><td>';
+            file.mode = 'unfill';
+        }
 
+        handleSongTag() {
             Swal.fire({
                 width: 800,
                 allowOutsideClick: false,
@@ -383,10 +484,13 @@ width: 50%;
 </style>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>文件名</th><th>进度</th></tr></thead><tbody></tbody></table>
 `,
-                footer: '',
                 didOpen: async () => {
                     const container = Swal.getHtmlContainer()
-
+                    this.selectedSongs = this.fileList.filter(item => item.mode !== 'unfill');
+                    if (this.selectedSongs.length === 0) {
+                        this.showFinishBox(0)
+                        return;
+                    }
                     this.songListTbody = container.querySelector('tbody');
                     this.selectedSongs.forEach(song => {
                         const tr = document.createElement('tr');
@@ -401,93 +505,118 @@ width: 50%;
                         song.progressDOM.innerHTML = '开始处理';
                         // 等待读取文件为 ArrayBuffer
                         const fileBuffer = await song.file.arrayBuffer();
-
-                         const songTitle = song.targetSong.name;
-                         const songArtist = song.targetSong.ar.map(ar => ar.name).join('');
-                         const songAlbum = song.targetSong.al.name;
-                         if (this.rename) {
-                             song.fileName = `${songArtist} - ${songTitle}.${song.fileName.split('.').pop()}`;
-                         }
-                         let coverBuffer = null;
-                         if (song.targetSong.al.pic > 0) {
-                             coverBuffer = await new Promise((resolve, reject) => {
-                                 GM_xmlhttpRequest({
-                                     method: "GET",
-                                     url: song.targetSong.al.picUrl,
-                                     responseType: "arraybuffer",
-                                     onload: res => resolve(res.response),
-                                     onerror: err => reject(err)
-                                 });
-                             });
-                            coverBuffer = new Uint8Array(coverBuffer).buffer;
-                             song.progressDOM.innerHTML = '已获取图片'
-                         }
-                         let lyricText = '';
-                         const lyricRes = await weapiRequestSync('/api/song/lyric/v1', {
-                             data: { id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, }
-                         })
-                        if (lyricRes && !lyricRes.pureMusic) {
-                            const LyricObj = handleLyric(lyricRes);
-                            if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
-                                lyricText = LyricObj.oritlrc.lyric;
-                                song.progressDOM.innerHTML = '已获取歌词';
-                            } else if (LyricObj && LyricObj.orilrc && LyricObj.orilrc.parsedLyric.length > 0) {
-                                lyricText = LyricObj.orilrc.lyric;
-                                song.progressDOM.innerHTML = '已获取歌词';
+                        const songTitle = song.mode === 'netease' ? song.targetSong.name : song.customSong.name;
+                        const songArtist = song.mode === 'netease' ? song.targetSong.ar.map(ar => ar.name).join('') : song.customSong.artist;
+                        const songAlbum = song.mode === 'netease' ? song.targetSong.al.name : song.customSong.album;
+                        if (this.rename) {
+                            const nameWithoutExt = nameFileWithoutExt(songTitle, songArtist, 'artist-title');
+                            if (nameWithoutExt && nameWithoutExt.length > 0) song.fileName = `${nameWithoutExt}.${song.ext}`;
+                        }
+                        let coverBuffer = null;
+                        let coverFormat = "image/jpeg";
+                        if (song.mode === 'netease') {
+                            if (song.targetSong.al.pic > 0) {
+                                coverBuffer = await new Promise((resolve, reject) => {
+                                    GM_xmlhttpRequest({
+                                        method: "GET",
+                                        url: song.targetSong.al.picUrl,
+                                        responseType: "arraybuffer",
+                                        onload: res => resolve(res.response),
+                                        onerror: err => reject(err)
+                                    });
+                                });
+                                coverBuffer = new Uint8Array(coverBuffer).buffer;
+                                song.progressDOM.innerHTML = '已获取图片'
                             }
                         }
-                         if (song.fileName.toLowerCase().endsWith('mp3')) {
+                        else {
+                            if (song.customSong.cover) {
+                                let imgext = song.customSong.cover.file.name.split(".").pop().toLowerCase();
+                                if (imgext === "jpg") {
+                                    imgext = "jpeg";
+                                }
+                                coverFormat = `image/${imgext}`;
+                                coverBuffer = await song.customSong.cover.file.arrayBuffer();
+                                coverBuffer = new Uint8Array(coverBuffer).buffer;
+                                URL.revokeObjectURL(song.customSong.cover.url);
+                            }
+                        }
+
+                        let lyricText = '';
+                        if (song.mode === 'netease') {
+                            const lyricRes = await weapiRequestSync('/api/song/lyric/v1', {
+                                data: { id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, }
+                            })
+                            if (lyricRes && !lyricRes.pureMusic) {
+                                const LyricObj = handleLyric(lyricRes);
+                                if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
+                                    lyricText = LyricObj.oritlrc.lyric;
+                                    song.progressDOM.innerHTML = '已获取歌词';
+                                } else if (LyricObj && LyricObj.orilrc && LyricObj.orilrc.parsedLyric.length > 0) {
+                                    lyricText = LyricObj.orilrc.lyric;
+                                    song.progressDOM.innerHTML = '已获取歌词';
+                                }
+                            }
+                        }
+                        else {
+                            lyricText = song.customSong.lyric.trim();
+                        }
+
+                        if (song.ext === 'mp3') {
                             const mp3tag = new MP3Tag(fileBuffer);
                             mp3tag.read();
-                             mp3tag.tags.title = songTitle;
-                             mp3tag.tags.artist = songArtist;
-                             if (songAlbum.length > 0) mp3tag.tags.album = songAlbum;
-                             if (coverBuffer) {
-                                 mp3tag.tags.v2.APIC = [{
-                                     description: "",
-                                     data: coverBuffer,
-                                     type: 3,
-                                     format: "image/jpeg",
-                                 }];
-                             }
+                            mp3tag.tags.title = songTitle;
+                            mp3tag.tags.artist = songArtist;
+                            if (songAlbum.length > 0) mp3tag.tags.album = songAlbum;
+                            if (coverBuffer) {
+                                mp3tag.tags.v2.APIC = [{
+                                    description: "",
+                                    data: coverBuffer,
+                                    type: 3,
+                                    format: coverFormat,
+                                }];
+                            }
                             if (lyricText && lyricText.length > 0) {
                                 mp3tag.tags.v2.TXXX = [{
                                     description: "LYRICS",
                                     text: lyricText,
                                 }];
                             }
-                             mp3tag.save();
-                             if (mp3tag.error) {
-                                 console.error("mp3tag.error", mp3tag.error);
-                                 song.progressDOM.innerHTML = `标记时出错：${mp3tag.error}`
-                                 continue;
-                             }
-                             const blob = new Blob([mp3tag.buffer], { type: "audio/mp3" });
-                             const url = URL.createObjectURL(blob);
-                             const downloadRes = await downloadFileSync(url, song.fileName);
-                             song.progressDOM.innerHTML = downloadRes;
-                             if (downloadRes.endsWith("完成")) {
-                                 finishCount += 1;
-                             }
-                         }
-                         else if (song.fileName.toLowerCase().endsWith('flac')) {
+                            mp3tag.save();
+                            if (mp3tag.error) {
+                                console.error("mp3tag.error", mp3tag.error);
+                                song.progressDOM.innerHTML = `标记时出错：${mp3tag.error}`
+                                continue;
+                            }
+                            const blob = new Blob([mp3tag.buffer], { type: "audio/mp3" });
+                            const url = URL.createObjectURL(blob);
+                            const downloadRes = await downloadFileSync(url, song.fileName);
+                            song.progressDOM.innerHTML = downloadRes;
+                            URL.revokeObjectURL(url);
+                            if (downloadRes.endsWith("完成")) {
+                                finishCount += 1;
+                            }
+                        }
+                        else if (song.ext === 'flac') {
                             const flac = new MetaFlac(fileBuffer);
-                             flac.removeAllTags();
-                             flac.setTag(`TITLE=${songTitle}`);
-                             flac.setTag(`ARTIST=${songArtist}`);
-                             if (songAlbum.length > 0) flac.setTag(`ALBUM=${songAlbum}`);
-                             if (lyricText.length > 0) flac.setTag(`LYRICS=${lyricText}`);
-                             if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, "image/jpeg");
-                             const newBuffer = flac.save();
-                             const blob = new Blob([newBuffer], { type: "audio/flac" });
-                             const url = URL.createObjectURL(blob);
-                             const downloadRes = await downloadFileSync(url, song.fileName);
-                             song.progressDOM.innerHTML = downloadRes;
-                             if (downloadRes.endsWith("完成")) {
-                                 finishCount += 1;
-                             }
-                         }
-                     }
+                            flac.removeAllTags();
+                            flac.removeAllPictures();
+                            flac.setTag(`TITLE=${songTitle}`);
+                            flac.setTag(`ARTIST=${songArtist}`);
+                            if (songAlbum.length > 0) flac.setTag(`ALBUM=${songAlbum}`);
+                            if (lyricText.length > 0) flac.setTag(`LYRICS=${lyricText}`);
+                            if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, coverFormat);
+                            const newBuffer = flac.save();
+                            const blob = new Blob([newBuffer], { type: "audio/flac" });
+                            const url = URL.createObjectURL(blob);
+                            const downloadRes = await downloadFileSync(url, song.fileName);
+                            song.progressDOM.innerHTML = downloadRes;
+                            URL.revokeObjectURL(url);
+                            if (downloadRes.endsWith("完成")) {
+                                finishCount += 1;
+                            }
+                        }
+                    }
                     this.showFinishBox(finishCount)
                 },
             })
