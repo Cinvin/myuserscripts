@@ -39,7 +39,7 @@ export class Uploader {
             allowOutsideClick: false,
             allowEscapeKey: false,
             showConfirmButton: false,
-            width: 800,
+            width: '980px',
             html: `<style>
     table {
         width: 100%;
@@ -67,28 +67,28 @@ export class Uploader {
         border-bottom: none;
     }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
-width: 35%;
+width: 31%;
 }
 tr td:nth-child(2){
-width: 10%;
+width: 6%;
 }
 tr td:nth-child(3){
 width: 25%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
-width: 20%;
+width: 25%;
 }
 tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;
 }
 tr th:nth-child(5),tr td:nth-child(6){
-width: 16%;
+width: 15%;
 }
 tr th:nth-child(6),tr td:nth-child(7){
-width: 8%;
+width: 15%;
 }
 </style>
 <input id="text-filter" class="swal2-input" placeholder="歌曲过滤">
@@ -280,7 +280,7 @@ width: 8%;
         for (let i = 0; i < this.songs.length; i++) {
             let song = this.songs[i]
             let tablerow = document.createElement('tr')
-            tablerow.innerHTML = `<td><button type="button" class="swal2-styled uploadbtn"><i class="fa-solid fa-cloud-arrow-up"></i></button><button type="button" class="swal2-styled reuploadbtn" style="display: none">文件已在云盘，点击关联到此歌曲</button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`
+            tablerow.innerHTML = `<td><button type="button" class="swal2-styled uploadbtn"><i class="fa-solid fa-cloud-arrow-up"></i></button><button type="button" class="swal2-styled reuploadbtn" style="display: none" title="重新上传并关联到此歌曲"><i class="fa-solid fa-repeat"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`
             let songTitle = tablerow.querySelector('.song-remark')
             if (song.isNoCopyright) {
                 songTitle.innerHTML = '无版权'
@@ -399,6 +399,7 @@ width: 8%;
         uploadbtn.style.display = 'none'
         let reuploadbtn = this.songs[songIndex].tablerow.querySelector('.reuploadbtn')
         reuploadbtn.style.display = ''
+        this.setSongRemark(this.songs[songIndex], '文件已在云盘但没有关联到目标歌曲，点击按钮重新上传并关联。')
     }
     uploadSong(songIndex) {
         let song = this.songs[songIndex]
@@ -461,8 +462,9 @@ width: 8%;
                         showTips(`(1/3)${song.name} 文件无法上传`, 2)
                         song.uploaded = true
                         let btnUpload = song.tablerow.querySelector('.uploadbtn')
-                        btnUpload.innerHTML = '无法上传'
+                        btnUpload.innerHTML = '<i class="fa-solid fa-xmark"></i>'
                         btnUpload.disabled = 'disabled'
+                        uploader.setSongRemark(song, '文件无法上传')
                         uploader.onUploadFinnsh()
                     }
                 },
@@ -534,7 +536,8 @@ width: 8%;
                     if (res5.code != 200) {
                         console.error(song.name, '5.匹配歌曲', res5)
                         showTips(`${song.name}上传成功，但是关联失败`, 2)
-                        this.setSongUploaded(song, '已上传（未关联）')
+                        this.setSongUploaded(song)
+                        this.setSongRemark(song, '文件关联失败')
                         this.onUploadFinish()
                         return
                     }
@@ -660,15 +663,22 @@ width: 8%;
         this.renderFilterInfo()
     }
 
-    setSongUploaded(song, description='已上传') {
+    setSongUploaded(song) {
         song.uploaded = true
         let btnSelect = '.uploadbtn'
         if (song.uploadType == 0) {
             btnSelect = '.reuploadbtn'
         }
         let btnUpload = song.tablerow.querySelector(btnSelect)
-        btnUpload.innerHTML = description
+        btnUpload.innerHTML = '<i class="fa-solid fa-check"></i>'
         btnUpload.disabled = 'disabled'
+    }
+
+    setSongRemark(song, remark) {
+        let markElement = song.tablerow.querySelector('.song-remark')
+        if (markElement) {
+            markElement.innerHTML = remark
+        }
     }
 
     uploadSongBatch(retry = false) {
@@ -733,7 +743,8 @@ width: 8%;
                     else if (fileData.upload > 1) {
                         this.songs[songIndex].uploaded = true
                         let btnUpload = this.songs[songIndex].tablerow.querySelector('.uploadbtn')
-                        btnUpload.innerHTML = '无法上传'
+                        btnUpload.innerHTML = '<i class="fa-solid fa-xmark"></i>'
+                        this.setSongRemark(this.songs[songIndex], '文件无法上传')
                         btnUpload.disabled = 'disabled'
                     }
                 })
@@ -860,7 +871,8 @@ width: 8%;
                     console.error(song.name, '匹配歌曲', res5)
                     if (res5.code == 400) {
                         showTips(`${song.name}上传成功，但是关联失败`, 2)
-                        this.setSongUploaded(song, '已上传（未关联）')
+                        this.setSongUploaded(song)
+                        this.setSongRemark(song, '文件关联失败')
                         this.batchUpload.matchOffset += 1
                         this.uploadSongMatchBatch()
                     }
@@ -871,7 +883,8 @@ width: 8%;
                     }
                     else {
                         showTips(`${song.name}上传成功，但是关联失败`, 2)
-                        this.setSongUploaded(song, '已上传（未关联）')
+                        this.setSongUploaded(song)
+                        this.setSongRemark(song, '文件关联失败')
                         this.batchUpload.matchOffset += 1
                         this.uploadSongMatchBatch()
                     }

@@ -73,7 +73,7 @@ export const cloudUpgrade = (uiArea) => {
             Swal.fire({
                 showCloseButton: true,
                 showConfirmButton: false,
-                width: 800,
+                width: '980px',
                 html: `<style>
 table {
     width: 100%;
@@ -101,19 +101,19 @@ table tbody tr td{
     border-bottom: none;
 }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
-width: 35%;
+width: 34%;
 }
 tr td:nth-child(2){
-width: 10%;
+width: 6%;
 }
 tr td:nth-child(3){
-width: 25%;
+width: 28%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
-width: 20%;
+width: 28%;
 }
 tr th:nth-child(4),tr td:nth-child(5){
 width: 16%;
@@ -265,7 +265,7 @@ width: 16%;
             for (let i = 0; i < this.songs.length; i++) {
                 let song = this.songs[i]
                 let tablerow = document.createElement('tr')
-                tablerow.innerHTML = `<td><button type="button" class="swal2-styled">提升</button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${levelDesc(song.fileinfo.originalLevel)} ${song.fileinfo.originalBr}k</td><td>${tagetLevelDesc} ${song.fileinfo.tagetBr}k</td>`
+                tablerow.innerHTML = `<td><button type="button" class="swal2-styled" title="提升"><i class="fa-solid fa-arrow-up"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${levelDesc(song.fileinfo.originalLevel)} ${song.fileinfo.originalBr}k</td><td>${tagetLevelDesc} ${song.fileinfo.tagetBr}k</td>`
                 let btn = tablerow.querySelector('button')
                 btn.addEventListener('click', () => {
                     if (this.batchUpgrade.working) {
@@ -380,7 +380,7 @@ width: 16%;
             showTips(`${song.name} 音质提升成功`, 1)
             song.upgraded = true
             let btnUpgrade = song.tablerow.querySelector('button')
-            btnUpgrade.innerHTML = '已提升'
+            btnUpgrade.innerHTML = '<i class="fa-solid fa-check"></i>'
             btnUpgrade.disabled = 'disabled'
             ULsong.Upgrader.onUpgradeFinnsh(ULsong.songIndex)
         }

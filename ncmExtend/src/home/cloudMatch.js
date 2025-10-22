@@ -31,7 +31,7 @@ export const cloudMatch = (uiArea) => {
             Swal.fire({
                 showCloseButton: true,
                 showConfirmButton: false,
-                width: 800,
+                width: '980px',
                 html: `<style>
 table {
     width: 100%;
@@ -59,16 +59,16 @@ table tbody tr td{
     border-bottom: none;
 }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
 width: 32%;
 }
 tr td:nth-child(2){
-width: 8%;
+width: 6%;
 }
 tr td:nth-child(3){
-width: 25%;
+width: 27%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
 width: 18%;
@@ -364,7 +364,7 @@ width: 15%;
         openMatchPopup(song) {
             Swal.fire({
                 showCloseButton: true,
-                width: 800,
+                width: '980px',
                 confirmButtonText: '匹配',
                 html: `<style>
     table {
@@ -394,19 +394,19 @@ width: 15%;
         border-bottom: none;
     }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
-width: 52%;
+width: 46%;
 }
 tr td:nth-child(2){
-width: 10%;
+width: 6%;
 }
 tr td:nth-child(3){
-width: 42%;
+width: 40%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
-width: 32%;
+width: 40%;
 }
 tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;

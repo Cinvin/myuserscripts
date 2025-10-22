@@ -48,7 +48,7 @@ export const musicTag = (uiArea) => {
         openFilesDialog() {
             let fileList = [];
             Swal.fire({
-                width: 800,
+                width: '980px',
                 showCloseButton: true,
                 html: `<style>
 table {
@@ -77,22 +77,22 @@ table tbody tr td{
     border-bottom: none;
 }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2),tr td:nth-child(2){
-width: 42%;
+width: 30%;
 }
 tr th:nth-child(3),{
-width: 50%;
+width: 64%;
 }
 tr td:nth-child(3){
-width: 8%;
+width: 6%;
 }
 tr td:nth-child(4){
-width: 21%;
+width: 29%;
 }
 tr td:nth-child(5){
-width: 21%;
+width: 29%;
 }
 </style>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>文件名</th><th>目标歌曲</th></tr></thead><tbody></tbody></table>
@@ -140,7 +140,7 @@ width: 21%;
         openSongSelectionDialog(file) {
             Swal.fire({
                 showCloseButton: true,
-                width: 800,
+                width: '980px',
                 html: `<style>
     table {
         width: 100%;
@@ -169,19 +169,19 @@ width: 21%;
         border-bottom: none;
     }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
-width: 52%;
+width: 46%;
 }
 tr td:nth-child(2){
-width: 10%;
+width: 6%;
 }
 tr td:nth-child(3){
-width: 42%;
+width: 40%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
-width: 32%;
+width: 40%;
 }
 tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;
@@ -444,7 +444,7 @@ width: 8%;
 
         handleSongTag() {
             Swal.fire({
-                width: 800,
+                width: '980px',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
                 showCloseButton: false,

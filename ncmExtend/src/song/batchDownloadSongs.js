@@ -15,7 +15,7 @@ export const batchDownloadSongs = (songList, config) => {
         allowEscapeKey: false,
         showCloseButton: false,
         showConfirmButton: false,
-        width: 800,
+        width: '980px',
         html: `<style>
 table {
 width: 100%;
