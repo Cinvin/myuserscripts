@@ -3,6 +3,7 @@ import { downloadSongBatch } from "./downloadSongBatch"
 import { uploadSongBatch } from "./uploadSongBatch"
 import { sortSongs } from "./sortSongs"
 import { getAlbumTextInSongDetail, getArtistTextInSongDetail, escapeHTML, duringTimeDesc } from "../utils/descHelper"
+import {songItemAddToFormat} from "../utils/common"
 
 class PlaylistDetail {
     constructor() {
@@ -87,40 +88,12 @@ class PlaylistDetail {
     }
     createFormatAddToData(songItem) {
         if (songItem.privilege.plLevel != 'none') {
-            let addToFormat = {
-                album: songItem.song.al,
-                alias: songItem.song.alia || songItem.song.ala || [],
-                artists: songItem.song.ar || [],
-                commentThreadId: "R_SO_4_" + songItem.song.id,
-                copyrightId: songItem.song.cp || 0,
-                duration: songItem.song.dt || 0,
-                id: songItem.song.id,
-                mvid: songItem.song.mv || 0,
-                name: songItem.song.name || "",
-                cd: songItem.song.cd,
-                position: songItem.song.no || 0,
-                ringtone: songItem.song.rt,
-                rtUrl: songItem.song.rtUrl,
-                status: songItem.song.st || 0,
-                pstatus: songItem.song.pst || 0,
-                fee: songItem.song.fee || 0,
-                version: songItem.song.v || 0,
-                eq: songItem.song.eq,
-                songType: songItem.song.t || 0,
-                mst: songItem.song.mst,
-                score: songItem.song.pop || 0,
-                ftype: songItem.song.ftype,
-                rtUrls: songItem.song.rtUrls,
-                transNames: songItem.song.tns,
-                privilege: songItem.song.privilege,
-                lyrics: songItem.song.lyrics,
-                alg: songItem.song.alg,
-                source: {
-                    fdata: String(this.playlistId),
-                    fid: 13,
-                    link: `playlist?id=${this.playlistId}&_hash=songlist-${songItem.song.id}`,
-                    title: '歌单',
-                },
+            let addToFormat = songItemAddToFormat(songItem.song)
+            addToFormat.source = {
+                fdata: String(this.playlistId),
+                fid: 13,
+                link: `playlist?id=${this.playlistId}&_hash=songlist-${songItem.song.id}`,
+                title: '歌单',
             }
             this.playableSongList.push(addToFormat)
         }

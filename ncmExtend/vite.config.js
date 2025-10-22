@@ -16,7 +16,10 @@ export default defineConfig({
         match: ['https://music.163.com/*'],
         grant: ['unsafeWindow', 'GM_addStyle', 'GM_xmlhttpRequest', 'GM_download', 'GM_getValue', 'GM_setValue', 'GM_registerMenuCommand', 'GM_cookie'],
         'run-at': 'document-start',
-        connect: ['45.127.129.8','126.net']
+        connect: ['45.127.129.8', '126.net'],
+        resource: {
+          fa: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css',
+        },
       },
 
       build: {

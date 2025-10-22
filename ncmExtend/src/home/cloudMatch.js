@@ -1,5 +1,5 @@
-import { createBigButton, showTips } from "../utils/common"
-import { weapiRequest } from "../utils/request"
+import { createBigButton, showTips, songItemAddToFormat } from "../utils/common"
+import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc } from '../utils/descHelper'
 
 export const cloudMatch = (uiArea) => {
@@ -82,6 +82,35 @@ width: 18%;
 tr th:nth-child(6),tr td:nth-child(7){
 width: 15%;
 }
+
+  /* 最右边隐藏按钮的容器 */
+  .row-actions {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+
+  /* 当鼠标悬停整行时显示 */
+  table tbody tr:hover .row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* 行相对定位，以便放置右侧按钮 */
+  table tbody tr {
+    position: relative;
+  }
+
+  /* 鼠标悬停时隐藏该行的最后三个单元格 */
+  table tbody tr:hover td:nth-last-child(-n + 3) {
+    visibility: hidden;
+  }
 </style>
 <input class="swal2-input" value="${this.filter.text}" id="text-filter" placeholder="歌曲过滤">
 <input class="form-check-input" type="checkbox" value="" id="cb-notmatch" ${this.filter.notMatch ? 'checked' : ''}><label class="form-check-label" for="cb-notmatch">未匹配歌曲</label>
@@ -200,16 +229,45 @@ width: 15%;
                 let dateObj = new Date(song.addTime)
                 let addTime = `${dateObj.getFullYear()}-${dateObj.getMonth() + 1}-${dateObj.getDate()}`
                 let tablerow = document.createElement('tr')
-                tablerow.innerHTML = `<td><button type="button" class="swal2-styled">匹配</button></td><td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${album}"></a></td><td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${song.simpleSong.name}</a></td><td>${artist}</td><td>${duringTimeDesc(song.simpleSong.dt)}</td><td>${fileSizeDesc(song.fileSize)} ${levelDesc(song.simpleSong.privilege.plLevel)}</td><td>${addTime}</td>`
+                tablerow.innerHTML = `<td><button type="button" class="swal2-styled btn-match" title="匹配"><i class="fa-solid fa-link"></i></button></td>
+                <td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${album}"></a></td>
+                <td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${song.simpleSong.name}</a></td>
+                <td>${artist}</td><td>${duringTimeDesc(song.simpleSong.dt)}</td><td>${fileSizeDesc(song.fileSize)} ${levelDesc(song.simpleSong.privilege.plLevel)}</td>
+                <td>${addTime}</td>
+                <div class="row-actions">
+                    <button type="button" class="swal2-styled btn-play"  title="播放"><i class="fa-solid fa-play"></i></button>
+                    <button type="button" class="swal2-styled btn-addplay"  title="添加至播放列表"><i class="fa-solid fa-plus"></i></button>
+                    <button type="button" class="swal2-styled btn-collect"  title="收藏"><i class="fa-solid fa-folder-plus"></i></button>
+                    <button type="button" class="swal2-styled btn-delete"  title="删除"><i class="fa-solid fa-trash"></i></button>
+                </div>`
                 if (song.simpleSong.al && song.simpleSong.al.id > 0) {
                     let albumLink = tablerow.querySelector('.album-link')
                     albumLink.href = 'https://music.163.com/album?id=' + song.simpleSong.al.id
                     albumLink.target = "_blank"
                 }
-                let btn = tablerow.querySelector('button')
-                btn.addEventListener('click', () => {
+                const btnMatch = tablerow.querySelector('.btn-match')
+                btnMatch.addEventListener('click', () => {
                     this.openMatchPopup(song)
                 })
+
+                const addToFormat = songItemAddToFormat(song.simpleSong)
+                const btnPlay = tablerow.querySelector('.btn-play')
+                btnPlay.addEventListener('click', () => {
+                    unsafeWindow.top.player.addTo([addToFormat], false, true)
+                })
+                const btnAddPlay = tablerow.querySelector('.btn-addplay')
+                btnAddPlay.addEventListener('click', () => {
+                    unsafeWindow.top.player.addTo([addToFormat], false, false)
+                })
+                const btnCollect = tablerow.querySelector('.btn-collect')
+                btnCollect.addEventListener('click', () => {
+                    this.openAddToPlaylistPopup(song)
+                })
+                const btnDelete = tablerow.querySelector('.btn-delete')
+                btnDelete.addEventListener('click', () => {
+                    this.deleteCloudSong(song)
+                })
+
                 this.controls.tbody.appendChild(tablerow)
             })
         }
@@ -515,7 +573,7 @@ width: 8%;
                     const needHighLight = Math.abs(resultSong.dt - this.fileDuringTime) < 1000
                     const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
 
-                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">关联</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
+                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
                     let selectbtn = tablerow.querySelector('.selectbtn')
                     selectbtn.addEventListener('click', () => {
                         this.matchSong(cloudSongId, resultSong.id)
@@ -526,6 +584,153 @@ width: 8%;
             } else {
                 this.tbody.innerHTML = '搜索结果为空'
             }
+        }
+        openAddToPlaylistPopup(song) {
+            Swal.fire({
+                showCloseButton: true,
+                showConfirmButton: false,
+                html: `<style>
+    table {
+        width: 100%;
+        height: 400px; 
+        border-spacing: 0px;
+        border-collapse: collapse;
+    }
+    table th, table td {
+        text-align: left;
+        text-overflow: ellipsis;
+    }
+    table tbody {
+        display: block;
+        width: 100%;
+        max-height: 400px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    table thead tr, table tbody tr, table tfoot tr {
+        box-sizing: border-box;
+        table-layout: fixed;
+        display: table;
+        width: 100%;
+    }
+    table tbody tr td{
+        border-bottom: none;
+    }
+tr th:nth-child(1),tr td:nth-child(1){
+width: 14%;
+}
+tr th:nth-child(2){
+width: 86%;
+}
+tr td:nth-child(2){
+width: 16%;
+}
+tr td:nth-child(3){
+width: 70%;
+}
+</style>
+<div class="table-wrapper">
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌单</th></tr></thead><tbody></tbody></table>
+</div>
+`,
+                footer: '',
+
+                didOpen: async () => {
+                    const container = Swal.getHtmlContainer()
+                    this.tbody = container.querySelector('tbody')
+                    const userPlaylistRes = await weapiRequestSync("/api/user/playlist", {
+                        data: {
+                            uid: unsafeWindow.GUser.userId,
+                            limit: 1001,
+                            offset: 0,
+                        },
+                    })
+                    const userPlaylists = []
+                    if (userPlaylistRes.code === 200 && userPlaylistRes.playlist.length > 0) {
+                        for (const playlist of userPlaylistRes.playlist) {
+                            if (!playlist.subscribed) {
+                                userPlaylists.push({
+                                    id: playlist.id,
+                                    name: playlist.name,
+                                    html: `<td><button type="button" class="swal2-styled btn-add" title="加入歌单"><i class="fa-solid fa-plus"></i></button></td>
+                                                <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${playlist.name}"></td>
+                                                <td>${playlist.name}</td>`,
+                                })
+                            }
+                        }
+                    }
+                    for (const playlist of userPlaylists) {
+                        const row = document.createElement('tr')
+                        row.innerHTML = playlist.html
+                        const btnAdd = row.querySelector('.btn-add')
+                        btnAdd.addEventListener('click', async () => {
+                            const collectRes = await weapiRequestSync("/api/playlist/manipulate/tracks", {
+                                method: "POST",
+                                data: {
+                                    op: "add",
+                                    pid: playlist.id,
+                                    tracks: song.simpleSong.id,
+                                    trackIds: JSON.stringify([song.simpleSong.id])
+                                }
+                            })
+                            if (collectRes.code === 200) {
+                                showTips('加入歌单成功', 1)
+                                this.openCloudList()
+                            } else {
+                                if (collectRes.message) {
+                                    showTips(collectRes.message, 2)
+                                } else {
+                                    showTips('加入歌单失败', 2)
+                                }
+                            }
+                        })
+                        this.tbody.appendChild(row)
+                    }
+                },
+                didClose: () => {
+                    this.openCloudList()
+                }
+            })
+        }
+        deleteCloudSong(song) {
+            Swal.fire({
+                icon: 'warning',
+                title: '确认删除',
+                text: `确定要删除《${song.simpleSong.name}》吗？`,
+                showCancelButton: true,
+                confirmButtonText: '删除',
+                cancelButtonText: '取消',
+                didClose: () => {
+                    this.openCloudList()
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const deleteRes = await weapiRequestSync("/api/cloud/del", {
+                        method: "POST",
+                        data: {
+                            songIds: [song.simpleSong.id],
+                        }
+                    })
+                    if (deleteRes.code === 200) {
+                        showTips('删除成功', 1)
+                        if (this.filter.songs.length > 0) {
+                            for (let i = 0; i < this.filter.songs.length; i++) {
+                                if (this.filter.songs[i].simpleSong.id == song.simpleSong.id) {
+                                    this.filter.songs.splice(i, 1)
+                                    break
+                                }
+                            }
+                        }
+                    } else {
+                        if (deleteRes.message) {
+                            showTips(deleteRes.message, 2)
+                        } else {
+                            showTips('删除失败', 2)
+                        }
+                    }
+                    this.openCloudList()
+                }
+            })
         }
     }
 }

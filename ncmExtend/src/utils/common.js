@@ -49,12 +49,45 @@ export const createBigButton = (desc, parent, appendWay) => {
 }
 
 export const downloadFileSync = (url, fileName) => {
-        return new Promise((resolve, reject) => {
-            GM_download({
-                url,
-                name: fileName,
-                onload: () => resolve(`下载 ${fileName} 完成`),
-                onerror: (error) => reject(`下载 ${fileName} 失败`)
-            });
+    return new Promise((resolve, reject) => {
+        GM_download({
+            url,
+            name: fileName,
+            onload: () => resolve(`下载 ${fileName} 完成`),
+            onerror: (error) => reject(`下载 ${fileName} 失败`)
         });
+    });
+}
+
+export const songItemAddToFormat = (song) => {
+    return {
+        album: song.al,
+        alias: song.alia || song.ala || [],
+        artists: song.ar || [],
+        commentThreadId: "R_SO_4_" + song.id,
+        copyrightId: song.cp || 0,
+        duration: song.dt || 0,
+        id: song.id,
+        mvid: song.mv || 0,
+        name: song.name || "",
+        cd: song.cd,
+        position: song.no || 0,
+        ringtone: song.rt,
+        rtUrl: song.rtUrl,
+        status: song.st || 0,
+        pstatus: song.pst || 0,
+        fee: song.fee || 0,
+        version: song.v || 0,
+        eq: song.eq,
+        songType: song.t || 0,
+        mst: song.mst,
+        score: song.pop || 0,
+        ftype: song.ftype,
+        rtUrls: song.rtUrls,
+        transNames: song.tns,
+        privilege: song.privilege,
+        lyrics: song.lyrics,
+        alg: song.alg,
+        source: null,
     }
+}

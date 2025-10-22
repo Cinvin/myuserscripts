@@ -253,12 +253,12 @@ width: 8%;
 
                                         tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
                                         let selectbtn = tablerow.querySelector('.selectbtn')
-                                        selectbtn.addEventListener('click', () => {
-                                            file.targetSong = resultSong
-                                            file.mode = 'netease'
-                                            file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
-                                            this.openFilesDialog()
-                                        })
+                                            selectbtn.addEventListener('click', () => {
+                                                file.targetSong = resultSong
+                                                file.mode = 'netease'
+                                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
+                                                this.openFilesDialog()
+                                            })
                                         tbody.appendChild(tablerow)
                                     })
                                 } else {
@@ -377,7 +377,7 @@ width: 8%;
             this.fileList.forEach(item => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                        <td><button type="button" class="swal2-styled">设置</button></td>
+                        <td><button type="button" class="swal2-styled"><i class="fa-solid fa-gear"></i></button></td>
                         <td>${item.fileName}</td>
                         <td class="target-song">${item.songDescription}</td>
                     `;
@@ -403,7 +403,7 @@ width: 8%;
             this.isAutoFillingSong = true;
             for (let i = 0; i < this.fileList.length; i++) {
                 const file = this.fileList[i];
-                if (!file.targetSong) {
+                if (file.mode === 'unfill') {
                     const searchWord = file.fileName.substring(0, file.fileName.lastIndexOf('.')).normalize('NFC');
                     const response = await weapiRequestSync("/api/cloudsearch/get/web", {
                         data: {

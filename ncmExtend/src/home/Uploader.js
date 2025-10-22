@@ -280,7 +280,7 @@ width: 8%;
         for (let i = 0; i < this.songs.length; i++) {
             let song = this.songs[i]
             let tablerow = document.createElement('tr')
-            tablerow.innerHTML = `<td><button type="button" class="swal2-styled uploadbtn">上传</button><button type="button" class="swal2-styled reuploadbtn" style="display: none">文件已在云盘，点击关联到此歌曲</button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`
+            tablerow.innerHTML = `<td><button type="button" class="swal2-styled uploadbtn"><i class="fa-solid fa-cloud-arrow-up"></i></button><button type="button" class="swal2-styled reuploadbtn" style="display: none">文件已在云盘，点击关联到此歌曲</button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`
             let songTitle = tablerow.querySelector('.song-remark')
             if (song.isNoCopyright) {
                 songTitle.innerHTML = '无版权'
@@ -533,7 +533,9 @@ width: 8%;
                 onload: (res5) => {
                     if (res5.code != 200) {
                         console.error(song.name, '5.匹配歌曲', res5)
-                        uploader.onUploadFail(songIndex)
+                        showTips(`${song.name}上传成功，但是关联失败`, 2)
+                        this.setSongUploaded(song, '已上传（未关联）')
+                        this.onUploadFinish()
                         return
                     }
                     console.log(song.name, '5.匹配歌曲', res5)
@@ -658,14 +660,14 @@ width: 8%;
         this.renderFilterInfo()
     }
 
-    setSongUploaded(song) {
+    setSongUploaded(song, description='已上传') {
         song.uploaded = true
         let btnSelect = '.uploadbtn'
         if (song.uploadType == 0) {
             btnSelect = '.reuploadbtn'
         }
         let btnUpload = song.tablerow.querySelector(btnSelect)
-        btnUpload.innerHTML = '已上传'
+        btnUpload.innerHTML = description
         btnUpload.disabled = 'disabled'
     }
 
@@ -856,14 +858,20 @@ width: 8%;
             onload: (res5) => {
                 if (res5.code != 200) {
                     console.error(song.name, '匹配歌曲', res5)
-                    if (!retry) {
-                        showTips('接口调用失败，1秒后重试', 1)
+                    if (res5.code == 400) {
+                        showTips(`${song.name}上传成功，但是关联失败`, 2)
+                        this.setSongUploaded(song, '已上传（未关联）')
+                        this.batchUpload.matchOffset += 1
+                        this.uploadSongMatchBatch()
+                    }
+                    else if (!retry) {
                         sleep(1000).then(() => {
                             this.uploadSongMatchBatch(retry = true)
                         })
                     }
                     else {
-                        //跳过
+                        showTips(`${song.name}上传成功，但是关联失败`, 2)
+                        this.setSongUploaded(song, '已上传（未关联）')
                         this.batchUpload.matchOffset += 1
                         this.uploadSongMatchBatch()
                     }

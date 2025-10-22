@@ -26,6 +26,8 @@ export const onStart = () => {
         }
     }
     else if (unsafeWindow.name === 'contentFrame') {
+        GM_addStyle(GM_getResourceText('fa').replaceAll('../webfonts/', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/'))
+
         hookWindowForCommentBox(unsafeWindow)
         if (paramId > 0) {
             if (url.includes('/song?')) {
