@@ -30,7 +30,7 @@ export const freeVIPSong = (uiArea) => {
             title: '限免VIP歌曲',
             showCloseButton: true,
             showConfirmButton: false,
-            width: 800,
+            width: '980px',
             html: `<style>
 table {
     width: 100%;

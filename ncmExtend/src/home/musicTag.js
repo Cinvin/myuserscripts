@@ -21,11 +21,12 @@ export const musicTag = (uiArea) => {
             footer: `<div>为本地文件添加添加的封面歌词等音乐标签，使得文件上传网易云云盘后，不关联的情况下显示封面以及滚动歌词。</div>
             <div>仅支持MP3/FLAC格式</div>`,
             preConfirm: () => {
-                let files = document.getElementById('song-file').files
+                const container = Swal.getHtmlContainer()
+                const files = container.querySelector('#song-file').files
                 if (files.length == 0) return Swal.showValidationMessage('请选择文件')
                 return {
                     files: files,
-                    rename: document.getElementById('cb-rename').checked
+                    rename: container.querySelector('#cb-rename').checked
                 }
             },
         })
@@ -253,12 +254,12 @@ width: 8%;
 
                                         tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
                                         let selectbtn = tablerow.querySelector('.selectbtn')
-                                            selectbtn.addEventListener('click', () => {
-                                                file.targetSong = resultSong
-                                                file.mode = 'netease'
-                                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
-                                                this.openFilesDialog()
-                                            })
+                                        selectbtn.addEventListener('click', () => {
+                                            file.targetSong = resultSong
+                                            file.mode = 'netease'
+                                            file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
+                                            this.openFilesDialog()
+                                        })
                                         tbody.appendChild(tablerow)
                                     })
                                 } else {

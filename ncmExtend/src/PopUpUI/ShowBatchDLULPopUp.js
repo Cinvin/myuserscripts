@@ -27,15 +27,16 @@ export const ShowBatchDLULPopUp = (config) => {
         footer: '<span></span><a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
         focusConfirm: false,
         preConfirm: () => {
+            const container = Swal.getHtmlContainer()
             return {
-                free: document.getElementById('cb-fee0').checked,
-                VIP: document.getElementById('cb-fee1').checked,
-                pay: document.getElementById('cb-fee4').checked,
-                lowFree: document.getElementById('cb-fee8').checked,
-                targetLevelOnly: document.getElementById('cb-targetLevelOnly').checked,
+                free: container.querySelector('#cb-fee0').checked,
+                VIP: container.querySelector('#cb-fee1').checked,
+                pay: container.querySelector('#cb-fee4').checked,
+                lowFree: container.querySelector('#cb-fee8').checked,
+                targetLevelOnly: container.querySelector('#cb-targetLevelOnly').checked,
                 skipCloud: true,
-                level: document.getElementById('level-select').value,
-                out: document.getElementById('out-select').value,
+                level: container.querySelector('#level-select').value,
+                out: container.querySelector('#out-select').value,
                 listType: config.listType,
                 listId: config.listId,
                 action: 'batchUpload'

@@ -22,12 +22,13 @@ export const cloudLocalUpload = (uiArea) => {
             </div>`,
             confirmButtonText: '上传',
             showCloseButton: true,
-            preConfirm: (level) => {
-                let files = document.getElementById('song-file').files
+            preConfirm: () => {
+                const container = Swal.getHtmlContainer()
+                const files = container.querySelector('#song-file').files
                 if (files.length == 0) return Swal.showValidationMessage('请选择文件')
                 return {
                     files: files,
-                    needFillInfo: document.getElementById('need-fill-info-radio').checked,
+                    needFillInfo: container.querySelector('#need-fill-info-radio').checked,
                 }
             },
         })
@@ -166,12 +167,13 @@ width: 27%;
                 showCloseButton: false,
                 confirmButtonText: '确定',
                 preConfirm: () => {
-                    let songTitle = document.getElementById('text-title').value.trim()
+                    const container = Swal.getHtmlContainer()
+                    let songTitle = container.querySelector('#text-title').value.trim()
                     if (songTitle.length == 0) return Swal.showValidationMessage('歌名不能为空')
                     return {
                         title: songTitle,
-                        artist: document.getElementById('text-artist').value.trim(),
-                        album: document.getElementById('text-album').value.trim(),
+                        artist: container.querySelector('#text-artist').value.trim(),
+                        album: container.querySelector('#text-album').value.trim(),
                     }
                 },
             })

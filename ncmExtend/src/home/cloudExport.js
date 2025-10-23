@@ -17,14 +17,15 @@ export const cloudExport = (uiArea) => {
             footer: '过滤条件取交集',
             confirmButtonText: '导出',
             preConfirm: () => {
+                const container = Swal.getHtmlContainer()
                 return [
-                    document.getElementById('text-artist')
+                    container.querySelector('#text-artist')
                         .value.trim(),
-                    document.getElementById('text-album')
+                    container.querySelector('#text-album')
                         .value.trim(),
-                    document.getElementById('text-song')
+                    container.querySelector('#text-song')
                         .value.trim(),
-                    document.getElementById('text-playlistid')
+                    container.querySelector('#text-playlistid')
                         .value
                 ]
             },
