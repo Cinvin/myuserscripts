@@ -18,7 +18,8 @@ const paramId = Number(params.get('id'))
 export const onStart = () => {
     console.log('[ncmExtend] onStart()')
     if (unsafeWindow.self === unsafeWindow.top) {
-        unsafeWindow.GUserScriptObjects = {}
+        GM_addStyle(GM_getResourceText('fa').replaceAll('../webfonts/', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/'))
+        unsafeWindow.GUserScriptObjects = { Swal: Swal }
         hookTopWindow()
         const iframes = document.getElementsByTagName("iframe")
         for (let iframe of iframes) {
@@ -26,7 +27,7 @@ export const onStart = () => {
         }
     }
     else if (unsafeWindow.name === 'contentFrame') {
-        GM_addStyle(GM_getResourceText('fa').replaceAll('../webfonts/', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/'))
+        Swal = unsafeWindow.top.GUserScriptObjects.Swal
 
         hookWindowForCommentBox(unsafeWindow)
         if (paramId > 0) {
