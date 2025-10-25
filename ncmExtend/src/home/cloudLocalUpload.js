@@ -96,6 +96,7 @@ table {
     width: 100%;
     border-spacing: 0px;
     border-collapse: collapse;
+    border: 2px solid #f0f0f0;
 }
 table th, table td {
     text-align: left;

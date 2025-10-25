@@ -37,6 +37,7 @@ table {
     width: 100%;
     border-spacing: 0px;
     border-collapse: collapse;
+    border: 2px solid #f0f0f0;
 }
 table th, table td {
     text-align: left;
@@ -230,7 +231,7 @@ width: 15%;
                 let addTime = `${dateObj.getFullYear()}-${dateObj.getMonth() + 1}-${dateObj.getDate()}`
                 let tablerow = document.createElement('tr')
                 tablerow.innerHTML = `<td><button type="button" class="swal2-styled btn-match" title="匹配"><i class="fa-solid fa-link"></i></button></td>
-                <td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${album}"></a></td>
+                <td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td>
                 <td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${song.simpleSong.name}</a></td>
                 <td>${artist}</td><td>${duringTimeDesc(song.simpleSong.dt)}</td><td>${fileSizeDesc(song.fileSize)} ${levelDesc(song.simpleSong.privilege.plLevel)}</td>
                 <td>${addTime}</td>
@@ -372,6 +373,7 @@ width: 15%;
         height: 400px; 
         border-spacing: 0px;
         border-collapse: collapse;
+        border: 2px solid #f0f0f0;
     }
     table th, table td {
         text-align: left;
@@ -573,7 +575,7 @@ width: 8%;
                     const needHighLight = Math.abs(resultSong.dt - this.fileDuringTime) < 1000
                     const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
 
-                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
+                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
                     let selectbtn = tablerow.querySelector('.selectbtn')
                     selectbtn.addEventListener('click', () => {
                         this.matchSong(cloudSongId, resultSong.id)
@@ -595,6 +597,7 @@ width: 8%;
         height: 400px; 
         border-spacing: 0px;
         border-collapse: collapse;
+        border: 2px solid #f0f0f0;
     }
     table th, table td {
         text-align: left;
@@ -653,7 +656,7 @@ width: 70%;
                                     id: playlist.id,
                                     name: playlist.name,
                                     html: `<td><button type="button" class="swal2-styled btn-add" title="加入歌单"><i class="fa-solid fa-plus"></i></button></td>
-                                                <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${playlist.name}"></td>
+                                                <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${playlist.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
                                                 <td>${playlist.name}</td>`,
                                 })
                             }

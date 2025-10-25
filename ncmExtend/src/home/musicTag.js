@@ -56,6 +56,7 @@ table {
     width: 100%;
     border-spacing: 0px;
     border-collapse: collapse;
+    border: 2px solid #f0f0f0;
 }
 table th, table td {
     text-align: left;
@@ -148,6 +149,7 @@ width: 29%;
         height: 400px;
         border-spacing: 0px;
         border-collapse: collapse;
+        border: 2px solid #f0f0f0;
     }
     table th, table td {
         text-align: left;
@@ -252,12 +254,12 @@ width: 8%;
                                         const needHighLight = Math.abs(resultSong.dt - file.duration) < 1000
                                         const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
 
-                                        tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
+                                        tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
                                         let selectbtn = tablerow.querySelector('.selectbtn')
                                         selectbtn.addEventListener('click', () => {
                                             file.targetSong = resultSong
                                             file.mode = 'netease'
-                                            file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
+                                            file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
                                             this.openFilesDialog()
                                         })
                                         tbody.appendChild(tablerow)
@@ -422,7 +424,7 @@ width: 8%;
                                 const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
                                 file.targetSong = resultSong;
                                 file.mode = 'netease'
-                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
+                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
                                 this.refreshSongListTable();
                                 break;
                             }
@@ -455,6 +457,7 @@ table {
     width: 100%;
     border-spacing: 0px;
     border-collapse: collapse;
+    border: 2px solid #f0f0f0;
 }
 table th, table td {
     text-align: left;

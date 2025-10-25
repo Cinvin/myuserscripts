@@ -320,7 +320,7 @@ export class ncmDownUploadBatch {
     }
     importSongsSub(offset, retry = false) {
         if (offset >= this.songs.length) {
-            this.final()
+            this.matchSongs()
             return
         }
         let songCloudIdMap = {}
@@ -372,10 +372,8 @@ export class ncmDownUploadBatch {
                     let successSongs = []
                     content.data.successSongs.forEach(successSong => {
                         let songId = songCloudIdMap[successSong.songId]
-                        this.successSongsId.push(songId)
-                        successSongs.push(this.songs[this.songIdIndexsMap[songId]].title)
+                        this.songs[this.songIdIndexsMap[songId]].cloudSongId = successSong.song.songId
                     })
-                    this.addLog(`以下歌曲上传成功：${successSongs.join()}`)
                 }
                 if (content.data.failed.length > 0) {
                     console.error('导入歌曲接口，存在上传失败歌曲。', content.data.failed)
@@ -407,6 +405,54 @@ export class ncmDownUploadBatch {
                 }
             }
         })
+    }
+    matchSongs() {
+        this.addLog('第四步：文件关联歌曲')
+        this.matchSongsSub(0)
+    }
+    matchSongsSub(offset) {
+        if (offset >= this.songs.length) {
+            this.final()
+            return
+        }
+        const song = this.songs[offset]
+        console.log('匹配歌曲', song)
+        if (song.cloudSongId) {
+            if (song.cloudSongId !== song.id) {
+                weapiRequest("/api/cloud/user/song/match", {
+                    data: {
+                        songId: song.cloudSongId,
+                        adjustSongId: song.id,
+                    },
+                    onload: (res) => {
+                        if (res.code != 200) {
+                            console.error(song.title, '匹配歌曲', res)
+                            let songTItle = song.title
+                            if (res.msg) {
+                                songTItle += '：' + res.msg
+                            }
+                            this.failSongs.push(songTItle)
+                        } else {
+                            this.successSongsId.push(song.id)
+                            this.addLog(`转存完成：${song.title}`)
+                        }
+                        this.matchSongsSub(offset + 1)
+                    },
+                    onerror: (res) => {
+                        console.error(song.title, '5.匹配歌曲', res)
+                        this.matchSongsSub(offset + 1)
+                    }
+                })
+            }
+            else {
+                this.successSongsId.push(song.id)
+                this.addLog(`转存完成：${song.title}`)
+                this.matchSongsSub(offset + 1)
+            }
+        }
+        else {
+            this.matchSongsSub(offset + 1)
+        }
     }
     final() {
         this.addLog('上传结束')

@@ -271,7 +271,7 @@ class PlaylistDetail {
 						<div class="f-cb">
 							<div class="tt">
                                 <a href="#/song?id=${songItem.id}" title="${songName}">
-                                    <img class="rpic" src="${songItem.song.al.picUrl}?param=50y50&amp;quality=100">
+                                    <img class="rpic" src="${songItem.song.al.picUrl}?param=50y50&amp;quality=100" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5">
                                 </a>
 								<div class="ncmextend-playlist-songtitle">
 									<span class="txt" style="max-width: 78%;">

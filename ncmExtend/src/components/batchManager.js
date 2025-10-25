@@ -197,7 +197,6 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     const row = document.createElement('div')
                     // 容器为 mainContent 的宽度（625px），各列使用固定/弹性宽度并保证文本溢出省略
                     row.style = 'display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #f0f0f0;width:100%;box-sizing:border-box;min-width:0;'
-                    const coverUrl = (s.song && s.song.al && s.song.al.picUrl) ? s.song.al.picUrl + '?param=50y50&quality=100' : (s.picUrl || '')
                     row.innerHTML = `
                       <div style="flex:0 0 36px;display:flex;align-items:center;justify-content:center;">
                         <input type="checkbox" ${s.selected ? 'checked' : ''} style="width:16px;height:16px;">

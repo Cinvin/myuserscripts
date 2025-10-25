@@ -22,6 +22,7 @@ table {
 width: 100%;
 border-spacing: 0px;
 border-collapse: collapse;
+border: 2px solid #f0f0f0;
 }
 table th, table td {
 text-align: left;
@@ -138,8 +139,6 @@ const downloadSongSub = (threadIndex, songList, config) => {
                         downloadSongSub(threadIndex, songList, config)
                         return
                     }
-                    song.fileNameWithOutExt = nameFileWithoutExt(song.title, song.artist, config.out).replace('/', '／')
-                    let fileFullName = song.fileNameWithOutExt + '.' + resData.type.toLowerCase()
                     let folder = ''
                     if (config.folder != 'none' && song.artist.length > 0) {
                         folder = song.artist.replace('/', '／') + '/'
@@ -147,7 +146,8 @@ const downloadSongSub = (threadIndex, songList, config) => {
                     if (config.folder == 'artist-album' && song.album.length > 0) {
                         folder += song.album.replace('/', '／') + '/'
                     }
-                    song.fileFullName = folder + fileFullName
+                    song.fileNameWithOutExt = folder + nameFileWithoutExt(song.title, song.artist, config.out).replace('/', '／')
+                    song.fileFullName = song.fileNameWithOutExt + '.' + resData.type.toLowerCase()
                     song.dlUrl = resData.url
                     song.ext = resData.type.toLowerCase()
                     levelText.innerHTML = levelDesc(resData.level)
