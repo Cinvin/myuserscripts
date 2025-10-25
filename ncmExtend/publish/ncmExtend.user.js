@@ -1,22 +1,24 @@
 // ==UserScript==
 // @name         网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.3.0
+// @version      4.3.1
 // @author       cinvin
 // @description  无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、专辑页加载Disc信息、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
 // @license      MIT
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAALiSURBVHgBpVZLThtBEH3d40WkIGWWSSDSGMw6cAP7BBlOgDkB5gSYE2BOgDlBnBNgToCzDmQmii0iZYEXsRRBPJ1X6R4+Mz3IKLVxT1f1q9/rais8IQmiCLjZNlBNA8O1iqzGpAoqNcAnjfmgjh9pFYbyA7+ODIJjAjSxmPTp6MDnSJfBV3YzBOfPABdp88zpBd7ERcWjDC7xdp9bXfyXZHtruOqVHNjITW8RCGZ3xOSHClnITwaF6KFeQ7XqGA/tGrbmBO9W4E0tIFL33W9g0gmQpWuY9A30XvEAsT4mCMM7B3MEXf6EZUN8ZvM2BVAY47bPyK6QuvNLLCcGWdcTFPVLnX8OJHrWadsHXsOsKeuvWD6lza7ThHWkzEqJw4gRvodXzK5kodn92KNNa5hz/0Uo7BBGicOMtc0b2MA4ZnZ17h34HUgWL9uakX3wKIfCaVe6yDqcNWv4NUrINIkswfKGGK5j3K1yItkp1vEahfpr3GwCwZTRJ25rRxoqNbdlUS2gNspwe02Qdh2TEymj5+6MNDzNreMnDwfNe4ezwQXexS4bksLE0geOC9qhJxkR/ASeMmlUS1ilCIBXdmWm1m5pg/0Y+mzFQVrclIhY11H+zWbFDXwfkDlHjHrAHA7svMKGzWheFcxUmpwWdwWwxhqLgds6FEAyp7OK8Rbwm/3R+3BZBjCjP6hFRRxO4G96DnVWVMi9kBpzmbND6JpII8meYwbAZqu20/WFcQqmXcZRA2Vv5e01SmKH1hesdDXMPjzCQDiPZlvuviRFvdwTbdmAYfm4PpTxKzwXQ2EJ7UbusWE/sq1VTFr5ZfT4d5khH3bBOfzMqXxMeC/a/Dn0nEt5pnXnwBl3nLFXJEsZF7IWmnIdVwQEya6Bq4E7dy9P1XtRoeO9dUzKD04uLpM7Cj5DOGGznTzyXEo3mTOnJ29AxdWvkr59Nx6Di6inTrnmxzJx3a11WT382zIjW6bTKoy/H+Iy6oHlZ+kAAAAASUVORK5CYII=
 // @match        https://music.163.com/*
-// @require      https://fastly.jsdelivr.net/npm/sweetalert2@11.12.2/dist/sweetalert2.all.min.js
+// @require      https://fastly.jsdelivr.net/npm/sweetalert2@11.26.3/dist/sweetalert2.all.min.js
 // @require      https://fastly.jsdelivr.net/npm/ajax-hook@3.0.3/dist/ajaxhook.min.js
 // @require      https://fastly.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js
 // @require      https://fastly.jsdelivr.net/npm/node-forge@1.3.1/dist/forge.min.js
 // @require      https://fastly.jsdelivr.net/npm/mp3tag.js@3.14.1/dist/mp3tag.min.js
+// @resource     fa  https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css
 // @connect      45.127.129.8
 // @connect      126.net
 // @grant        GM_addStyle
 // @grant        GM_cookie
 // @grant        GM_download
+// @grant        GM_getResourceText
 // @grant        GM_getValue
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
@@ -33,6 +35,66 @@
   const levelOptions = { jymaster: "超清母带", dolby: "杜比全景声", sky: "沉浸环绕声", jyeffect: "高清环绕声", hires: "Hi-Res", lossless: "无损", exhigh: "极高", higher: "较高", standard: "标准" };
   const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 5, lossless: 4, exhigh: 3, higher: 2, standard: 1, none: 0 };
   const defaultOfDEFAULT_LEVEL = "jymaster";
+  const defaultOfBatchFilter = {
+    free: true,
+    // 免费
+    vip: true,
+    // VIP
+    pay: true,
+    // 付费
+    lowfree: true,
+    // 低码率免费
+    cloud: false
+    // 云盘歌曲
+  };
+  const getBatchFilter = () => {
+    return Object.assign(defaultOfBatchFilter, JSON.parse(GM_getValue("batchFilter", "{}")));
+  };
+  const setBatchFilter = (value) => {
+    GM_setValue("batchFilter", JSON.stringify(Object.assign(defaultOfBatchFilter, value)));
+  };
+  const defaultOfDownloadSettings = {
+    appendMeta: "notAppend",
+    // 是否附加元数据
+    out: "artist-title",
+    // 输出文件名格式
+    folder: "none"
+    // 输出文件夹
+  };
+  const getDownloadSettings = () => {
+    return Object.assign(defaultOfDownloadSettings, JSON.parse(GM_getValue("downloadSettings", "{}")));
+  };
+  const setDownloadSettings = (value) => {
+    GM_setValue("downloadSettings", JSON.stringify(Object.assign(defaultOfDownloadSettings, value)));
+  };
+  const defaultOfBatchDownloadSettings = {
+    concurrent: 4,
+    // 并发下载数
+    level: "jymaster",
+    // 下载音质
+    dllrc: false,
+    // 下载.lrc歌词文件
+    levelonly: false
+    // 仅获取到目标音质时下载
+  };
+  const getBatchDownloadSettings = () => {
+    return Object.assign(defaultOfBatchDownloadSettings, JSON.parse(GM_getValue("batchDownloadSettings", "{}")));
+  };
+  const setBatchDownloadSettings = (value) => {
+    GM_setValue("batchDownloadSettings", JSON.stringify(Object.assign(defaultOfBatchDownloadSettings, value)));
+  };
+  const defaultOfBatchTransUploadSettings = {
+    level: "jymaster",
+    // 转存音质
+    levelonly: false
+    // 仅获取到目标音质时下载
+  };
+  const getBatchTransUploadSettings = () => {
+    return Object.assign(defaultOfBatchTransUploadSettings, JSON.parse(GM_getValue("batchTransUploadSettings", "{}")));
+  };
+  const setBatchTransUploadSettings = (value) => {
+    GM_setValue("batchTransUploadSettings", JSON.stringify(Object.assign(defaultOfBatchTransUploadSettings, value)));
+  };
   const uploadChunkSize = 8 * 1024 * 1024;
   const songMark = { explicit: 1048576 };
   const iv = "0102030405060708";
@@ -295,11 +357,19 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       confirmButtonText: "确定"
     });
   };
-  const showTips = (tip, type) => {
-    unsafeWindow.g_showTipCard({
-      tip,
-      type
-    });
+  const showTips = (tip, type = 1) => {
+    if (Swal.isVisible()) {
+      unsafeWindow.g_showTipCard({
+        tip,
+        type,
+        parent: Swal.getContainer()
+      });
+    } else {
+      unsafeWindow.top.g_showTipCard({
+        tip,
+        type
+      });
+    }
   };
   const saveContentAsFile = (content, fileName) => {
     let data = new Blob([content], {
@@ -338,9 +408,41 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
         url: url2,
         name: fileName,
         onload: () => resolve(`下载 ${fileName} 完成`),
-        onerror: (error) => reject(`下载 ${fileName} 失败: ${error}`)
+        onerror: (error) => reject(`下载 ${fileName} 失败`)
       });
     });
+  };
+  const songItemAddToFormat = (song) => {
+    return {
+      album: song.al,
+      alias: song.alia || song.ala || [],
+      artists: song.ar || [],
+      commentThreadId: "R_SO_4_" + song.id,
+      copyrightId: song.cp || 0,
+      duration: song.dt || 0,
+      id: song.id,
+      mvid: song.mv || 0,
+      name: song.name || "",
+      cd: song.cd,
+      position: song.no || 0,
+      ringtone: song.rt,
+      rtUrl: song.rtUrl,
+      status: song.st || 0,
+      pstatus: song.pst || 0,
+      fee: song.fee || 0,
+      version: song.v || 0,
+      eq: song.eq,
+      songType: song.t || 0,
+      mst: song.mst,
+      score: song.pop || 0,
+      ftype: song.ftype,
+      rtUrls: song.rtUrls,
+      transNames: song.tns,
+      privilege: song.privilege,
+      lyrics: song.lyrics,
+      alg: song.alg,
+      source: null
+    };
   };
   const scriptSettings = (uiArea) => {
     let btnExport = createBigButton("脚本设置", uiArea, 2);
@@ -349,7 +451,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       Swal.fire({
         title: "脚本设置",
         showConfirmButton: false,
-        html: `<div><button type="button" class="swal2-styled" id="btn-download-settings">下载设置</button></div>
+        html: `<div><button type="button" class="swal2-styled" id="btn-download-settings">通用下载设置</button></div>
             <div><button type="button" class="swal2-styled" id="btn-header-settings">设置请求头</button></div>`,
         confirmButtonText: "设置",
         didOpen: () => {
@@ -367,29 +469,45 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     }
     function openDownloadSettingPopup() {
       Swal.fire({
-        title: "下载设置",
+        title: "通用下载设置",
         showCloseButton: true,
         html: `<div>
-<label>是否添加元数据<select id="meta-select" class="swal2-select"><option value="notAppend" selected="">不添加</option><option value="skipCloud">云盘歌曲不添加</option><option value="allAppend">全部添加</option></select></label>
+                        <div><label>文件名格式
+                      <select id="dl-out"  class="swal2-select">
+                        <option value="artist-title">歌手 - 标题</option><option value="title-artist">标题 - 歌手</option><option value="title">仅标题</option>
+                      </select>
+                    </label></div>
+                    <div><label>文件夹格式
+                    <select id="dl-folder" class="swal2-select"><option value="none">不建立文件夹</option><option value="artist">建立歌手文件夹</option><option value="artist-album">建立歌手 \\ 专辑文件夹</option></select>
+                    </label></div>
+                    <div><label>音乐元数据
+                        <select id="dl-appendMeta" class="swal2-select">
+                            <option value="notAppend">不添加</option><option value="skipCloud">云盘歌曲不添加</option><option value="allAppend">全部添加</option>
+                        </select></div>
+                    </label>
 </div>`,
         confirmButtonText: "确定",
         preConfirm: () => {
+          const container = Swal.getHtmlContainer();
           return {
-            appendMeta: document.getElementById("meta-select").value.trim()
+            appendMeta: container.querySelector("#dl-appendMeta").value.trim(),
+            out: container.querySelector("#dl-out").value.trim(),
+            folder: container.querySelector("#dl-folder").value.trim()
           };
         },
         didOpen: () => {
-          let container = Swal.getHtmlContainer();
-          let metaInput = container.querySelector("#meta-select");
-          const downloadSettings = JSON.parse(GM_getValue("downloadSettings", '{"appendMeta":"notAppend"}'));
-          if (downloadSettings.appendMeta) {
-            metaInput.value = downloadSettings.appendMeta;
-          }
+          const container = Swal.getHtmlContainer();
+          const downloadSettings = getDownloadSettings();
+          const metaInput = container.querySelector("#dl-appendMeta");
+          metaInput.value = downloadSettings.appendMeta;
+          const outinput = container.querySelector("#dl-out");
+          outinput.value = downloadSettings.out;
+          const folderInput = container.querySelector("#dl-folder");
+          folderInput.value = downloadSettings.folder;
         }
       }).then((result) => {
         if (result.isConfirmed) {
-          console.log(result.value);
-          GM_setValue("downloadSettings", JSON.stringify(result.value));
+          setDownloadSettings(result.value);
         }
       });
     }
@@ -402,9 +520,10 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
         footer: '<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div><div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>',
         confirmButtonText: "设置",
         preConfirm: () => {
+          const container = Swal.getHtmlContainer();
           return {
-            cookie: document.getElementById("text-cookie").value.trim(),
-            userAgent: document.getElementById("text-userAgent").value.trim()
+            cookie: container.querySelector("#text-cookie").value.trim(),
+            userAgent: container.querySelector("#text-userAgent").value.trim()
           };
         },
         didOpen: () => {
@@ -498,19 +617,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       }
       return false;
     }
-  };
-  const filterSongs = (songList, config) => {
-    let songFilteredList = [];
-    for (let song of songList) {
-      if (song.privilege.st < 0 || song.privilege.plLevel == "none") continue;
-      if (song.privilege.cs && config.skipCloud) continue;
-      if (song.privilege.fee == 0 && !config.free) continue;
-      if (song.privilege.fee == 1 && !config.VIP) continue;
-      if (song.privilege.fee == 4 && !config.pay) continue;
-      if (song.privilege.fee == 8 && !config.lowFree) continue;
-      songFilteredList.push(song);
-    }
-    return songFilteredList;
   };
   const extractLrcRegex = /^(?<lyricTimestamps>(?:\[.+?\])+)(?!\[)(?<content>.+)$/gm;
   const extractTimestampRegex = /\[(?<min>\d+):(?<sec>\d+)(?:\.|:)*(?<ms>\d+)*\]/g;
@@ -955,6 +1061,11 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     removeAllTags() {
       this.tags = [];
     }
+    removeAllPictures() {
+      this.pictures = [];
+      this.picturesSpecs = [];
+      this.picturesDatas = [];
+    }
     setTag(field) {
       if (field.indexOf("=") === -1) {
         throw new Error(`malformed vorbis comment field "${field}", field contains no '=' character`);
@@ -1086,12 +1197,13 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       allowEscapeKey: false,
       showCloseButton: false,
       showConfirmButton: false,
-      width: 800,
+      width: "980px",
       html: `<style>
 table {
 width: 100%;
 border-spacing: 0px;
 border-collapse: collapse;
+border: 2px solid #f0f0f0;
 }
 table th, table td {
 text-align: left;
@@ -1149,7 +1261,6 @@ width: 10%;
         config.skipSongs = [];
         config.taskCount = songList.length;
         config.threadList = threadList;
-        config.appendMeta = JSON.parse(GM_getValue("downloadSettings", '{"appendMeta":"notAppend"}')).appendMeta;
         console.log(config);
         for (let i = 0; i < config.threadCount; i++) {
           downloadSongSub(i, songList, config);
@@ -1193,6 +1304,9 @@ width: 10%;
     let levelText = tableRowDOM.querySelector(".my-level");
     let sizeText = tableRowDOM.querySelector(".my-size");
     let prText = tableRowDOM.querySelector(".my-pr");
+    if (!song.api) {
+      song.api = song.privilege.fee == 0 && (levelWeight[song.privilege.plLevel] || 99) < (levelWeight[song.privilege.dlLevel] || -1) ? { url: "/api/song/enhance/download/url/v1", data: { id: song.id, level: config.level, encodeType: "mp3" } } : { url: "/api/song/enhance/player/url/v1", data: { ids: JSON.stringify([song.id]), level: config.level, encodeType: "mp3" } };
+    }
     try {
       weapiRequest(song.api.url, {
         data: song.api.data,
@@ -1205,8 +1319,6 @@ width: 10%;
               downloadSongSub(threadIndex, songList, config);
               return;
             }
-            song.fileNameWithOutExt = nameFileWithoutExt(song.title, song.artist, config.out).replace("/", "／");
-            let fileFullName = song.fileNameWithOutExt + "." + resData.type.toLowerCase();
             let folder = "";
             if (config.folder != "none" && song.artist.length > 0) {
               folder = song.artist.replace("/", "／") + "/";
@@ -1214,7 +1326,8 @@ width: 10%;
             if (config.folder == "artist-album" && song.album.length > 0) {
               folder += song.album.replace("/", "／") + "/";
             }
-            song.fileFullName = folder + fileFullName;
+            song.fileNameWithOutExt = folder + nameFileWithoutExt(song.title, song.artist, config.out).replace("/", "／");
+            song.fileFullName = song.fileNameWithOutExt + "." + resData.type.toLowerCase();
             song.dlUrl = resData.url;
             song.ext = resData.type.toLowerCase();
             levelText.innerHTML = levelDesc(resData.level);
@@ -1422,88 +1535,479 @@ width: 10%;
       }
     }
   };
-  const batchUploadSongs = (songList, config) => {
-    if (songList.length == 0) {
-      showConfirmBox("没有可上传的歌曲");
+  const PAGE_SIZE = 50;
+  const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
+    const songPlayableList = fullSongList.filter((item) => item.privilege.plLevel !== "none");
+    if (!songPlayableList || songPlayableList.length === 0) {
+      showTips("没有可操作的歌曲", 2);
       return;
     }
-    showTips(`开始下载上传${songList.length}首歌曲`, 1);
-    let ULobj = new ncmDownUploadBatch(songList, config);
-    ULobj.startUpload();
-  };
-  const createSongsUrlApi = (songList, config) => {
-    for (let songItem of songList) {
-      let api = { url: "/api/song/enhance/player/url/v1", data: { ids: JSON.stringify([songItem.id]), level: config.level, encodeType: "mp3" } };
-      if (songItem.privilege.fee == 0 && (levelWeight[songItem.privilege.plLevel] || 99) < (levelWeight[songItem.privilege.dlLevel] || -1)) api = { url: "/api/song/enhance/download/url/v1", data: { id: songItem.id, level: config.level, encodeType: "mp3" } };
-      songItem.api = api;
+    console.log(songPlayableList, defaultConfig);
+    let _savedBatchDl = {};
+    let _savedBatchUp = {};
+    let _savedDl = {};
+    try {
+      _savedBatchDl = getBatchDownloadSettings() || {};
+    } catch (e) {
+      console.warn("getBatchDownloadSettings error", e);
     }
-    if (config.action == "batchUpload") {
-      batchUploadSongs(songList, config);
-    } else if (config.action == "batchDownload") {
-      batchDownloadSongs(songList, config);
+    try {
+      _savedBatchUp = getBatchTransUploadSettings() || {};
+    } catch (e) {
+      console.warn("getBatchTransUploadSettings error", e);
     }
-  };
-  const downloadSongBatch$1 = (playlistId, uiArea) => {
-    let btnBatchDownload = createBigButton("批量下载", uiArea, 1);
-    btnBatchDownload.addEventListener("click", () => {
-      ShowBatchDLPopUp({ listType: "playlist", listId: playlistId });
-    });
-  };
-  const ShowBatchDLULPopUp = (config) => {
+    try {
+      _savedDl = getDownloadSettings() || {};
+    } catch (e) {
+      console.warn("getDownloadSettings error", e);
+    }
+    let state = {
+      songs: songPlayableList.map((s, idx) => {
+        return Object.assign({ _index: idx, downloadStatus: "", uploadStatus: "", selected: false }, s);
+      }),
+      filterText: "",
+      filterOptions: getBatchFilter(),
+      page: 1,
+      pageMax: Math.ceil(songPlayableList.length / PAGE_SIZE),
+      view: "songs",
+      // 当前视图：songs / filter / dl / up
+      downloadConfig: Object.assign({
+        threadCount: _savedBatchDl.concurrent !== void 0 ? _savedBatchDl.concurrent : 4,
+        downloadLyric: !!_savedBatchDl.dllrc || false,
+        folder: _savedDl.folder || "none",
+        out: _savedDl.out || "artist-title",
+        level: _savedBatchDl.level || "jymaster",
+        targetLevelOnly: !!_savedBatchUp.levelonly || false,
+        appendMeta: _savedDl.appendMeta || "notAppend"
+        // 转存相关设置占位
+      }, defaultConfig),
+      uploadConfig: Object.assign({
+        level: _savedBatchUp.level || "jymaster",
+        levelonly: !!_savedBatchUp.levelonly || false
+        // 转存相关设置占位
+      }, defaultConfig)
+    };
     Swal.fire({
-      width: 600,
-      title: "批量转存云盘",
-      html: `<div id="my-cbs">
-<label><input class="form-check-input" type="checkbox" value="" id="cb-fee1" checked>VIP歌曲</label>
-<label><input class="form-check-input" type="checkbox" value="" id="cb-fee4" checked>付费专辑歌曲</label>
-<label><input class="form-check-input" type="checkbox" value="" id="cb-fee8">低音质免费歌曲</label>
-<labe><input class="form-check-input" type="checkbox" value="" id="cb-fee0">免费歌曲</label>
-</div>
-<div id="my-cbs2">
-<label><input class="form-check-input" type="checkbox" value="" id="cb-targetLevelOnly">仅获取到目标音质时上传</label>
-</div>
-<div id="my-level">
-<label>优先转存音质<select id="level-select" class="swal2-select"><option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option></select></label>
-</div>
-<div id="my-out">
-<label>文件命名格式<select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手 - 歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名-歌手</option></select></label>
-</div>
-`,
-      confirmButtonText: "开始转存",
+      width: "980px",
+      showConfirmButton: false,
       showCloseButton: true,
-      footer: '<span></span><a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
-      focusConfirm: false,
-      preConfirm: () => {
-        return {
-          free: document.getElementById("cb-fee0").checked,
-          VIP: document.getElementById("cb-fee1").checked,
-          pay: document.getElementById("cb-fee4").checked,
-          lowFree: document.getElementById("cb-fee8").checked,
-          targetLevelOnly: document.getElementById("cb-targetLevelOnly").checked,
-          skipCloud: true,
-          level: document.getElementById("level-select").value,
-          out: document.getElementById("out-select").value,
-          listType: config.listType,
-          listId: config.listId,
-          action: "batchUpload"
-        };
-      }
-    }).then((res) => {
-      if (res.isConfirmed) {
-        if (res.value.listType == "playlist") {
-          let filtedSongList = filterSongs(playlistDetailObj.playlistSongList, res.value);
-          createSongsUrlApi(filtedSongList, res.value);
-        } else if (res.value.listType == "album") {
-          let filtedSongList = filterSongs(albumDetailObj.albumSongList, res.value);
-          createSongsUrlApi(filtedSongList, res.value);
+      html: `<div style="display:flex;gap:12px;">
+    <div style="width:260px;border-right:1px solid #eee;padding-right:8px;box-sizing:border-box;">
+      <ul id="bm-nav" style="list-style:none;padding:0;margin:0;">
+        <li><button data-view="songs" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">歌曲列表</button></li>
+        <li style="margin-top:6px;"><button data-view="filter" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">过滤条件</button></li>
+        <li style="margin-top:6px;"><button data-view="dl" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">下载设置</button></li>
+        <li style="margin-top:6px;"><button data-view="up" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">转存设置</button></li>
+      </ul>
+      <div id="bm-nav-desc" style="margin-top:16px;color:#666;font-size:13px;">仅显示可操作的歌曲</div>
+    </div>
+    <div style="flex:1;padding-left:8px;box-sizing:border-box;">
+      <div id="bm-toolbar" style="display:flex;gap:8px;margin-bottom:8px;">
+        <button id="bm-select-all" type="button" class="swal2-styled">全部选择</button>
+        <button id="bm-clear-select" type="button" class="swal2-styled">取消已选</button>
+        <button id="bm-download-all" type="button" class="swal2-styled">下载已选</button>
+        <button id="bm-upload-all" type="button" class="swal2-styled">转存已选</button>
+      </div>
+      <div id="bm-main-content" style="height:520px;overflow:auto;border:1px solid #eee;padding:8px;"></div>
+      <div id="bm-pager" style="margin-top:8px;text-align:center"></div>
+    </div>
+  </div>`,
+      didOpen: () => {
+        const container = Swal.getHtmlContainer();
+        const btnSelectAll = container.querySelector("#bm-select-all");
+        const btnClearSelect = container.querySelector("#bm-clear-select");
+        const btnDownloadAll = container.querySelector("#bm-download-all");
+        const btnUploadAll = container.querySelector("#bm-upload-all");
+        const mainContent = container.querySelector("#bm-main-content");
+        const pager = container.querySelector("#bm-pager");
+        const nav = container.querySelector("#bm-nav");
+        container.querySelector("#bm-nav-desc");
+        const toolbar = container.querySelector("#bm-toolbar");
+        nav.querySelectorAll(".bm-nav-item").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const view = e.currentTarget.getAttribute("data-view");
+            state.view = view;
+            renderView();
+          });
+        });
+        btnSelectAll.addEventListener("click", () => {
+          const filtered = filteredSongs();
+          filtered.forEach((s) => s.selected = true);
+          renderView();
+        });
+        btnClearSelect.addEventListener("click", () => {
+          const filtered = filteredSongs();
+          filtered.forEach((s) => s.selected = false);
+          renderView();
+        });
+        btnDownloadAll.addEventListener("click", () => {
+          const toDl = state.songs.filter((s) => s.selected);
+          console.log(toDl, state.downloadConfig);
+          if (toDl.length === 0) {
+            showTips("未选择歌曲", 2);
+            return;
+          }
+          console.log(toDl, state.downloadConfig);
+          batchDownloadSongs(toDl, state.downloadConfig);
+        });
+        btnUploadAll.addEventListener("click", () => {
+          const toUp = state.songs.filter((s) => s.selected && !s.privilege.cs);
+          if (toUp.length === 0) {
+            showTips("未选择歌曲或只选择了云盘歌曲", 2);
+            return;
+          }
+          let ULobj = new ncmDownUploadBatch(toUp, state.uploadConfig);
+          ULobj.startUpload();
+        });
+        function currentPageSongs() {
+          const filtered = filteredSongs();
+          const begin = (state.page - 1) * PAGE_SIZE;
+          const pageSongs = filtered.slice(begin, begin + PAGE_SIZE);
+          state.pageMax = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+          return pageSongs;
         }
+        function filteredSongs() {
+          return state.songs.filter((s) => {
+            if (s.privilege.fee === 0) {
+              if (!state.filterOptions.free) return false;
+            } else if (s.privilege.fee === 1) {
+              if (!state.filterOptions.vip) return false;
+            } else if (s.privilege.fee === 4) {
+              if (!state.filterOptions.pay) return false;
+            } else if (s.privilege.fee === 8) {
+              if (!state.filterOptions.lowfree) return false;
+            }
+            if (s.privilege.cs && !state.filterOptions.cloud) return false;
+            if (!state.filterText) return true;
+            const t = state.filterText.toLowerCase();
+            return s.title.toLowerCase().includes(t) || s.artist.toLowerCase().includes(t) || s.album.toLowerCase().includes(t);
+          });
+        }
+        function renderView() {
+          toolbar.style.display = state.view === "songs" ? "" : "none";
+          if (state.view === "songs") {
+            renderSongsView();
+            renderPager();
+          } else if (state.view === "filter") {
+            renderFilterView();
+            pager.innerHTML = "";
+          } else if (state.view === "dl") {
+            renderDownloadSettingsView();
+            pager.innerHTML = "";
+          } else if (state.view === "up") {
+            renderUploadSettingsView();
+            pager.innerHTML = "";
+          }
+        }
+        function renderSongsView() {
+          mainContent.style.width = "625px";
+          mainContent.style.boxSizing = "border-box";
+          const pageSongs = currentPageSongs();
+          mainContent.innerHTML = "";
+          pageSongs.forEach((s) => {
+            const row = document.createElement("div");
+            row.style = "display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #f0f0f0;width:100%;box-sizing:border-box;min-width:0;";
+            row.innerHTML = `
+                      <div style="flex:0 0 36px;display:flex;align-items:center;justify-content:center;">
+                        <input type="checkbox" ${s.selected ? "checked" : ""} style="width:16px;height:16px;">
+                      </div>
+                      <div style="flex:0 0 56px;display:flex;align-items:center;justify-content:center;">
+                      <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" title="${s.album}">
+                        <img src="${s.song.al.picUrl + "?param=50y50&quality=100"}" alt="cover" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5">
+                      </a>
+                      </div>
+                      <!-- 文本区域：在固定总宽下使用弹性伸缩并保证溢出省略 -->
+                      <div style="flex:1 1 auto;min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:4px;">
+                        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">
+                          <a href="https://music.163.com/#/song?id=${s.song.id}" target="_blank">${s.title}</a>
+                        </div>
+                        <div style="font-size:12px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">
+                          ${s.artist}
+                        </div>
+                      </div>
+                    `;
+            const chk = row.querySelector("input[type=checkbox]");
+            chk.addEventListener("change", () => {
+              s.selected = chk.checked;
+            });
+            mainContent.appendChild(row);
+          });
+        }
+        function renderFilterView() {
+          mainContent.innerHTML = `
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    <input id="bm-filter-input" class="swal2-input" placeholder="过滤：标题/歌手/专辑" value="${state.filterText}">
+                    <div>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-free" type="checkbox" ${state.filterOptions.free ? "checked" : ""}> 免费</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-lowfree" type="checkbox" ${state.filterOptions.lowfree ? "checked" : ""}> 128k音质免费</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-vip" type="checkbox" ${state.filterOptions.vip ? "checked" : ""}> VIP</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-pay" type="checkbox" ${state.filterOptions.pay ? "checked" : ""}> 数字专辑</label>
+                    </div>
+                    <div>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-cloud" type="checkbox" ${state.filterOptions.cloud ? "checked" : ""}>显示云盘歌曲</label>
+                    </div>
+                  </div>
+                `;
+          const input = mainContent.querySelector("#bm-filter-input");
+          input.addEventListener("input", (e) => {
+            state.filterText = e.target.value.trim();
+            state.page = 1;
+          });
+          const checkboxes = mainContent.querySelectorAll('input[type="checkbox"]');
+          checkboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", () => {
+              state.filterOptions[checkbox.id.split("-").pop()] = checkbox.checked;
+              setBatchFilter(state.filterOptions);
+              state.page = 1;
+            });
+          });
+        }
+        function renderDownloadSettingsView() {
+          mainContent.innerHTML = `
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    <label>同时下载的歌曲数
+                        <select id="bm-dl-concurrent" class="swal2-select">
+                        <option value=4>4</option><option value=3>3</option><option value="2">2</option><option value=1>1</option>
+                        </select></label>
+                    <label>优先下载音质
+                    <select id="bm-dl-level" class="swal2-select">
+                        <option value="jymaster">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option>
+                    </select></label>
+                    <label>文件名格式
+                      <select id="bm-dl-out"  class="swal2-select">
+                        <option value="artist-title">歌手 - 标题</option><option value="title-artist">标题 - 歌手</option><option value="title">仅标题</option>
+                      </select>
+                    </label>
+                    <label>文件夹格式
+                    <select id="bm-dl-folder" class="swal2-select"><option value="none">不建立文件夹</option><option value="artist">建立歌手文件夹</option><option value="artist-album">建立歌手 \\ 专辑文件夹</option></select>
+                    </label>
+                    <label>音乐元数据
+                        <select id="bm-dl-appendMeta" class="swal2-select">
+                            <option value="notAppend">不添加</option><option value="skipCloud">云盘歌曲不添加</option><option value="allAppend">全部添加</option>
+                        </select>
+                    </label>
+                    <label><input id="bm-dl-dllrc" type="checkbox"> 下载.lrc歌词文件</label>
+                    <label><input id="bm-dl-levelonly" type="checkbox"> 仅获取到目标音质时下载</label>
+                  </div>
+                `;
+          const selConcurrent = mainContent.querySelector("#bm-dl-concurrent");
+          const selLevel = mainContent.querySelector("#bm-dl-level");
+          const selOut = mainContent.querySelector("#bm-dl-out");
+          const selFolder = mainContent.querySelector("#bm-dl-folder");
+          const selAppend = mainContent.querySelector("#bm-dl-appendMeta");
+          const cbLyric = mainContent.querySelector("#bm-dl-dllrc");
+          const cbLevelOnly = mainContent.querySelector("#bm-dl-levelonly");
+          selConcurrent.value = state.downloadConfig.threadCount || state.downloadConfig.concurrent || 4;
+          selLevel.value = state.downloadConfig.level || "jymaster";
+          selOut.value = state.downloadConfig.out || "artist-title";
+          selFolder.value = state.downloadConfig.folder || "none";
+          selAppend.value = state.downloadConfig.appendMeta || "notAppend";
+          cbLyric.checked = !!state.downloadConfig.downloadLyric;
+          cbLevelOnly.checked = !!state.downloadConfig.levelonly;
+          selConcurrent.addEventListener("change", (e) => {
+            const v = parseInt(e.target.value || "4");
+            state.downloadConfig.threadCount = v;
+            setBatchDownloadSettings({ concurrent: v, level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
+          });
+          selLevel.addEventListener("change", (e) => {
+            state.downloadConfig.level = e.target.value;
+            setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
+          });
+          selOut.addEventListener("change", (e) => {
+            state.downloadConfig.out = e.target.value;
+            setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta });
+          });
+          selFolder.addEventListener("change", (e) => {
+            state.downloadConfig.folder = e.target.value;
+            setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta });
+          });
+          selAppend.addEventListener("change", (e) => {
+            state.downloadConfig.appendMeta = e.target.value;
+            setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta });
+          });
+          cbLyric.addEventListener("change", (e) => {
+            state.downloadConfig.downloadLyric = e.target.checked;
+            setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
+          });
+          cbLevelOnly.addEventListener("change", (e) => {
+            state.downloadConfig.levelonly = e.target.checked;
+            setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
+          });
+        }
+        function renderUploadSettingsView() {
+          mainContent.innerHTML = `
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    <label>优先转存音质
+                    <select id="bm-up-level" class="swal2-select">
+                        <option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option>
+                    </select></label>
+                    <label><input id="bm-up-target-only" type="checkbox" ${state.uploadConfig.targetLevelOnly ? "checked" : ""}> 仅获取到目标音质时转存</label>
+                  </div>
+                `;
+          const selUpLevel = mainContent.querySelector("#bm-up-level");
+          const cbUpLevelOnly = mainContent.querySelector("#bm-up-target-only");
+          selUpLevel.value = state.uploadConfig.level || "jymaster";
+          cbUpLevelOnly.checked = !!state.uploadConfig.targetLevelOnly;
+          selUpLevel.addEventListener("change", (e) => {
+            state.uploadConfig.level = e.target.value;
+            setBatchTransUploadSettings({ level: state.uploadConfig.level, levelonly: !!state.uploadConfig.targetLevelOnly });
+          });
+          cbUpLevelOnly.addEventListener("change", (e) => {
+            state.uploadConfig.targetLevelOnly = e.target.checked;
+            setBatchTransUploadSettings({ level: state.uploadConfig.level, levelonly: !!state.uploadConfig.targetLevelOnly });
+          });
+        }
+        function renderPager() {
+          pager.innerHTML = "";
+          for (let p = 1; p <= state.pageMax; p++) {
+            const btn = document.createElement("button");
+            btn.className = "swal2-styled";
+            btn.style.margin = "2px";
+            btn.textContent = p;
+            if (p === state.page) btn.style.background = "#fff";
+            else btn.addEventListener("click", () => {
+              state.page = p;
+              renderView();
+            });
+            pager.appendChild(btn);
+          }
+        }
+        renderView();
       }
     });
   };
-  const uploadSongBatch$1 = (playlistId, uiArea) => {
-    let btnBatchUpload = createBigButton("批量转存云盘", uiArea, 1);
-    btnBatchUpload.addEventListener("click", () => {
-      ShowBatchDLULPopUp({ listType: "playlist", listId: playlistId });
+  const songsDownUpLoad$1 = (albumId, uiArea) => {
+    let btnSongsDownUpLoad = createBigButton("批量下载 & 转存", uiArea, 1);
+    btnSongsDownUpLoad.addEventListener("click", () => {
+      showBatchManager(albumDetailObj.albumSongList, { listType: "album", listId: albumId });
+    });
+  };
+  class AlbumDetail {
+    constructor() {
+      this.domReady = false;
+      this.dataFetched = false;
+      this.flag = true;
+      this.albumSongList = [];
+      this.albumRes = null;
+      this.albumDiscList = [];
+      const params2 = new URLSearchParams(unsafeWindow.location.search);
+      this.playlistId = Number(params2.get("id"));
+      this._hash = params2.get("_hash");
+    }
+    fetchAlbumData(albumId) {
+      this.albumId = albumId;
+      weapiRequest(`/api/v1/album/${albumId}`, {
+        onload: (content) => {
+          this.albumRes = content;
+          for (let i = 0; i < content.songs.length; i++) {
+            content.songs[i].al.picUrl = content.album.blurPicUrl;
+            let songItem = {
+              id: content.songs[i].id,
+              title: content.songs[i].name,
+              artist: getArtistTextInSongDetail(content.songs[i]),
+              album: getAlbumTextInSongDetail(content.songs[i]),
+              song: content.songs[i],
+              privilege: content.songs[i].privilege
+            };
+            this.albumSongList.push(songItem);
+            const discInfos = content.songs[i].cd ? content.songs[i].cd.split(" ") : [];
+            if (discInfos.length > 0) {
+              const discIndex = parseInt(discInfos[0]);
+              while (this.albumDiscList.length < discIndex) {
+                this.albumDiscList.push(null);
+              }
+              if (this.albumDiscList[discIndex - 1] === null) {
+                let discTitle = `Disc ${discIndex}`;
+                if (discInfos.length > 1) discTitle += " " + discInfos.slice(1).join(" ");
+                this.albumDiscList[discIndex - 1] = { title: discTitle, songs: [] };
+              }
+              this.albumDiscList[discIndex - 1].songs.push(songItem);
+            }
+          }
+          this.dataFetched = true;
+          this.checkStartCreateDom();
+        }
+      });
+    }
+    onDomReady() {
+      this.domReady = true;
+      this.descriptionArea = document.querySelector(".topblk");
+      this.operationArea = document.querySelector("#content-operation");
+      this.checkStartCreateDom();
+    }
+    checkStartCreateDom() {
+      if (this.domReady && this.dataFetched && this.flag) {
+        this.flag = false;
+        this.AppendInfos();
+        this.AppendBtns();
+        if (this.albumDiscList.length > 1) this.createDiscTable();
+      }
+    }
+    AppendInfos() {
+      this.descriptionArea.innerHTML += `<p class="intr"><b>专辑类型：</b>${this.albumRes.album.type} ${this.albumRes.album.subType}</p>`;
+      if ((this.albumRes.album.mark & songMark.explicit) == songMark.explicit) {
+        this.descriptionArea.innerHTML += `<p class="intr"><b>🅴：</b>内容含有不健康因素</p>`;
+      }
+      if (this.albumRes.album.blurPicUrl) {
+        this.descriptionArea.innerHTML += `<p class="intr"><a class="s-fc7" href="${this.albumRes.album.blurPicUrl}" target="_blank">专辑封面原图</a></p>`;
+      }
+    }
+    AppendBtns() {
+      songsDownUpLoad$1(this.albumId, this.operationArea);
+    }
+    createDiscTable() {
+      const tableRows = document.querySelectorAll(".m-table-album tr");
+      const tableParent = document.querySelector("div:has(> .m-table-album)");
+      let isTableCreated = false;
+      this.albumDiscList.forEach((disc, index) => {
+        if (disc === null) return;
+        isTableCreated = true;
+        tableParent.innerHTML += `
+            <div class="u-title u-title-1 f-cb" style="margin-top: 10px"><h3><span class="f-ff2">${disc.title}</span></h3><span class="sub s-fc3">${disc.songs.length}首歌</span></div>
+            <table class="m-table m-table-album">
+                <thead><tr><th class="first w1"><div class="wp">&nbsp;</div></th><th><div class="wp">歌曲标题</div></th><th class="w2-1"><div class="wp">时长</div></th><th class="w4"><div class="wp">歌手</div></th></tr></thead>
+                <tbody id="ncmextend-disc-${index}"></tbody>
+            </table>
+            `;
+        let tbody = tableParent.querySelector(`#ncmextend-disc-${index}`);
+        disc.songs.forEach((songItem, songIndex) => {
+          tableRows.forEach((tableRow) => {
+            if (Number(tableRow.id.slice(0, -13)) === songItem.id) {
+              tableRow.querySelector(".num").innerHTML = songItem.song.no;
+              tableRow.className = songIndex % 2 == 0 ? "even " : "";
+              if (songItem.privilege.st < 0) tableRow.className += "js-dis";
+              tbody.appendChild(tableRow);
+            }
+          });
+        });
+      });
+      if (isTableCreated) {
+        const originTitle = document.querySelector(".n-songtb .u-title");
+        originTitle.parentNode.removeChild(originTitle);
+        tableParent.removeChild(tableParent.firstChild);
+      }
+      if (/^songlist-(\d+)$/.test(this._hash) && tableRows.length > 0) {
+        const timestamp = document.querySelector(".m-table > tbody > tr").id.slice(-13);
+        const tr = document.querySelector(`[id="${this._hash.slice(9)}${timestamp}"]`);
+        if (tr) tr.scrollIntoView();
+      }
+    }
+    updateSongsCloudStatus(songIds) {
+      songIds.forEach((songId) => {
+        for (let i = 0; i < this.albumSongList.length; i++) {
+          if (this.albumSongList[i].id == songId) {
+            this.albumSongList[i].privilege.cs = true;
+            break;
+          }
+        }
+      });
+    }
+  }
+  const albumDetailObj = new AlbumDetail();
+  const songsDownUpLoad = (playlistId, uiArea) => {
+    let btnSongsDownUpLoad = createBigButton("批量下载 & 转存", uiArea, 1);
+    btnSongsDownUpLoad.addEventListener("click", () => {
+      showBatchManager(playlistDetailObj.playlistSongList, { listType: "playlist", listId: playlistId });
     });
   };
   const sortSongs = (playlistId, uiArea) => {
@@ -1832,40 +2336,12 @@ width: 10%;
     }
     createFormatAddToData(songItem) {
       if (songItem.privilege.plLevel != "none") {
-        let addToFormat = {
-          album: songItem.song.al,
-          alias: songItem.song.alia || songItem.song.ala || [],
-          artists: songItem.song.ar || [],
-          commentThreadId: "R_SO_4_" + songItem.song.id,
-          copyrightId: songItem.song.cp || 0,
-          duration: songItem.song.dt || 0,
-          id: songItem.song.id,
-          mvid: songItem.song.mv || 0,
-          name: songItem.song.name || "",
-          cd: songItem.song.cd,
-          position: songItem.song.no || 0,
-          ringtone: songItem.song.rt,
-          rtUrl: songItem.song.rtUrl,
-          status: songItem.song.st || 0,
-          pstatus: songItem.song.pst || 0,
-          fee: songItem.song.fee || 0,
-          version: songItem.song.v || 0,
-          eq: songItem.song.eq,
-          songType: songItem.song.t || 0,
-          mst: songItem.song.mst,
-          score: songItem.song.pop || 0,
-          ftype: songItem.song.ftype,
-          rtUrls: songItem.song.rtUrls,
-          transNames: songItem.song.tns,
-          privilege: songItem.song.privilege,
-          lyrics: songItem.song.lyrics,
-          alg: songItem.song.alg,
-          source: {
-            fdata: String(this.playlistId),
-            fid: 13,
-            link: `playlist?id=${this.playlistId}&_hash=songlist-${songItem.song.id}`,
-            title: "歌单"
-          }
+        let addToFormat = songItemAddToFormat(songItem.song);
+        addToFormat.source = {
+          fdata: String(this.playlistId),
+          fid: 13,
+          link: `playlist?id=${this.playlistId}&_hash=songlist-${songItem.song.id}`,
+          title: "歌单"
         };
         this.playableSongList.push(addToFormat);
       }
@@ -1915,8 +2391,7 @@ width: 10%;
     }
     appendBtns() {
       var _a;
-      downloadSongBatch$1(this.playlistId, this.operationArea);
-      uploadSongBatch$1(this.playlistId, this.operationArea);
+      songsDownUpLoad(this.playlistId, this.operationArea);
       const creatorhomeURL = (_a = document.head.querySelector("[property~='music:creator'][content]")) == null ? void 0 : _a.content;
       const creatorId = new URLSearchParams(new URL(creatorhomeURL).search).get("id");
       if (creatorId == unsafeWindow.GUser.userId) {
@@ -2043,7 +2518,7 @@ width: 10%;
 						<div class="f-cb">
 							<div class="tt">
                                 <a href="#/song?id=${songItem.id}" title="${songName}">
-                                    <img class="rpic" src="${songItem.song.al.picUrl}?param=50y50&amp;quality=100">
+                                    <img class="rpic" src="${songItem.song.al.picUrl}?param=50y50&amp;quality=100" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5">
                                 </a>
 								<div class="ncmextend-playlist-songtitle">
 									<span class="txt" style="max-width: 78%;">
@@ -2093,204 +2568,7 @@ width: 10%;
       });
     }
   }
-  let playlistDetailObj = new PlaylistDetail();
-  const ShowBatchDLPopUp = (config) => {
-    Swal.fire({
-      width: 650,
-      title: "批量下载",
-      html: `<div id="my-cbs">
-<label><input class="form-check-input" type="checkbox" value="" id="cb-fee1" checked>VIP歌曲</label>
-<label><input class="form-check-input" type="checkbox" value="" id="cb-fee4" checked>付费专辑歌曲</label>
-<label><input class="form-check-input" type="checkbox" value="" id="cb-fee8" checked>低音质免费歌曲</label>
-<label><input class="form-check-input" type="checkbox" value="" id="cb-fee0" checked>免费和云盘未匹配歌曲</label>
-</div>
-<div id="my-cbs2">
-<label><input class="form-check-input" type="checkbox" value="" id="cb-skipcloud">跳过云盘歌曲</label>
-<label><input class="form-check-input" type="checkbox" value="" id="cb-dlLyric">下载歌词文件(.lrc)</label>
-<label><input class="form-check-input" type="checkbox" value="" id="cb-targetLevelOnly">仅获取到目标音质时下载</label>
-</div>
-<div id="my-level">
-<label>优先下载音质<select id="level-select" class="swal2-select"><option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option></select></label>
-</div>
-<div id="my-out">
-<label>文件命名格式<select id="out-select" class="swal2-select"><option value="artist-title" selected="">歌手 - 歌曲名</option><option value="title">歌曲名</option><option value="title-artist">歌曲名 - 歌手</option></select></label>
-</div>
-<div id="my-folder">
-<label>文件夹格式<select id="folder-select" class="swal2-select"><option value="none" selected="">不建立文件夹</option><option value="artist">建立歌手文件夹</option><option value="artist-album">建立歌手 \\ 专辑文件夹</option></select></label>
-</div>
-<div id="my-thread-count">
-<label>同时下载的歌曲数<select id="thread-count-select" class="swal2-select"><option value=4 selected="">4</option><option value=3>3</option><option value="2">2</option><option value=1>1</option></select></label>
-</div>
-`,
-      confirmButtonText: "开始下载",
-      showCloseButton: true,
-      footer: '<span>请将 <b>TamperMonkey</b> 插件设置中的 <b>下载模式</b> 设置为 <b>浏览器 API</b> 并将 <b>/.(mp3|flac|lrc)$/</b> 添加进 <b>文件扩展名白名单</b> 以保证能正常下载。</span><a href="https://github.com/Cinvin/myuserscripts"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
-      focusConfirm: false,
-      preConfirm: () => {
-        let container = Swal.getHtmlContainer();
-        return {
-          free: container.querySelector("#cb-fee0").checked,
-          VIP: container.querySelector("#cb-fee1").checked,
-          pay: container.querySelector("#cb-fee4").checked,
-          lowFree: container.querySelector("#cb-fee8").checked,
-          skipCloud: container.querySelector("#cb-skipcloud").checked,
-          downloadLyric: container.querySelector("#cb-dlLyric").checked,
-          targetLevelOnly: container.querySelector("#cb-targetLevelOnly").checked,
-          level: container.querySelector("#level-select").value,
-          out: container.querySelector("#out-select").value,
-          folder: container.querySelector("#folder-select").value,
-          threadCount: Number(container.querySelector("#thread-count-select").value),
-          listType: config.listType,
-          listId: config.listId,
-          action: "batchDownload"
-        };
-      }
-    }).then((res) => {
-      if (res.isConfirmed) {
-        if (res.value.listType == "playlist") {
-          let filtedSongList = filterSongs(playlistDetailObj.playlistSongList, res.value);
-          createSongsUrlApi(filtedSongList, res.value);
-        } else if (res.value.listType == "album") {
-          let filtedSongList = filterSongs(albumDetailObj.albumSongList, res.value);
-          createSongsUrlApi(filtedSongList, res.value);
-        }
-      }
-    });
-  };
-  const downloadSongBatch = (albumId, uiArea) => {
-    let btnBatchDownload = createBigButton("批量下载", uiArea, 1);
-    btnBatchDownload.addEventListener("click", () => {
-      ShowBatchDLPopUp({ listType: "album", listId: albumId });
-    });
-  };
-  const uploadSongBatch = (albumId, uiArea) => {
-    let btnBatchUpload = createBigButton("批量转存云盘", uiArea, 1);
-    btnBatchUpload.addEventListener("click", () => {
-      ShowBatchDLULPopUp({ listType: "album", listId: albumId });
-    });
-  };
-  class AlbumDetail {
-    constructor() {
-      this.domReady = false;
-      this.dataFetched = false;
-      this.flag = true;
-      this.albumSongList = [];
-      this.albumRes = null;
-      this.albumDiscList = [];
-      const params2 = new URLSearchParams(unsafeWindow.location.search);
-      this.playlistId = Number(params2.get("id"));
-      this._hash = params2.get("_hash");
-    }
-    fetchAlbumData(albumId) {
-      this.albumId = albumId;
-      weapiRequest(`/api/v1/album/${albumId}`, {
-        onload: (content) => {
-          this.albumRes = content;
-          for (let i = 0; i < content.songs.length; i++) {
-            let songItem = {
-              id: content.songs[i].id,
-              title: content.songs[i].name,
-              artist: getArtistTextInSongDetail(content.songs[i]),
-              album: getAlbumTextInSongDetail(content.songs[i]),
-              song: content.songs[i],
-              privilege: content.songs[i].privilege
-            };
-            this.albumSongList.push(songItem);
-            const discInfos = content.songs[i].cd ? content.songs[i].cd.split(" ") : [];
-            if (discInfos.length > 0) {
-              const discIndex = parseInt(discInfos[0]);
-              while (this.albumDiscList.length < discIndex) {
-                this.albumDiscList.push(null);
-              }
-              if (this.albumDiscList[discIndex - 1] === null) {
-                let discTitle = `Disc ${discIndex}`;
-                if (discInfos.length > 1) discTitle += " " + discInfos.slice(1).join(" ");
-                this.albumDiscList[discIndex - 1] = { title: discTitle, songs: [] };
-              }
-              this.albumDiscList[discIndex - 1].songs.push(songItem);
-            }
-          }
-          this.dataFetched = true;
-          this.checkStartCreateDom();
-        }
-      });
-    }
-    onDomReady() {
-      this.domReady = true;
-      this.descriptionArea = document.querySelector(".topblk");
-      this.operationArea = document.querySelector("#content-operation");
-      this.checkStartCreateDom();
-    }
-    checkStartCreateDom() {
-      if (this.domReady && this.dataFetched && this.flag) {
-        this.flag = false;
-        this.AppendInfos();
-        this.AppendBtns();
-        if (this.albumDiscList.length > 1) this.createDiscTable();
-      }
-    }
-    AppendInfos() {
-      this.descriptionArea.innerHTML += `<p class="intr"><b>专辑类型：</b>${this.albumRes.album.type} ${this.albumRes.album.subType}</p>`;
-      if ((this.albumRes.album.mark & songMark.explicit) == songMark.explicit) {
-        this.descriptionArea.innerHTML += `<p class="intr"><b>🅴：</b>内容含有不健康因素</p>`;
-      }
-      if (this.albumRes.album.blurPicUrl) {
-        this.descriptionArea.innerHTML += `<p class="intr"><a class="s-fc7" href="${this.albumRes.album.blurPicUrl}" target="_blank">专辑封面原图</a></p>`;
-      }
-    }
-    AppendBtns() {
-      downloadSongBatch(this.albumId, this.operationArea);
-      uploadSongBatch(this.albumId, this.operationArea);
-    }
-    createDiscTable() {
-      const tableRows = document.querySelectorAll(".m-table-album tr");
-      const tableParent = document.querySelector("div:has(> .m-table-album)");
-      let isTableCreated = false;
-      this.albumDiscList.forEach((disc, index) => {
-        if (disc === null) return;
-        isTableCreated = true;
-        tableParent.innerHTML += `
-            <div class="u-title u-title-1 f-cb" style="margin-top: 10px"><h3><span class="f-ff2">${disc.title}</span></h3><span class="sub s-fc3">${disc.songs.length}首歌</span></div>
-            <table class="m-table m-table-album">
-                <thead><tr><th class="first w1"><div class="wp">&nbsp;</div></th><th><div class="wp">歌曲标题</div></th><th class="w2-1"><div class="wp">时长</div></th><th class="w4"><div class="wp">歌手</div></th></tr></thead>
-                <tbody id="ncmextend-disc-${index}"></tbody>
-            </table>
-            `;
-        let tbody = tableParent.querySelector(`#ncmextend-disc-${index}`);
-        disc.songs.forEach((songItem, songIndex) => {
-          tableRows.forEach((tableRow) => {
-            if (Number(tableRow.id.slice(0, -13)) === songItem.id) {
-              tableRow.querySelector(".num").innerHTML = songItem.song.no;
-              tableRow.className = songIndex % 2 == 0 ? "even " : "";
-              if (songItem.privilege.st < 0) tableRow.className += "js-dis";
-              tbody.appendChild(tableRow);
-            }
-          });
-        });
-      });
-      if (isTableCreated) {
-        const originTitle = document.querySelector(".n-songtb .u-title");
-        originTitle.parentNode.removeChild(originTitle);
-        tableParent.removeChild(tableParent.firstChild);
-      }
-      if (/^songlist-(\d+)$/.test(this._hash) && tableRows.length > 0) {
-        const timestamp = document.querySelector(".m-table > tbody > tr").id.slice(-13);
-        const tr = document.querySelector(`[id="${this._hash.slice(9)}${timestamp}"]`);
-        if (tr) tr.scrollIntoView();
-      }
-    }
-    updateSongsCloudStatus(songIds) {
-      songIds.forEach((songId) => {
-        for (let i = 0; i < this.albumSongList.length; i++) {
-          if (this.albumSongList[i].id == songId) {
-            this.albumSongList[i].privilege.cs = true;
-            break;
-          }
-        }
-      });
-    }
-  }
-  let albumDetailObj = new AlbumDetail();
+  const playlistDetailObj = new PlaylistDetail();
   const PlayAPIDataLimit = 1e3;
   const CheckAPIDataLimit = 100;
   const importAPIDataLimit = 10;
@@ -2304,6 +2582,9 @@ width: 10%;
       for (let i = 0; i < songs.length; i++) {
         const songId = songs[i].id;
         this.songIdIndexsMap[songId] = i;
+        if (!songs[i].api) {
+          songs[i].api = songs[i].privilege.fee == 0 && (levelWeight[songs[i].privilege.plLevel] || 99) < (levelWeight[songs[i].privilege.dlLevel] || -1) ? { url: "/api/song/enhance/download/url/v1", data: { id: songs[i].id, level: config.level, encodeType: "mp3" } } : { url: "/api/song/enhance/player/url/v1", data: { ids: JSON.stringify([songs[i].id]), level: config.level, encodeType: "mp3" } };
+        }
         if (songs[i].api.url === "/api/song/enhance/player/url/v1") {
           this.playerApiSongIds.push(songId);
         } else {
@@ -2583,7 +2864,7 @@ width: 10%;
     }
     importSongsSub(offset, retry = false) {
       if (offset >= this.songs.length) {
-        this.final();
+        this.matchSongs();
         return;
       }
       let songCloudIdMap = {};
@@ -2631,13 +2912,10 @@ width: 10%;
           }
           console.log("歌曲导入云盘接口", content);
           if (content.data.successSongs.length > 0) {
-            let successSongs = [];
             content.data.successSongs.forEach((successSong) => {
               let songId = songCloudIdMap[successSong.songId];
-              this.successSongsId.push(songId);
-              successSongs.push(this.songs[this.songIdIndexsMap[songId]].title);
+              this.songs[this.songIdIndexsMap[songId]].cloudSongId = successSong.song.songId;
             });
-            this.addLog(`以下歌曲上传成功：${successSongs.join()}`);
           }
           if (content.data.failed.length > 0) {
             console.error("导入歌曲接口，存在上传失败歌曲。", content.data.failed);
@@ -2668,6 +2946,52 @@ width: 10%;
           }
         }
       });
+    }
+    matchSongs() {
+      this.addLog("第四步：文件关联歌曲");
+      this.matchSongsSub(0);
+    }
+    matchSongsSub(offset) {
+      if (offset >= this.songs.length) {
+        this.final();
+        return;
+      }
+      const song = this.songs[offset];
+      console.log("匹配歌曲", song);
+      if (song.cloudSongId) {
+        if (song.cloudSongId !== song.id) {
+          weapiRequest("/api/cloud/user/song/match", {
+            data: {
+              songId: song.cloudSongId,
+              adjustSongId: song.id
+            },
+            onload: (res) => {
+              if (res.code != 200) {
+                console.error(song.title, "匹配歌曲", res);
+                let songTItle = song.title;
+                if (res.msg) {
+                  songTItle += "：" + res.msg;
+                }
+                this.failSongs.push(songTItle);
+              } else {
+                this.successSongsId.push(song.id);
+                this.addLog(`转存完成：${song.title}`);
+              }
+              this.matchSongsSub(offset + 1);
+            },
+            onerror: (res) => {
+              console.error(song.title, "5.匹配歌曲", res);
+              this.matchSongsSub(offset + 1);
+            }
+          });
+        } else {
+          this.successSongsId.push(song.id);
+          this.addLog(`转存完成：${song.title}`);
+          this.matchSongsSub(offset + 1);
+        }
+      } else {
+        this.matchSongsSub(offset + 1);
+      }
     }
     final() {
       this.addLog("上传结束");
@@ -2735,12 +3059,13 @@ width: 10%;
         allowOutsideClick: false,
         allowEscapeKey: false,
         showConfirmButton: false,
-        width: 800,
+        width: "980px",
         html: `<style>
     table {
         width: 100%;
         border-spacing: 0px;
         border-collapse: collapse;
+        border: 2px solid #f0f0f0;
     }
     table th, table td {
         text-align: left;
@@ -2763,28 +3088,28 @@ width: 10%;
         border-bottom: none;
     }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
-width: 35%;
+width: 31%;
 }
 tr td:nth-child(2){
-width: 10%;
+width: 6%;
 }
 tr td:nth-child(3){
 width: 25%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
-width: 20%;
+width: 25%;
 }
 tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;
 }
 tr th:nth-child(5),tr td:nth-child(6){
-width: 16%;
+width: 15%;
 }
 tr th:nth-child(6),tr td:nth-child(7){
-width: 8%;
+width: 15%;
 }
 </style>
 <input id="text-filter" class="swal2-input" placeholder="歌曲过滤">
@@ -2970,7 +3295,7 @@ width: 8%;
       for (let i = 0; i < this.songs.length; i++) {
         let song = this.songs[i];
         let tablerow = document.createElement("tr");
-        tablerow.innerHTML = `<td><button type="button" class="swal2-styled uploadbtn">上传</button><button type="button" class="swal2-styled reuploadbtn" style="display: none">文件已在云盘，点击关联到此歌曲</button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`;
+        tablerow.innerHTML = `<td><button type="button" class="swal2-styled uploadbtn"><i class="fa-solid fa-cloud-arrow-up"></i></button><button type="button" class="swal2-styled reuploadbtn" style="display: none" title="重新上传并关联到此歌曲"><i class="fa-solid fa-repeat"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`;
         let songTitle = tablerow.querySelector(".song-remark");
         if (song.isNoCopyright) {
           songTitle.innerHTML = "无版权";
@@ -3085,6 +3410,7 @@ width: 8%;
       uploadbtn.style.display = "none";
       let reuploadbtn = this.songs[songIndex].tablerow.querySelector(".reuploadbtn");
       reuploadbtn.style.display = "";
+      this.setSongRemark(this.songs[songIndex], "文件已在云盘但没有关联到目标歌曲，点击按钮重新上传并关联。");
     }
     uploadSong(songIndex) {
       let song = this.songs[songIndex];
@@ -3141,8 +3467,9 @@ width: 8%;
               showTips(`(1/3)${song.name} 文件无法上传`, 2);
               song.uploaded = true;
               let btnUpload = song.tablerow.querySelector(".uploadbtn");
-              btnUpload.innerHTML = "无法上传";
+              btnUpload.innerHTML = '<i class="fa-solid fa-xmark"></i>';
               btnUpload.disabled = "disabled";
+              uploader.setSongRemark(song, "文件无法上传");
               uploader.onUploadFinnsh();
             }
           },
@@ -3209,7 +3536,10 @@ width: 8%;
           onload: (res5) => {
             if (res5.code != 200) {
               console.error(song.name, "5.匹配歌曲", res5);
-              uploader.onUploadFail(songIndex);
+              showTips(`${song.name}上传成功，但是关联失败`, 2);
+              this.setSongUploaded(song);
+              this.setSongRemark(song, "文件关联失败");
+              this.onUploadFinish();
               return;
             }
             console.log(song.name, "5.匹配歌曲", res5);
@@ -3334,8 +3664,14 @@ width: 8%;
         btnSelect = ".reuploadbtn";
       }
       let btnUpload = song.tablerow.querySelector(btnSelect);
-      btnUpload.innerHTML = "已上传";
+      btnUpload.innerHTML = '<i class="fa-solid fa-check"></i>';
       btnUpload.disabled = "disabled";
+    }
+    setSongRemark(song, remark) {
+      let markElement = song.tablerow.querySelector(".song-remark");
+      if (markElement) {
+        markElement.innerHTML = remark;
+      }
     }
     uploadSongBatch(retry = false) {
       if (this.batchUpload.checkOffset >= this.batchUpload.songIndexs.length) {
@@ -3394,7 +3730,8 @@ width: 8%;
             } else if (fileData.upload > 1) {
               this.songs[songIndex].uploaded = true;
               let btnUpload = this.songs[songIndex].tablerow.querySelector(".uploadbtn");
-              btnUpload.innerHTML = "无法上传";
+              btnUpload.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+              this.setSongRemark(this.songs[songIndex], "文件无法上传");
               btnUpload.disabled = "disabled";
             }
           });
@@ -3512,12 +3849,20 @@ width: 8%;
         onload: (res5) => {
           if (res5.code != 200) {
             console.error(song.name, "匹配歌曲", res5);
-            if (!retry) {
-              showTips("接口调用失败，1秒后重试", 1);
+            if (res5.code == 400) {
+              showTips(`${song.name}上传成功，但是关联失败`, 2);
+              this.setSongUploaded(song);
+              this.setSongRemark(song, "文件关联失败");
+              this.batchUpload.matchOffset += 1;
+              this.uploadSongMatchBatch();
+            } else if (!retry) {
               sleep(1e3).then(() => {
                 this.uploadSongMatchBatch(retry = true);
               });
             } else {
+              showTips(`${song.name}上传成功，但是关联失败`, 2);
+              this.setSongUploaded(song);
+              this.setSongRemark(song, "文件关联失败");
               this.batchUpload.matchOffset += 1;
               this.uploadSongMatchBatch();
             }
@@ -3649,12 +3994,13 @@ width: 8%;
         Swal.fire({
           showCloseButton: true,
           showConfirmButton: false,
-          width: 800,
+          width: "980px",
           html: `<style>
 table {
     width: 100%;
     border-spacing: 0px;
     border-collapse: collapse;
+    border: 2px solid #f0f0f0;
 }
 table th, table td {
     text-align: left;
@@ -3677,16 +4023,16 @@ table tbody tr td{
     border-bottom: none;
 }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
 width: 32%;
 }
 tr td:nth-child(2){
-width: 8%;
+width: 6%;
 }
 tr td:nth-child(3){
-width: 25%;
+width: 27%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
 width: 18%;
@@ -3700,6 +4046,35 @@ width: 18%;
 tr th:nth-child(6),tr td:nth-child(7){
 width: 15%;
 }
+
+  /* 最右边隐藏按钮的容器 */
+  .row-actions {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+
+  /* 当鼠标悬停整行时显示 */
+  table tbody tr:hover .row-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* 行相对定位，以便放置右侧按钮 */
+  table tbody tr {
+    position: relative;
+  }
+
+  /* 鼠标悬停时隐藏该行的最后三个单元格 */
+  table tbody tr:hover td:nth-last-child(-n + 3) {
+    visibility: hidden;
+  }
 </style>
 <input class="swal2-input" value="${this.filter.text}" id="text-filter" placeholder="歌曲过滤">
 <input class="form-check-input" type="checkbox" value="" id="cb-notmatch" ${this.filter.notMatch ? "checked" : ""}><label class="form-check-label" for="cb-notmatch">未匹配歌曲</label>
@@ -3814,15 +4189,42 @@ width: 15%;
           let dateObj = new Date(song.addTime);
           let addTime = `${dateObj.getFullYear()}-${dateObj.getMonth() + 1}-${dateObj.getDate()}`;
           let tablerow = document.createElement("tr");
-          tablerow.innerHTML = `<td><button type="button" class="swal2-styled">匹配</button></td><td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${album}"></a></td><td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${song.simpleSong.name}</a></td><td>${artist}</td><td>${duringTimeDesc(song.simpleSong.dt)}</td><td>${fileSizeDesc(song.fileSize)} ${levelDesc(song.simpleSong.privilege.plLevel)}</td><td>${addTime}</td>`;
+          tablerow.innerHTML = `<td><button type="button" class="swal2-styled btn-match" title="匹配"><i class="fa-solid fa-link"></i></button></td>
+                <td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td>
+                <td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${song.simpleSong.name}</a></td>
+                <td>${artist}</td><td>${duringTimeDesc(song.simpleSong.dt)}</td><td>${fileSizeDesc(song.fileSize)} ${levelDesc(song.simpleSong.privilege.plLevel)}</td>
+                <td>${addTime}</td>
+                <div class="row-actions">
+                    <button type="button" class="swal2-styled btn-play"  title="播放"><i class="fa-solid fa-play"></i></button>
+                    <button type="button" class="swal2-styled btn-addplay"  title="添加至播放列表"><i class="fa-solid fa-plus"></i></button>
+                    <button type="button" class="swal2-styled btn-collect"  title="收藏"><i class="fa-solid fa-folder-plus"></i></button>
+                    <button type="button" class="swal2-styled btn-delete"  title="删除"><i class="fa-solid fa-trash"></i></button>
+                </div>`;
           if (song.simpleSong.al && song.simpleSong.al.id > 0) {
             let albumLink = tablerow.querySelector(".album-link");
             albumLink.href = "https://music.163.com/album?id=" + song.simpleSong.al.id;
             albumLink.target = "_blank";
           }
-          let btn = tablerow.querySelector("button");
-          btn.addEventListener("click", () => {
+          const btnMatch2 = tablerow.querySelector(".btn-match");
+          btnMatch2.addEventListener("click", () => {
             this.openMatchPopup(song);
+          });
+          const addToFormat = songItemAddToFormat(song.simpleSong);
+          const btnPlay = tablerow.querySelector(".btn-play");
+          btnPlay.addEventListener("click", () => {
+            unsafeWindow.top.player.addTo([addToFormat], false, true);
+          });
+          const btnAddPlay = tablerow.querySelector(".btn-addplay");
+          btnAddPlay.addEventListener("click", () => {
+            unsafeWindow.top.player.addTo([addToFormat], false, false);
+          });
+          const btnCollect = tablerow.querySelector(".btn-collect");
+          btnCollect.addEventListener("click", () => {
+            this.openAddToPlaylistPopup(song);
+          });
+          const btnDelete = tablerow.querySelector(".btn-delete");
+          btnDelete.addEventListener("click", () => {
+            this.deleteCloudSong(song);
           });
           this.controls.tbody.appendChild(tablerow);
         });
@@ -3916,7 +4318,7 @@ width: 15%;
       openMatchPopup(song) {
         Swal.fire({
           showCloseButton: true,
-          width: 800,
+          width: "980px",
           confirmButtonText: "匹配",
           html: `<style>
     table {
@@ -3924,6 +4326,7 @@ width: 15%;
         height: 400px; 
         border-spacing: 0px;
         border-collapse: collapse;
+        border: 2px solid #f0f0f0;
     }
     table th, table td {
         text-align: left;
@@ -3946,19 +4349,19 @@ width: 15%;
         border-bottom: none;
     }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
-width: 52%;
+width: 46%;
 }
 tr td:nth-child(2){
-width: 10%;
+width: 6%;
 }
 tr td:nth-child(3){
-width: 42%;
+width: 40%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
-width: 32%;
+width: 40%;
 }
 tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;
@@ -4114,7 +4517,7 @@ width: 8%;
             const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join();
             const needHighLight = Math.abs(resultSong.dt - this.fileDuringTime) < 1e3;
             const dtstyle = needHighLight ? "color:SpringGreen;" : "";
-            tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">关联</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
+            tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
             let selectbtn = tablerow.querySelector(".selectbtn");
             selectbtn.addEventListener("click", () => {
               this.matchSong(cloudSongId, resultSong.id);
@@ -4124,6 +4527,153 @@ width: 8%;
         } else {
           this.tbody.innerHTML = "搜索结果为空";
         }
+      }
+      openAddToPlaylistPopup(song) {
+        Swal.fire({
+          showCloseButton: true,
+          showConfirmButton: false,
+          html: `<style>
+    table {
+        width: 100%;
+        height: 400px; 
+        border-spacing: 0px;
+        border-collapse: collapse;
+        border: 2px solid #f0f0f0;
+    }
+    table th, table td {
+        text-align: left;
+        text-overflow: ellipsis;
+    }
+    table tbody {
+        display: block;
+        width: 100%;
+        max-height: 400px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    table thead tr, table tbody tr, table tfoot tr {
+        box-sizing: border-box;
+        table-layout: fixed;
+        display: table;
+        width: 100%;
+    }
+    table tbody tr td{
+        border-bottom: none;
+    }
+tr th:nth-child(1),tr td:nth-child(1){
+width: 14%;
+}
+tr th:nth-child(2){
+width: 86%;
+}
+tr td:nth-child(2){
+width: 16%;
+}
+tr td:nth-child(3){
+width: 70%;
+}
+</style>
+<div class="table-wrapper">
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌单</th></tr></thead><tbody></tbody></table>
+</div>
+`,
+          footer: "",
+          didOpen: async () => {
+            const container = Swal.getHtmlContainer();
+            this.tbody = container.querySelector("tbody");
+            const userPlaylistRes = await weapiRequestSync("/api/user/playlist", {
+              data: {
+                uid: unsafeWindow.GUser.userId,
+                limit: 1001,
+                offset: 0
+              }
+            });
+            const userPlaylists = [];
+            if (userPlaylistRes.code === 200 && userPlaylistRes.playlist.length > 0) {
+              for (const playlist of userPlaylistRes.playlist) {
+                if (!playlist.subscribed) {
+                  userPlaylists.push({
+                    id: playlist.id,
+                    name: playlist.name,
+                    html: `<td><button type="button" class="swal2-styled btn-add" title="加入歌单"><i class="fa-solid fa-plus"></i></button></td>
+                                                <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${playlist.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
+                                                <td>${playlist.name}</td>`
+                  });
+                }
+              }
+            }
+            for (const playlist of userPlaylists) {
+              const row = document.createElement("tr");
+              row.innerHTML = playlist.html;
+              const btnAdd = row.querySelector(".btn-add");
+              btnAdd.addEventListener("click", async () => {
+                const collectRes = await weapiRequestSync("/api/playlist/manipulate/tracks", {
+                  method: "POST",
+                  data: {
+                    op: "add",
+                    pid: playlist.id,
+                    tracks: song.simpleSong.id,
+                    trackIds: JSON.stringify([song.simpleSong.id])
+                  }
+                });
+                if (collectRes.code === 200) {
+                  showTips("加入歌单成功", 1);
+                  this.openCloudList();
+                } else {
+                  if (collectRes.message) {
+                    showTips(collectRes.message, 2);
+                  } else {
+                    showTips("加入歌单失败", 2);
+                  }
+                }
+              });
+              this.tbody.appendChild(row);
+            }
+          },
+          didClose: () => {
+            this.openCloudList();
+          }
+        });
+      }
+      deleteCloudSong(song) {
+        Swal.fire({
+          icon: "warning",
+          title: "确认删除",
+          text: `确定要删除《${song.simpleSong.name}》吗？`,
+          showCancelButton: true,
+          confirmButtonText: "删除",
+          cancelButtonText: "取消",
+          didClose: () => {
+            this.openCloudList();
+          }
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            const deleteRes = await weapiRequestSync("/api/cloud/del", {
+              method: "POST",
+              data: {
+                songIds: [song.simpleSong.id]
+              }
+            });
+            if (deleteRes.code === 200) {
+              showTips("删除成功", 1);
+              if (this.filter.songs.length > 0) {
+                for (let i = 0; i < this.filter.songs.length; i++) {
+                  if (this.filter.songs[i].simpleSong.id == song.simpleSong.id) {
+                    this.filter.songs.splice(i, 1);
+                    break;
+                  }
+                }
+              }
+            } else {
+              if (deleteRes.message) {
+                showTips(deleteRes.message, 2);
+              } else {
+                showTips("删除失败", 2);
+              }
+            }
+            this.openCloudList();
+          }
+        });
       }
     }
   };
@@ -4559,12 +5109,13 @@ width: 8%;
         Swal.fire({
           showCloseButton: true,
           showConfirmButton: false,
-          width: 800,
+          width: "980px",
           html: `<style>
 table {
     width: 100%;
     border-spacing: 0px;
     border-collapse: collapse;
+    border: 2px solid #f0f0f0;
 }
 table th, table td {
     text-align: left;
@@ -4587,19 +5138,19 @@ table tbody tr td{
     border-bottom: none;
 }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
-width: 35%;
+width: 34%;
 }
 tr td:nth-child(2){
-width: 10%;
+width: 6%;
 }
 tr td:nth-child(3){
-width: 25%;
+width: 28%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
-width: 20%;
+width: 28%;
 }
 tr th:nth-child(4),tr td:nth-child(5){
 width: 16%;
@@ -4744,7 +5295,7 @@ width: 16%;
         for (let i = 0; i < this.songs.length; i++) {
           let song = this.songs[i];
           let tablerow = document.createElement("tr");
-          tablerow.innerHTML = `<td><button type="button" class="swal2-styled">提升</button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${levelDesc(song.fileinfo.originalLevel)} ${song.fileinfo.originalBr}k</td><td>${tagetLevelDesc} ${song.fileinfo.tagetBr}k</td>`;
+          tablerow.innerHTML = `<td><button type="button" class="swal2-styled" title="提升"><i class="fa-solid fa-arrow-up"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${levelDesc(song.fileinfo.originalLevel)} ${song.fileinfo.originalBr}k</td><td>${tagetLevelDesc} ${song.fileinfo.tagetBr}k</td>`;
           let btn = tablerow.querySelector("button");
           btn.addEventListener("click", () => {
             if (this.batchUpgrade.working) {
@@ -4857,7 +5408,7 @@ width: 16%;
         showTips(`${song.name} 音质提升成功`, 1);
         song.upgraded = true;
         let btnUpgrade2 = song.tablerow.querySelector("button");
-        btnUpgrade2.innerHTML = "已提升";
+        btnUpgrade2.innerHTML = '<i class="fa-solid fa-check"></i>';
         btnUpgrade2.disabled = "disabled";
         ULsong.Upgrader.onUpgradeFinnsh(ULsong.songIndex);
       }
@@ -4897,12 +5448,13 @@ width: 16%;
             </div>`,
         confirmButtonText: "上传",
         showCloseButton: true,
-        preConfirm: (level) => {
-          let files = document.getElementById("song-file").files;
+        preConfirm: () => {
+          const container = Swal.getHtmlContainer();
+          const files = container.querySelector("#song-file").files;
           if (files.length == 0) return Swal.showValidationMessage("请选择文件");
           return {
             files,
-            needFillInfo: document.getElementById("need-fill-info-radio").checked
+            needFillInfo: container.querySelector("#need-fill-info-radio").checked
           };
         }
       }).then((result) => {
@@ -4966,6 +5518,7 @@ table {
     width: 100%;
     border-spacing: 0px;
     border-collapse: collapse;
+    border: 2px solid #f0f0f0;
 }
 table th, table td {
     text-align: left;
@@ -5036,12 +5589,13 @@ width: 27%;
           showCloseButton: false,
           confirmButtonText: "确定",
           preConfirm: () => {
-            let songTitle = document.getElementById("text-title").value.trim();
+            const container = Swal.getHtmlContainer();
+            let songTitle = container.querySelector("#text-title").value.trim();
             if (songTitle.length == 0) return Swal.showValidationMessage("歌名不能为空");
             return {
               title: songTitle,
-              artist: document.getElementById("text-artist").value.trim(),
-              album: document.getElementById("text-album").value.trim()
+              artist: container.querySelector("#text-artist").value.trim(),
+              album: container.querySelector("#text-album").value.trim()
             };
           }
         }).then((result) => {
@@ -5289,7 +5843,7 @@ width: 27%;
         title: "限免VIP歌曲",
         showCloseButton: true,
         showConfirmButton: false,
-        width: 800,
+        width: "980px",
         html: `<style>
 table {
     width: 100%;
@@ -5363,7 +5917,7 @@ width: 8%;
                     let filename = nameFileWithoutExt(songTitle, songArtist, "artist-title");
                     songArtist = content.songs[i].ar ? content.songs[i].ar.map((ar) => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>`).join() : "";
                     let tablerow = document.createElement("tr");
-                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${getAlbumTextInSongDetail(content.songs[i])}"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${content.songs[i].name}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`;
+                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${getAlbumTextInSongDetail(content.songs[i])}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${content.songs[i].name}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`;
                     let btnDL = tablerow.querySelector(".mydl");
                     btnDL.addEventListener("click", () => {
                       TrialDownLoad(content.songs[i].id, trialMode, filename);
@@ -5426,11 +5980,12 @@ width: 8%;
         footer: "过滤条件取交集",
         confirmButtonText: "导出",
         preConfirm: () => {
+          const container = Swal.getHtmlContainer();
           return [
-            document.getElementById("text-artist").value.trim(),
-            document.getElementById("text-album").value.trim(),
-            document.getElementById("text-song").value.trim(),
-            document.getElementById("text-playlistid").value
+            container.querySelector("#text-artist").value.trim(),
+            container.querySelector("#text-album").value.trim(),
+            container.querySelector("#text-song").value.trim(),
+            container.querySelector("#text-playlistid").value
           ];
         }
       }).then((result) => {
@@ -5714,20 +6269,23 @@ width: 8%;
     function openMusicTag() {
       Swal.fire({
         title: "音乐标签",
-        confirmButtonText: "添加元信息",
+        confirmButtonText: "添加元数据",
+        showCloseButton: true,
         html: `<div id="my-file">
             <input id='song-file' type="file" accept=".mp3,audio/mpeg,.flac,audio/flac"  aria-label='选择文件' multiple="multiple" class="swal2-file" placeholder="" style="display: flex;">
             </div>
             <div>
             <input class="form-check-input" type="checkbox" value="" id="cb-rename" checked><label class="form-check-label" for="cb-rename">完成时按《歌手 - 歌名》重命名文件</label>
             </div>`,
-        footer: "<div>为本地文件添加添加的封面歌词等音乐标签，使得文件上传网易云云盘后，不关联的情况下显示封面以及滚动歌词。</div>",
+        footer: `<div>为本地文件添加添加的封面歌词等音乐标签，使得文件上传网易云云盘后，不关联的情况下显示封面以及滚动歌词。</div>
+            <div>仅支持MP3/FLAC格式</div>`,
         preConfirm: () => {
-          let files = document.getElementById("song-file").files;
+          const container = Swal.getHtmlContainer();
+          const files = container.querySelector("#song-file").files;
           if (files.length == 0) return Swal.showValidationMessage("请选择文件");
           return {
             files,
-            rename: document.getElementById("cb-rename").checked
+            rename: container.querySelector("#cb-rename").checked
           };
         }
       }).then((result) => {
@@ -5746,12 +6304,14 @@ width: 8%;
       }
       openFilesDialog() {
         Swal.fire({
-          width: 800,
+          width: "980px",
+          showCloseButton: true,
           html: `<style>
 table {
     width: 100%;
     border-spacing: 0px;
     border-collapse: collapse;
+    border: 2px solid #f0f0f0;
 }
 table th, table td {
     text-align: left;
@@ -5774,27 +6334,26 @@ table tbody tr td{
     border-bottom: none;
 }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2),tr td:nth-child(2){
-width: 42%;
+width: 30%;
 }
 tr th:nth-child(3),{
-width: 50%;
+width: 64%;
 }
 tr td:nth-child(3){
-width: 8%;
+width: 6%;
 }
 tr td:nth-child(4){
-width: 21%;
+width: 29%;
 }
 tr td:nth-child(5){
-width: 21%;
+width: 29%;
 }
 </style>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>文件名</th><th>目标歌曲</th></tr></thead><tbody></tbody></table>
 `,
-          footer: "<div>为本地文件添加音乐标签，添加的封面歌词等信息上传网易云云盘后可以被识别。</div>",
           didOpen: async () => {
             const actions = Swal.getActions();
             const container = Swal.getHtmlContainer();
@@ -5804,7 +6363,10 @@ width: 21%;
               this.fileList = results.map((result) => ({
                 file: result.file,
                 fileName: result.file.name,
-                duration: Math.round(result.duration * 1e3)
+                ext: result.file.name.split(".").pop().toLowerCase(),
+                duration: Math.round(result.duration * 1e3),
+                mode: "unfill",
+                songDescription: "</td><td>未设置</td><td>"
               }));
             }
             actions.innerHTML = `<div class="swal2-loader"></div>
@@ -5830,14 +6392,14 @@ width: 21%;
       openSongSelectionDialog(file) {
         Swal.fire({
           showCloseButton: true,
-          showConfirmButton: false,
-          width: 800,
+          width: "980px",
           html: `<style>
     table {
         width: 100%;
         height: 400px;
         border-spacing: 0px;
         border-collapse: collapse;
+        border: 2px solid #f0f0f0;
     }
     table th, table td {
         text-align: left;
@@ -5860,19 +6422,19 @@ width: 21%;
         border-bottom: none;
     }
 tr th:nth-child(1),tr td:nth-child(1){
-width: 8%;
+width: 6%;
 }
 tr th:nth-child(2){
-width: 52%;
+width: 46%;
 }
 tr td:nth-child(2){
-width: 10%;
+width: 6%;
 }
 tr td:nth-child(3){
-width: 42%;
+width: 40%;
 }
 tr th:nth-child(3),tr td:nth-child(4){
-width: 32%;
+width: 40%;
 }
 tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;
@@ -5886,9 +6448,25 @@ width: 8%;
           footer: `<div>文件时长 ${duringTimeDesc(file.duration)}</div>`,
           didOpen: () => {
             const container = Swal.getHtmlContainer();
+            const actions = Swal.getActions();
+            actions.innerHTML = `<div class="swal2-loader"></div>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-unset" style="display: none;">移除设置</button>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-custom" style="display: inline-block;">自定义标签内容</button>`;
             const tbody = container.querySelector("tbody");
             const searchText = container.querySelector("#search-text");
             const btnSearch = container.querySelector("#btn-search");
+            const btnUnset = actions.querySelector("#btn-unset");
+            const btnCustom = actions.querySelector("#btn-custom");
+            if (file.mode != "unfill") {
+              btnUnset.style.display = "inline-block";
+              btnUnset.addEventListener("click", () => {
+                this.unsetSong(file);
+                this.openFilesDialog();
+              });
+            }
+            btnCustom.addEventListener("click", () => {
+              this.openSongCustomDialog(file);
+            });
             searchText.value = file.fileName.substring(0, file.fileName.lastIndexOf("."));
             btnSearch.addEventListener("click", () => {
               const searchWord = searchText.value.trim();
@@ -5906,7 +6484,6 @@ width: 8%;
                     return;
                   }
                   if (searchContent.result.songCount > 0) {
-                    console.log(file, searchContent.result.songs);
                     tbody.innerHTML = "";
                     const timeMatchSongs = [];
                     const timeNoMatchSongs = [];
@@ -5923,11 +6500,12 @@ width: 8%;
                       const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join();
                       const needHighLight = Math.abs(resultSong.dt - file.duration) < 1e3;
                       const dtstyle = needHighLight ? "color:SpringGreen;" : "";
-                      tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
+                      tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
                       let selectbtn = tablerow.querySelector(".selectbtn");
                       selectbtn.addEventListener("click", () => {
                         file.targetSong = resultSong;
-                        file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`;
+                        file.mode = "netease";
+                        file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`;
                         this.openFilesDialog();
                       });
                       tbody.appendChild(tablerow);
@@ -5939,6 +6517,75 @@ width: 8%;
               });
             });
             btnSearch.click();
+          },
+          didClose: () => {
+            this.openFilesDialog();
+          }
+        });
+      }
+      openSongCustomDialog(file) {
+        Swal.fire({
+          showCloseButton: true,
+          html: `
+                <div><label>歌名<input class="swal2-input" id="text-song"></label></div>
+                <div><label>歌手<input class="swal2-input" id="text-artist"></label></div>
+                <div><label>专辑<input class="swal2-input" id="text-album"></label></div>
+                <div><label>封面<input type="file" accept="image/jpeg,image/png" class="swal2-file"  id="text-cover"></label></div>
+                <div><label>歌词<textarea id="textarea-lyric" class="swal2-textarea" placeholder="[00:10.000] 第一行..."></textarea></label></div>
+                `,
+          didOpen: () => {
+            const container = Swal.getHtmlContainer();
+            const actions = Swal.getActions();
+            actions.innerHTML = `<div class="swal2-loader"></div>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-unset" style="display: none;">移除设置</button>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-netease" style="display: inline-block;">使用网易云信息</button>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-confirm" style="display: inline-block;">设置</button>`;
+            const songInput = container.querySelector("#text-song");
+            const artistInput = container.querySelector("#text-artist");
+            const albumInput = container.querySelector("#text-album");
+            const coverInput = container.querySelector("#text-cover");
+            const lyricInput = container.querySelector("#textarea-lyric");
+            const btnUnset = actions.querySelector("#btn-unset");
+            const btnNetease = actions.querySelector("#btn-netease");
+            const btnConfirm = actions.querySelector("#btn-confirm");
+            if (file.mode != "unfill") {
+              btnUnset.style.display = "inline-block";
+              btnUnset.addEventListener("click", () => {
+                this.unsetSong(file);
+                this.openFilesDialog();
+              });
+            }
+            if (file.customSong) {
+              songInput.value = file.customSong.name;
+              artistInput.value = file.customSong.artist;
+              albumInput.value = file.customSong.album;
+              if (file.customSong.cover) {
+                const dt = new DataTransfer();
+                dt.items.add(file.customSong.cover.file);
+                coverInput.files = dt.files;
+              }
+              lyricInput.value = file.customSong.lyric;
+            }
+            btnNetease.addEventListener("click", () => {
+              this.openSongSelectionDialog(file);
+            });
+            btnConfirm.addEventListener("click", () => {
+              var _a;
+              if ((_a = file.customSong) == null ? void 0 : _a.cover) {
+                URL.revokeObjectURL(file.customSong.cover.url);
+              }
+              file.customSong = {
+                name: songInput.value,
+                artist: artistInput.value,
+                album: albumInput.value,
+                cover: coverInput.files.length > 0 ? { file: coverInput.files[0], url: URL.createObjectURL(coverInput.files[0]) } : null,
+                lyric: lyricInput.value
+              };
+              file.mode = "custom";
+              file.songDescription = file.customSong.cover ? `<img src="${file.customSong.cover.url}" height=50 title="${file.customSong.album}"></td><td>` : "";
+              file.songDescription += `${file.customSong.name}</td><td>${file.customSong.artist}`;
+              this.openFilesDialog();
+            });
           },
           didClose: () => {
             this.openFilesDialog();
@@ -5969,9 +6616,9 @@ width: 8%;
         this.fileList.forEach((item) => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
-                        <td><button type="button" class="swal2-styled">选择</button></td>
+                        <td><button type="button" class="swal2-styled"><i class="fa-solid fa-gear"></i></button></td>
                         <td>${item.fileName}</td>
-                        <td class="target-song">${item.songDescription || "</td><td>未选择</td><td>"}</td>
+                        <td class="target-song">${item.songDescription}</td>
                     `;
           const selectButton = tr.querySelector(".swal2-styled");
           selectButton.addEventListener("click", () => {
@@ -5979,7 +6626,11 @@ width: 8%;
               showTips("正在自动填充歌曲信息，请稍候...", 1);
               return;
             }
-            this.openSongSelectionDialog(item);
+            if (item.mode === "unfill" || item.mode === "netease") {
+              this.openSongSelectionDialog(item);
+            } else {
+              this.openSongCustomDialog(item);
+            }
           });
           this.songListTbody.appendChild(tr);
         });
@@ -5989,7 +6640,7 @@ width: 8%;
         this.isAutoFillingSong = true;
         for (let i = 0; i < this.fileList.length; i++) {
           const file = this.fileList[i];
-          if (!file.targetSong) {
+          if (file.mode === "unfill") {
             const searchWord = file.fileName.substring(0, file.fileName.lastIndexOf(".")).normalize("NFC");
             const response = await weapiRequestSync("/api/cloudsearch/get/web", {
               data: {
@@ -6006,7 +6657,8 @@ width: 8%;
                   let songName = resultSong.name;
                   const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join();
                   file.targetSong = resultSong;
-                  file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`;
+                  file.mode = "netease";
+                  file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`;
                   this.refreshSongListTable();
                   break;
                 }
@@ -6018,14 +6670,15 @@ width: 8%;
           }
         }
       }
+      unsetSong(file) {
+        file.targetSong = null;
+        file.customSong = null;
+        file.songDescription = "</td><td>未设置</td><td>";
+        file.mode = "unfill";
+      }
       handleSongTag() {
-        this.selectedSongs = this.fileList.filter((item) => item.targetSong);
-        if (this.selectedSongs.length === 0) {
-          showFinishBox(0);
-          return;
-        }
         Swal.fire({
-          width: 800,
+          width: "980px",
           allowOutsideClick: false,
           allowEscapeKey: false,
           showCloseButton: false,
@@ -6035,6 +6688,7 @@ table {
     width: 100%;
     border-spacing: 0px;
     border-collapse: collapse;
+    border: 2px solid #f0f0f0;
 }
 table th, table td {
     text-align: left;
@@ -6065,9 +6719,13 @@ width: 50%;
 </style>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>文件名</th><th>进度</th></tr></thead><tbody></tbody></table>
 `,
-          footer: "",
           didOpen: async () => {
             const container = Swal.getHtmlContainer();
+            this.selectedSongs = this.fileList.filter((item) => item.mode !== "unfill");
+            if (this.selectedSongs.length === 0) {
+              this.showFinishBox(0);
+              return;
+            }
             this.songListTbody = container.querySelector("tbody");
             this.selectedSongs.forEach((song) => {
               const tr = document.createElement("tr");
@@ -6079,41 +6737,60 @@ width: 50%;
             for (const song of this.selectedSongs) {
               song.progressDOM.innerHTML = "开始处理";
               const fileBuffer = await song.file.arrayBuffer();
-              const songTitle = song.targetSong.name;
-              const songArtist = song.targetSong.ar.map((ar) => ar.name).join("");
-              const songAlbum = song.targetSong.al.name;
+              const songTitle = song.mode === "netease" ? song.targetSong.name : song.customSong.name;
+              const songArtist = song.mode === "netease" ? song.targetSong.ar.map((ar) => ar.name).join("") : song.customSong.artist;
+              const songAlbum = song.mode === "netease" ? song.targetSong.al.name : song.customSong.album;
               if (this.rename) {
-                song.fileName = `${songArtist} - ${songTitle}.${song.fileName.split(".").pop()}`;
+                const nameWithoutExt = nameFileWithoutExt(songTitle, songArtist, "artist-title");
+                if (nameWithoutExt && nameWithoutExt.length > 0) song.fileName = `${nameWithoutExt}.${song.ext}`;
               }
               let coverBuffer = null;
-              if (song.targetSong.al.pic > 0) {
-                coverBuffer = await new Promise((resolve, reject) => {
-                  GM_xmlhttpRequest({
-                    method: "GET",
-                    url: song.targetSong.al.picUrl,
-                    responseType: "arraybuffer",
-                    onload: (res) => resolve(res.response),
-                    onerror: (err) => reject(err)
+              let coverFormat = "image/jpeg";
+              if (song.mode === "netease") {
+                if (song.targetSong.al.pic > 0) {
+                  coverBuffer = await new Promise((resolve, reject) => {
+                    GM_xmlhttpRequest({
+                      method: "GET",
+                      url: song.targetSong.al.picUrl,
+                      responseType: "arraybuffer",
+                      onload: (res) => resolve(res.response),
+                      onerror: (err) => reject(err)
+                    });
                   });
-                });
-                coverBuffer = new Uint8Array(coverBuffer).buffer;
-                song.progressDOM.innerHTML = "已获取图片";
-              }
-              let lyricText = "";
-              const lyricRes = await weapiRequestSync("/api/song/lyric/v1", {
-                data: { id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 }
-              });
-              if (lyricRes && !lyricRes.pureMusic) {
-                const LyricObj = handleLyric(lyricRes);
-                if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
-                  lyricText = LyricObj.oritlrc.lyric;
-                  song.progressDOM.innerHTML = "已获取歌词";
-                } else if (LyricObj && LyricObj.orilrc && LyricObj.orilrc.parsedLyric.length > 0) {
-                  lyricText = LyricObj.orilrc.lyric;
-                  song.progressDOM.innerHTML = "已获取歌词";
+                  coverBuffer = new Uint8Array(coverBuffer).buffer;
+                  song.progressDOM.innerHTML = "已获取图片";
+                }
+              } else {
+                if (song.customSong.cover) {
+                  let imgext = song.customSong.cover.file.name.split(".").pop().toLowerCase();
+                  if (imgext === "jpg") {
+                    imgext = "jpeg";
+                  }
+                  coverFormat = `image/${imgext}`;
+                  coverBuffer = await song.customSong.cover.file.arrayBuffer();
+                  coverBuffer = new Uint8Array(coverBuffer).buffer;
+                  URL.revokeObjectURL(song.customSong.cover.url);
                 }
               }
-              if (song.fileName.toLowerCase().endsWith("mp3")) {
+              let lyricText = "";
+              if (song.mode === "netease") {
+                const lyricRes = await weapiRequestSync("/api/song/lyric/v1", {
+                  data: { id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 }
+                });
+                if (lyricRes && !lyricRes.pureMusic) {
+                  const LyricObj = handleLyric(lyricRes);
+                  if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
+                    lyricText = LyricObj.oritlrc.lyric;
+                    song.progressDOM.innerHTML = "已获取歌词";
+                  } else if (LyricObj && LyricObj.orilrc && LyricObj.orilrc.parsedLyric.length > 0) {
+                    lyricText = LyricObj.orilrc.lyric;
+                    song.progressDOM.innerHTML = "已获取歌词";
+                  }
+                }
+              } else {
+                lyricText = song.customSong.lyric.trim();
+              }
+              if (song.ext === "mp3") {
                 const mp3tag = new MP3Tag(fileBuffer);
                 mp3tag.read();
                 mp3tag.tags.title = songTitle;
@@ -6124,7 +6801,7 @@ width: 50%;
                     description: "",
                     data: coverBuffer,
                     type: 3,
-                    format: "image/jpeg"
+                    format: coverFormat
                   }];
                 }
                 if (lyricText && lyricText.length > 0) {
@@ -6143,22 +6820,25 @@ width: 50%;
                 const url2 = URL.createObjectURL(blob);
                 const downloadRes = await downloadFileSync(url2, song.fileName);
                 song.progressDOM.innerHTML = downloadRes;
+                URL.revokeObjectURL(url2);
                 if (downloadRes.endsWith("完成")) {
                   finishCount += 1;
                 }
-              } else if (song.fileName.toLowerCase().endsWith("flac")) {
+              } else if (song.ext === "flac") {
                 const flac = new MetaFlac(fileBuffer);
                 flac.removeAllTags();
+                flac.removeAllPictures();
                 flac.setTag(`TITLE=${songTitle}`);
                 flac.setTag(`ARTIST=${songArtist}`);
                 if (songAlbum.length > 0) flac.setTag(`ALBUM=${songAlbum}`);
                 if (lyricText.length > 0) flac.setTag(`LYRICS=${lyricText}`);
-                if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, "image/jpeg");
+                if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, coverFormat);
                 const newBuffer = flac.save();
                 const blob = new Blob([newBuffer], { type: "audio/flac" });
                 const url2 = URL.createObjectURL(blob);
                 const downloadRes = await downloadFileSync(url2, song.fileName);
                 song.progressDOM.innerHTML = downloadRes;
+                URL.revokeObjectURL(url2);
                 if (downloadRes.endsWith("完成")) {
                   finishCount += 1;
                 }
@@ -6569,11 +7249,9 @@ width: 50%;
         privilege: this.songDetailObj,
         api: { url: url2, data }
       };
-      const config = {
-        out: "artist-title",
-        threadCount: 1,
-        folder: "none"
-      };
+      const config = Object.assign({
+        threadCount: 1
+      }, getDownloadSettings());
       batchDownloadSongs([songItem], config);
     }
     downloadLyric(lrcKey) {
@@ -6714,13 +7392,15 @@ width: 50%;
   const onStart = () => {
     console.log("[ncmExtend] onStart()");
     if (_unsafeWindow.self === _unsafeWindow.top) {
-      _unsafeWindow.GUserScriptObjects = {};
+      GM_addStyle(GM_getResourceText("fa").replaceAll("../webfonts/", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/"));
+      _unsafeWindow.GUserScriptObjects = { Swal };
       hookTopWindow();
       const iframes = document.getElementsByTagName("iframe");
       for (let iframe of iframes) {
         hookWindowForCommentBox(iframe.contentWindow);
       }
     } else if (_unsafeWindow.name === "contentFrame") {
+      Swal = _unsafeWindow.top.GUserScriptObjects.Swal;
       hookWindowForCommentBox(_unsafeWindow);
       if (paramId > 0) {
         if (url.includes("/song?")) {
