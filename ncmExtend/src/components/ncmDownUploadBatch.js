@@ -5,6 +5,7 @@ import { nameFileWithoutExt, levelDesc } from "../utils/descHelper"
 
 import { albumDetailObj } from '../album/albumDetail'
 import { playlistDetailObj } from '../playlist/playlistDetail'
+import { levelWeight } from '../utils/constant'
 
 const PlayAPIDataLimit = 1000
 export const CheckAPIDataLimit = 100
@@ -19,6 +20,13 @@ export class ncmDownUploadBatch {
         for (let i = 0; i < songs.length; i++) {
             const songId = songs[i].id
             this.songIdIndexsMap[songId] = i
+
+            if (!songs[i].api) {
+                songs[i].api = (songs[i].privilege.fee == 0 && (levelWeight[songs[i].privilege.plLevel] || 99) < (levelWeight[songs[i].privilege.dlLevel] || -1)) ?
+                    { url: '/api/song/enhance/download/url/v1', data: { id: songs[i].id, level: config.level, encodeType: 'mp3' } } :
+                    { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([songs[i].id]), level: config.level, encodeType: 'mp3' } }
+            }
+
             if (songs[i].api.url === '/api/song/enhance/player/url/v1') {
                 this.playerApiSongIds.push(songId)
             }
@@ -106,7 +114,7 @@ export class ncmDownUploadBatch {
                             this.skipSongs.push(this.songs[songIndex].title)
                         }
                     }
-                    else if(songFileData.md5){
+                    else if (songFileData.md5) {
                         this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, this.config.out) + '.' + songFileData.type.toLowerCase()
                         this.songs[songIndex].md5 = songFileData.md5
                         this.songs[songIndex].size = songFileData.size
@@ -115,7 +123,7 @@ export class ncmDownUploadBatch {
                         this.songs[songIndex].bitrate = Math.floor(songFileData.br / 1000)
                     }
                     else {
-                        console.error('试听接口',this.songs[songIndex].title, songFileData)
+                        console.error('试听接口', this.songs[songIndex].title, songFileData)
                         this.failSongs.push(this.songs[songIndex].title + '：通过试听接口获取文件信息失败')
                     }
                 });

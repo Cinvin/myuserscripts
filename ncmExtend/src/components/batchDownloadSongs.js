@@ -3,6 +3,7 @@ import { weapiRequest } from "../utils/request"
 import { fileSizeDesc, levelDesc, nameFileWithoutExt } from "../utils/descHelper"
 import { handleLyric } from "../utils/lyric"
 import { MetaFlac } from "../utils/metaflac"
+import { levelWeight } from '../utils/constant'
 
 export const batchDownloadSongs = (songList, config) => {
     if (songList.length == 0) {
@@ -78,7 +79,6 @@ width: 10%;
             config.skipSongs = []
             config.taskCount = songList.length
             config.threadList = threadList
-            config.appendMeta = JSON.parse(GM_getValue('downloadSettings', '{"appendMeta":"notAppend"}')).appendMeta
             console.log(config);
             for (let i = 0; i < config.threadCount; i++) {
                 downloadSongSub(i, songList, config)
@@ -120,6 +120,11 @@ const downloadSongSub = (threadIndex, songList, config) => {
     let levelText = tableRowDOM.querySelector('.my-level')
     let sizeText = tableRowDOM.querySelector('.my-size')
     let prText = tableRowDOM.querySelector('.my-pr')
+    if(!song.api){
+            song.api = (song.privilege.fee == 0 && (levelWeight[song.privilege.plLevel] || 99) < (levelWeight[song.privilege.dlLevel] || -1)) ? 
+            { url: '/api/song/enhance/download/url/v1', data: { id: song.id, level: config.level, encodeType: 'mp3' } } : 
+            { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([song.id]), level: config.level, encodeType: 'mp3' } }
+    }
     try {
         weapiRequest(song.api.url, {
             data: song.api.data,

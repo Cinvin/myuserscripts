@@ -1,11 +1,11 @@
 
 import { weapiRequest } from "../utils/request"
 import { levelDesc, fileSizeDesc, nameFileWithoutExt, getAlbumTextInSongDetail, getArtistTextInSongDetail } from "../utils/descHelper"
-import { levelWeight, songMark } from "../utils/constant"
+import { levelWeight, songMark, getDownloadSettings } from "../utils/constant"
 import { handleLyric } from "../utils/lyric"
 import { ncmDownUpload } from "../components/ncmDownUpload"
+import { batchDownloadSongs } from "../components/batchDownloadSongs"
 import { saveContentAsFile } from "../utils/common"
-import { batchDownloadSongs } from "./batchDownloadSongs"
 class SongDetail {
     constructor() {
         this.domReady = false
@@ -329,11 +329,9 @@ class SongDetail {
             privilege: this.songDetailObj,
             api: { url, data, }
         }
-        const config = {
-            out: 'artist-title',
+        const config = Object.assign({
             threadCount: 1,
-            folder: 'none',
-        }
+        }, getDownloadSettings())
         batchDownloadSongs([songItem], config)
     }
     downloadLyric(lrcKey) {

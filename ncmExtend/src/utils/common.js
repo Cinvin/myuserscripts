@@ -1,3 +1,4 @@
+
 export const sleep = (millisec) => {
     return new Promise(resolve => setTimeout(resolve, millisec));
 };
@@ -8,12 +9,21 @@ export const showConfirmBox = (msg) => {
         confirmButtonText: '确定',
     })
 }
-export const showTips = (tip, type) => {
+
+export const showTips = (tip, type = 1) => {
     //type:1 √ 2:!
-    unsafeWindow.g_showTipCard({
-        tip: tip,
-        type: type
-    })
+    if (Swal.isVisible()) {
+        unsafeWindow.g_showTipCard({
+            tip: tip,
+            type: type,
+            parent: Swal.getContainer()
+        })
+    } else {
+        unsafeWindow.top.g_showTipCard({
+            tip: tip,
+            type: type,
+        })
+    }
 }
 export const saveContentAsFile = (content, fileName) => {
     let data = new Blob([content], {

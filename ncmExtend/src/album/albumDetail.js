@@ -1,8 +1,7 @@
 import { weapiRequest } from "../utils/request"
 import { songMark } from "../utils/constant"
 import { getAlbumTextInSongDetail, getArtistTextInSongDetail } from "../utils/descHelper"
-import { downloadSongBatch } from "./downloadSongBatch"
-import { uploadSongBatch } from "./uploadSongBatch"
+import { songsDownUpLoad } from "./songsDownUpLoad"
 class AlbumDetail {
     constructor() {
         this.domReady = false
@@ -21,6 +20,7 @@ class AlbumDetail {
             onload: (content) => {
                 this.albumRes = content
                 for (let i = 0; i < content.songs.length; i++) {
+                    content.songs[i].al.picUrl = content.album.blurPicUrl
                     let songItem = {
                         id: content.songs[i].id,
                         title: content.songs[i].name,
@@ -73,8 +73,7 @@ class AlbumDetail {
         }
     }
     AppendBtns() {
-        downloadSongBatch(this.albumId, this.operationArea)
-        uploadSongBatch(this.albumId, this.operationArea)
+        songsDownUpLoad(this.albumId, this.operationArea)
     }
     createDiscTable() {
         const tableRows = document.querySelectorAll('.m-table-album tr')
@@ -125,4 +124,4 @@ class AlbumDetail {
         })
     }
 }
-export let albumDetailObj = new AlbumDetail()
+export const albumDetailObj = new AlbumDetail()

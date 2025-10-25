@@ -14,9 +14,6 @@ importers:
       jsmediatags:
         specifier: ^3.9.7
         version: 3.9.7
-      metaflac-js:
-        specifier: ^1.0.0
-        version: 1.0.5
       mp3tag.js:
         specifier: ^3.14.1
         version: 3.14.1
@@ -24,8 +21,8 @@ importers:
         specifier: ^1.3.1
         version: 1.3.1
       sweetalert2:
-        specifier: ^11.12.2
-        version: 11.12.2
+        specifier: ^11.26.3
+        version: 11.26.3
     devDependencies:
       vite:
         specifier: ^6.0.0
@@ -313,9 +310,6 @@ packages:
     resolution: {integrity: sha512-tjwM5exMg6BGRI+kNmTntNsvdZS1X8BFYS6tnJ2hdH0kVxM6/eVZ2xy+FqStSWvYmtfFMDLIxurorHwDKfDz5Q==}
     engines: {node: '>=18'}
 
-  commander@2.20.3:
-    resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
-
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
@@ -354,10 +348,6 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  file-type@10.11.0:
-    resolution: {integrity: sha512-uzk64HRpUZyTGZtVuvrjP0FYxzQrBf4rojot6J65YMEbwBLB0CWm0CLojVpwpmFmxcE/lkvYICgfcGozbBq6rw==}
-    engines: {node: '>=6'}
-
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -365,11 +355,6 @@ packages:
 
   htmlparser2@9.1.0:
     resolution: {integrity: sha512-5zfg6mHUoaer/97TxnGpxmbR7zJtPwIYFMZ/H5ucTlPZhKvtum05yiPK3Mgai3a0DyVxv7qYqoweaEd2nrYQzQ==}
-
-  image-size@0.6.3:
-    resolution: {integrity: sha512-47xSUiQioGaB96nqtp5/q55m0aBQSQdyIloMOc/x+QVTDZLNmXE892IIDrJ0hM1A5vcNUDD5tDffkSP5lCaIIA==}
-    engines: {node: '>=4.0'}
-    hasBin: true
 
   import-meta-resolve@4.1.0:
     resolution: {integrity: sha512-I6fiaX09Xivtk+THaMfAwnA3MVA5Big1WHF1Dfx9hFuvNIWpXnorlkzhcQf6ehrqQiiZECRt1poOAkPmer3ruw==}
@@ -397,10 +382,6 @@ packages:
 
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
-
-  metaflac-js@1.0.5:
-    resolution: {integrity: sha512-JxMDjEWQRHu+JTvA77vk0uOSt2NGqKYFAcheI8Qop7V5fxsEbRhSSjg8QnAhcmCuMo9zkSLjpj6ndRyZHb77sg==}
-    hasBin: true
 
   mp3tag.js@3.14.1:
     resolution: {integrity: sha512-3yTDNlIagK76KXhwiHQwFCeKUzOWEmGNzo1KRKV5xk6+l4tsCl5/PO8K4mn/xh8qg8QnR9MjkYmZYaPEea5/2g==}
@@ -454,8 +435,8 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
-  sweetalert2@11.12.2:
-    resolution: {integrity: sha512-Rwv5iRYlApkDSXeX22aLhhWMlWPzFxnNBVLZajkFKYhaVEfQkMOPQQRhBtSFxKBPCoko9U3SccWm9hI4o3Id0Q==}
+  sweetalert2@11.26.3:
+    resolution: {integrity: sha512-VU0hGw/WfI9h7Mh+SCsDlWgtxDwWZ6ccqS7QcO8zEeWnwplN1GptcLstq76OluUBSLUza6ldvKd3558OhjpJ9A==}
 
   systemjs@6.15.1:
     resolution: {integrity: sha512-Nk8c4lXvMB98MtbmjX7JwJRgJOL8fluecYCfCeYBznwmpOs8Bf15hLM6z4z71EDAhQVrQrI+wt1aLWSXZq+hXA==}
@@ -667,8 +648,6 @@ snapshots:
     dependencies:
       run-applescript: 7.0.0
 
-  commander@2.20.3: {}
-
   cross-spawn@7.0.6:
     dependencies:
       path-key: 3.1.1
@@ -732,8 +711,6 @@ snapshots:
       '@esbuild/win32-ia32': 0.25.0
       '@esbuild/win32-x64': 0.25.0
 
-  file-type@10.11.0: {}
-
   fsevents@2.3.3:
     optional: true
 
@@ -743,8 +720,6 @@ snapshots:
       domhandler: 5.0.3
       domutils: 3.2.2
       entities: 4.5.0
-
-  image-size@0.6.3: {}
 
   import-meta-resolve@4.1.0: {}
 
@@ -767,12 +742,6 @@ snapshots:
   magic-string@0.30.17:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.0
-
-  metaflac-js@1.0.5:
-    dependencies:
-      commander: 2.20.3
-      file-type: 10.11.0
-      image-size: 0.6.3
 
   mp3tag.js@3.14.1: {}
 
@@ -834,7 +803,7 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
-  sweetalert2@11.12.2: {}
+  sweetalert2@11.26.3: {}
 
   systemjs@6.15.1: {}
 

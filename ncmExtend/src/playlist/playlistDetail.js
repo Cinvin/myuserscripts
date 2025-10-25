@@ -1,9 +1,8 @@
 import { weapiRequest } from "../utils/request"
-import { downloadSongBatch } from "./downloadSongBatch"
-import { uploadSongBatch } from "./uploadSongBatch"
+import { songsDownUpLoad } from "./SongsDownUpLoad"
 import { sortSongs } from "./sortSongs"
 import { getAlbumTextInSongDetail, getArtistTextInSongDetail, escapeHTML, duringTimeDesc } from "../utils/descHelper"
-import {songItemAddToFormat} from "../utils/common"
+import { songItemAddToFormat } from "../utils/common"
 
 class PlaylistDetail {
     constructor() {
@@ -72,6 +71,7 @@ class PlaylistDetail {
                         album: getAlbumTextInSongDetail(songs[i]),
                         song: songs[i],
                         privilege: privileges[j],
+
                     }
                     this.playlistSongList.push(songItem)
                     break
@@ -142,8 +142,7 @@ class PlaylistDetail {
         this.operationArea.children[3].style.display = 'none'
     }
     appendBtns() {
-        downloadSongBatch(this.playlistId, this.operationArea)
-        uploadSongBatch(this.playlistId, this.operationArea)
+        songsDownUpLoad(this.playlistId, this.operationArea)
         const creatorhomeURL = document.head.querySelector("[property~='music:creator'][content]")?.content
         const creatorId = new URLSearchParams(new URL(creatorhomeURL).search).get('id')
         if (creatorId == unsafeWindow.GUser.userId) {
@@ -322,4 +321,4 @@ class PlaylistDetail {
         })
     }
 }
-export let playlistDetailObj = new PlaylistDetail()
+export const playlistDetailObj = new PlaylistDetail()

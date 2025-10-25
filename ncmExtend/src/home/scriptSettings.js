@@ -1,4 +1,5 @@
 import { createBigButton, showTips, showConfirmBox } from "../utils/common"
+import { getDownloadSettings,setDownloadSettings } from "../utils/constant"
 
 export const scriptSettings = (uiArea) => {
     //设置请求头
@@ -9,7 +10,7 @@ export const scriptSettings = (uiArea) => {
         Swal.fire({
             title: '脚本设置',
             showConfirmButton: false,
-            html: `<div><button type="button" class="swal2-styled" id="btn-download-settings">下载设置</button></div>
+            html: `<div><button type="button" class="swal2-styled" id="btn-download-settings">通用下载设置</button></div>
             <div><button type="button" class="swal2-styled" id="btn-header-settings">设置请求头</button></div>`,
             confirmButtonText: '设置',
             didOpen: () => {
@@ -29,32 +30,47 @@ export const scriptSettings = (uiArea) => {
 
     function openDownloadSettingPopup() {
         Swal.fire({
-            title: '下载设置',
+            title: '通用下载设置',
             showCloseButton: true,
             html: `<div>
-<label>是否添加元数据<select id="meta-select" class="swal2-select"><option value="notAppend" selected="">不添加</option><option value="skipCloud">云盘歌曲不添加</option><option value="allAppend">全部添加</option></select></label>
+                        <div><label>文件名格式
+                      <select id="dl-out"  class="swal2-select">
+                        <option value="artist-title">歌手 - 标题</option><option value="title-artist">标题 - 歌手</option><option value="title">仅标题</option>
+                      </select>
+                    </label></div>
+                    <div><label>文件夹格式
+                    <select id="dl-folder" class="swal2-select"><option value="none">不建立文件夹</option><option value="artist">建立歌手文件夹</option><option value="artist-album">建立歌手 \\ 专辑文件夹</option></select>
+                    </label></div>
+                    <div><label>音乐元数据
+                        <select id="dl-appendMeta" class="swal2-select">
+                            <option value="notAppend">不添加</option><option value="skipCloud">云盘歌曲不添加</option><option value="allAppend">全部添加</option>
+                        </select></div>
+                    </label>
 </div>`,
             confirmButtonText: '确定',
             preConfirm: () => {
                 const container = Swal.getHtmlContainer()
 
                 return {
-                    appendMeta: container.querySelector('#meta-select').value.trim(),
+                    appendMeta: container.querySelector('#dl-appendMeta').value.trim(),
+                    out: container.querySelector('#dl-out').value.trim(),
+                    folder: container.querySelector('#dl-folder').value.trim(),
                 }
             },
             didOpen: () => {
-                let container = Swal.getHtmlContainer()
-                let metaInput = container.querySelector('#meta-select')
-                const downloadSettings = JSON.parse(GM_getValue('downloadSettings', '{"appendMeta":"notAppend"}'))
-                if (downloadSettings.appendMeta) {
-                    metaInput.value = downloadSettings.appendMeta
-                }
+                const container = Swal.getHtmlContainer()
+                const downloadSettings = getDownloadSettings()
+                const metaInput = container.querySelector('#dl-appendMeta')
+                metaInput.value = downloadSettings.appendMeta
+                const outinput = container.querySelector('#dl-out')
+                outinput.value = downloadSettings.out
+                const folderInput = container.querySelector('#dl-folder')
+                folderInput.value = downloadSettings.folder
             }
         })
             .then((result) => {
                 if (result.isConfirmed) {
-                    console.log(result.value)
-                    GM_setValue('downloadSettings', JSON.stringify(result.value))
+                    setDownloadSettings(result.value)
                 }
             })
     }
