@@ -5,6 +5,7 @@ import { nameFileWithoutExt, levelDesc } from "../utils/descHelper"
 
 import { albumDetailObj } from '../album/albumDetail'
 import { playlistDetailObj } from '../playlist/playlistDetail'
+import { artistDetailObj } from '../artist/artistDetail'
 import { levelWeight } from '../utils/constant'
 
 const PlayAPIDataLimit = 1000
@@ -115,7 +116,7 @@ export class ncmDownUploadBatch {
                         }
                     }
                     else if (songFileData.md5) {
-                        this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, this.config.out) + '.' + songFileData.type.toLowerCase()
+                        this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, 'artist-title') + '.' + songFileData.type.toLowerCase()
                         this.songs[songIndex].md5 = songFileData.md5
                         this.songs[songIndex].size = songFileData.size
                         this.songs[songIndex].level = songFileData.level
@@ -190,7 +191,7 @@ export class ncmDownUploadBatch {
                     this.skipSongs.push(this.songs[songIndex].title)
                 }
                 else if (content.data.md5) {
-                    this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, this.config.out) + '.' + content.data.type.toLowerCase()
+                    this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, 'artist-title') + '.' + content.data.type.toLowerCase()
                     this.songs[songIndex].md5 = content.data.md5
                     this.songs[songIndex].size = content.data.size
                     this.songs[songIndex].level = content.data.level
@@ -481,6 +482,9 @@ export class ncmDownUploadBatch {
             }
             else if (this.config.listType == 'album') {
                 albumDetailObj.updateSongsCloudStatus(this.successSongsId)
+            }
+            else if (this.config.listType == 'artist') {
+                artistDetailObj.updateSongsCloudStatus(this.successSongsId)
             }
         }
     }

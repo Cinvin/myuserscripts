@@ -1,4 +1,4 @@
-import { createBigButton, showTips, songItemAddToFormat } from "../utils/common"
+import { createBigButton, showTips, songItemAddToFormat,createPageJumpInput } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc } from '../utils/descHelper'
 
@@ -194,6 +194,19 @@ width: 15%;
                         }
                         this.controls.pageArea.appendChild(pageBtn)
                     })
+                    //页码跳转
+                    if (pageIndexs.length < maxPage) {
+                        const jumpToPageInput = createPageJumpInput(this.currentPage, maxPage)
+                        jumpToPageInput.addEventListener('change', () => {
+                            const newPage = parseInt(jumpToPageInput.value)
+                            if (newPage >= 1 && newPage <= maxPage) {
+                                this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (newPage - 1))
+                            } else {
+                                jumpToPageInput.value = this.currentPage
+                            }
+                        })
+                        this.controls.pageArea.appendChild(jumpToPageInput)
+                    }
                     this.fillCloudListTable(res.data)
                 }
             })

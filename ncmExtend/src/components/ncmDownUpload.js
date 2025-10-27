@@ -29,7 +29,7 @@ export class ncmDownUpload {
                     //console.log(content)
                     let resData = content.data[0] || content.data
                     if (resData.url != null) {
-                        song.fileFullName = nameFileWithoutExt(song.title, song.artist, this.out) + '.' + resData.type.toLowerCase()
+                        song.fileFullName = nameFileWithoutExt(song.title, song.artist, 'artist-title') + '.' + resData.type.toLowerCase()
                         song.dlUrl = resData.url
                         song.md5 = resData.md5
                         song.size = resData.size

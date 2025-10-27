@@ -101,7 +101,6 @@ export const handleLyric = (lyricRes) => {
         },
     }
     const notLyricLines = parseNotLyricLines(lrc);
-    console.log(LyricObj,notLyricLines);
     if (LyricObj.orilrc.parsedLyric.length > 0 && LyricObj.tlyriclrc.parsedLyric.length > 0) {
         LyricObj.oritlrc = combineLyric(LyricObj.tlyriclrc, LyricObj.orilrc);
         LyricObj.oritlrc.lyric = notLyricLines.before + LyricObj.oritlrc.lyric + notLyricLines.after;

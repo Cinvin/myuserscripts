@@ -58,6 +58,19 @@ export const createBigButton = (desc, parent, appendWay) => {
     return btn
 }
 
+export const createPageJumpInput = (currentPage, maxPage) => {
+    const jumpToPageInput = document.createElement('input')
+    jumpToPageInput.setAttribute("type", "number")
+    jumpToPageInput.setAttribute("min", 1)
+    jumpToPageInput.setAttribute("max", maxPage)
+    jumpToPageInput.value = currentPage
+    jumpToPageInput.style.width = '50px'
+    jumpToPageInput.style.margin = '.3125em'
+    jumpToPageInput.style.padding = '.625em 1.1em'
+    jumpToPageInput.placeholder = '跳转到页码'
+    return jumpToPageInput
+}
+
 export const downloadFileSync = (url, fileName) => {
     return new Promise((resolve, reject) => {
         GM_download({

@@ -1,18 +1,19 @@
-import { showTips } from "../utils/common"
+import { showTips, createPageJumpInput } from "../utils/common"
 import { getBatchFilter, setBatchFilter, getBatchDownloadSettings, getBatchTransUploadSettings, getDownloadSettings, setBatchDownloadSettings, setBatchTransUploadSettings, setDownloadSettings } from "../utils/constant"
 import { ncmDownUploadBatch } from "../components/ncmDownUploadBatch"
 import { batchDownloadSongs } from "../components/batchDownloadSongs"
 
 // 每页显示数量
 const PAGE_SIZE = 50
+const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
 
 export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
     const songPlayableList = fullSongList.filter(item => item.privilege.plLevel !== 'none');
     if (!songPlayableList || songPlayableList.length === 0) {
-        showTips('没有可操作的歌曲',2)
+        showTips('没有可操作的歌曲', 2)
         return
     }
-    console.log(songPlayableList, defaultConfig)
+    //console.log(songPlayableList, defaultConfig)
 
     // 读取油猴中保存的设置并合并到默认配置（在 state 初始化时完成）
     let _savedBatchDl = {}
@@ -60,7 +61,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
         showConfirmButton: false,
         showCloseButton: true,
         html: `<div style="display:flex;gap:12px;">
-    <div style="width:260px;border-right:1px solid #eee;padding-right:8px;box-sizing:border-box;">
+    <div style="width:150px;border-right:1px solid #eee;padding-right:8px;box-sizing:border-box;">
       <ul id="bm-nav" style="list-style:none;padding:0;margin:0;">
         <li><button data-view="songs" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">歌曲列表</button></li>
         <li style="margin-top:6px;"><button data-view="filter" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">过滤条件</button></li>
@@ -68,11 +69,14 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
         <li style="margin-top:6px;"><button data-view="up" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">转存设置</button></li>
       </ul>
       <div id="bm-nav-desc" style="margin-top:16px;color:#666;font-size:13px;">仅显示可操作的歌曲</div>
+      ${defaultConfig.listType === 'artist' ? '<div style="margin-top:16px;color:#666;font-size:13px;">对歌手歌曲进行了一定的去重。若一首歌的重复版本是云盘歌曲，其也视作云盘歌曲。</div>' : ''}
     </div>
     <div style="flex:1;padding-left:8px;box-sizing:border-box;">
       <div id="bm-toolbar" style="display:flex;gap:8px;margin-bottom:8px;">
+        <button id="bm-select-page-all" type="button" class="swal2-styled">本页全选择</button>
+        <button id="bm-clear-page-all" type="button" class="swal2-styled">本页全取消</button>
         <button id="bm-select-all" type="button" class="swal2-styled">全部选择</button>
-        <button id="bm-clear-select" type="button" class="swal2-styled">取消已选</button>
+        <button id="bm-clear-select" type="button" class="swal2-styled">全部取消</button>
         <button id="bm-download-all" type="button" class="swal2-styled">下载已选</button>
         <button id="bm-upload-all" type="button" class="swal2-styled">转存已选</button>
       </div>
@@ -82,6 +86,8 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
   </div>`,
         didOpen: () => {
             const container = Swal.getHtmlContainer()
+            const btnSelectPageAll = container.querySelector('#bm-select-page-all')
+            const btnClearPageAll = container.querySelector('#bm-clear-page-all')
             const btnSelectAll = container.querySelector('#bm-select-all')
             const btnClearSelect = container.querySelector('#bm-clear-select')
             const btnDownloadAll = container.querySelector('#bm-download-all')
@@ -101,7 +107,25 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     renderView()
                 })
             })
-
+            btnSelectPageAll.addEventListener('click', () => {
+                // 仅对当前页的歌曲进行全选
+                const filtered = filteredSongs()
+                const begin = (state.page - 1) * PAGE_SIZE
+                //const pageSongs = filtered.slice(begin, begin + PAGE_SIZE)
+                for (let i = begin; i < begin + PAGE_SIZE && i < filtered.length; i++) {
+                    filtered[i].selected = true
+                }
+                renderView()
+            })
+            btnClearPageAll.addEventListener('click', () => {
+                // 仅对当前页的歌曲进行取消选择
+                const filtered = filteredSongs()
+                const begin = (state.page - 1) * PAGE_SIZE
+                for (let i = begin; i < begin + PAGE_SIZE && i < filtered.length; i++) {
+                    filtered[i].selected = false
+                }
+                renderView()
+            })
             btnSelectAll.addEventListener('click', () => {
                 // 仅对当前过滤条件匹配的歌曲进行全部选择（跨页）
                 const filtered = filteredSongs()
@@ -117,12 +141,10 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
 
             btnDownloadAll.addEventListener('click', () => {
                 const toDl = state.songs.filter(s => s.selected)
-                console.log(toDl, state.downloadConfig)
                 if (toDl.length === 0) {
                     showTips('未选择歌曲', 2)
                     return
                 }
-                console.log(toDl, state.downloadConfig)
                 batchDownloadSongs(toDl, state.downloadConfig)
             })
             btnUploadAll.addEventListener('click', () => {
@@ -158,6 +180,16 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     else if (s.privilege.fee === 8) {
                         if (!state.filterOptions.lowfree) return false
                     }
+                    // 纯音乐
+                    if ((s.song.mark & 131072) === 131072 && !state.filterOptions.instrumental) return false
+                    // 现场版
+                    if (!state.filterOptions.live){
+                        if(s.song.album && s.song.album.subType === '现场版') return false
+                        if(s.song.additionalTitle){
+                            if(s.song.additionalTitle.toLowerCase().includes('live')) return false
+                        }
+                        else if(liveRegex.test(s.title.toLowerCase())) return false
+                    }
                     if (s.privilege.cs && !state.filterOptions.cloud) return false
                     if (!state.filterText) return true
                     const t = state.filterText.toLowerCase()
@@ -188,33 +220,47 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
             }
 
             function renderSongsView() {
-                // 强制 mainContent 固定宽度为 625px（与请求保持一致）
-                mainContent.style.width = '625px'
+                // 强制 mainContent 固定宽度为 735px（与请求保持一致）
+                mainContent.style.width = '735px'
                 mainContent.style.boxSizing = 'border-box'
                 const pageSongs = currentPageSongs()
                 mainContent.innerHTML = ''
                 pageSongs.forEach(s => {
                     const row = document.createElement('div')
-                    // 容器为 mainContent 的宽度（625px），各列使用固定/弹性宽度并保证文本溢出省略
+                    // 容器为 mainContent 的宽度（735px），各列使用固定/弹性宽度并保证文本溢出省略
                     row.style = 'display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #f0f0f0;width:100%;box-sizing:border-box;min-width:0;'
-                    row.innerHTML = `
-                      <div style="flex:0 0 36px;display:flex;align-items:center;justify-content:center;">
-                        <input type="checkbox" ${s.selected ? 'checked' : ''} style="width:16px;height:16px;">
-                      </div>
-                      <div style="flex:0 0 56px;display:flex;align-items:center;justify-content:center;">
-                      <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" title="${s.album}">
-                        <img src="${s.song.al.picUrl + '?param=50y50&quality=100'}" alt="cover" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5">
-                      </a>
-                      </div>
-                      <!-- 文本区域：在固定总宽下使用弹性伸缩并保证溢出省略 -->
-                      <div style="flex:1 1 auto;min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:4px;">
-                        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">
-                          <a href="https://music.163.com/#/song?id=${s.song.id}" target="_blank">${s.title}</a>
-                        </div>
-                        <div style="font-size:12px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">
-                          ${s.artist}
-                        </div>
-                      </div>
+                    row.innerHTML = ` 
+  <!-- 复选框：固定宽度，居中 -->
+  <div style="flex: 0 0 36px; display: flex; align-items: center; justify-content: center;">
+    <input type="checkbox" style="width: 16px; height: 16px; " ${s.selected ? 'checked' : ''}>
+  </div>
+  
+  <!-- 封面：固定宽度，居中 -->
+  <div style="flex: 0 0 56px; display: flex; align-items: center; justify-content: center;">
+    <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" title="${s.album}" style="display: block;">
+      <img src="${s.song.al.picUrl + '?param=50y50&quality=100'}" 
+           alt="cover" 
+           style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; background: #f5f5f5; transition: transform 0.2s ease;">
+    </a>
+  </div>
+  
+  <!-- 歌曲信息：弹性伸缩，优先占用空间 -->
+  <div style="flex: 2 1 200px; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
+    <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
+      <a href="https://music.163.com/#/song?id=${s.song.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${s.title}</a>
+    </div>
+    <div style="font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
+    ${(s.song.mark & 1048576) === 1048576 ? '🅴 ' : ''}
+      ${s.artist}
+    </div>
+  </div>
+  
+  <!-- 专辑信息：弹性伸缩，次要占用空间 -->
+  <div style="flex: 1 1 120px; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center;">
+    <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
+      <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${s.album}</a>
+    </div>
+  </div>
                     `
                     const chk = row.querySelector('input[type=checkbox]')
                     chk.addEventListener('change', () => {
@@ -229,14 +275,22 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <input id="bm-filter-input" class="swal2-input" placeholder="过滤：标题/歌手/专辑" value="${state.filterText}">
                     <div>
-                      <label style="margin-right:12px"><input id="bm-filter-cb-free" type="checkbox" ${state.filterOptions.free ? 'checked' : ''}> 免费</label>
-                      <label style="margin-right:12px"><input id="bm-filter-cb-lowfree" type="checkbox" ${state.filterOptions.lowfree ? 'checked' : ''}> 128k音质免费</label>
-                      <label style="margin-right:12px"><input id="bm-filter-cb-vip" type="checkbox" ${state.filterOptions.vip ? 'checked' : ''}> VIP</label>
-                      <label style="margin-right:12px"><input id="bm-filter-cb-pay" type="checkbox" ${state.filterOptions.pay ? 'checked' : ''}> 数字专辑</label>
+                        歌曲收费类型：
+                      <div>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-lowfree" type="checkbox" ${state.filterOptions.lowfree ? 'checked' : ''}> 最高极高音质试听</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-free" type="checkbox" ${state.filterOptions.free ? 'checked' : ''}> 前者基础上+最高HiRes音质下载</label></div>
+                      <div><label style="margin-right:12px"><input id="bm-filter-cb-vip" type="checkbox" ${state.filterOptions.vip ? 'checked' : ''}> VIP</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-pay" type="checkbox" ${state.filterOptions.pay ? 'checked' : ''}> 数字专辑</label></div>
                     </div>
                     <div>
                       <label style="margin-right:12px"><input id="bm-filter-cb-cloud" type="checkbox" ${state.filterOptions.cloud ? 'checked' : ''}>显示云盘歌曲</label>
                     </div>
+                    <div>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-instrumental" type="checkbox" ${state.filterOptions.instrumental ? 'checked' : ''}>纯音乐</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-live" type="checkbox" ${state.filterOptions.live ? 'checked' : ''}>歌曲标题含有(Live)或歌曲的专辑类型是现场版</label>
+                    </div>
+                    <div style="margin-top:16px;color:#666;font-size:13px;">专辑页面无法识别纯音乐</div>
+                    <div style="margin-top:16px;color:#666;font-size:13px;">”歌曲的专辑类型是现场版“仅在歌手页面能识别</div>
                   </div>
                 `
                 const input = mainContent.querySelector('#bm-filter-input')
@@ -361,14 +415,41 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
 
             function renderPager() {
                 pager.innerHTML = ''
-                for (let p = 1; p <= state.pageMax; p++) {
-                    const btn = document.createElement('button')
-                    btn.className = 'swal2-styled'
-                    btn.style.margin = '2px'
-                    btn.textContent = p
-                    if (p === state.page) btn.style.background = '#fff'
-                    else btn.addEventListener('click', () => { state.page = p; renderView() })
-                    pager.appendChild(btn)
+
+                let pageIndexs = [1]
+                let floor = Math.max(2, state.page - 2);
+                let ceil = Math.min(state.pageMax - 1, state.page + 2);
+                for (let i = floor; i <= ceil; i++) {
+                    pageIndexs.push(i)
+                }
+                if (state.pageMax > 1) {
+                    pageIndexs.push(state.pageMax)
+                }
+                pageIndexs.forEach(pageIndex => {
+                    let pageBtn = document.createElement('button')
+                    pageBtn.setAttribute("type", "button")
+                    pageBtn.className = "swal2-styled"
+                    pageBtn.innerHTML = pageIndex
+                    if (pageIndex != state.page) {
+                        pageBtn.addEventListener('click', () => { state.page = pageIndex; renderView() })
+                    } else {
+                        pageBtn.style.background = 'white'
+                    }
+                    pager.appendChild(pageBtn)
+                })
+                //页码跳转
+                if (pageIndexs.length < state.pageMax) {
+                    const jumpToPageInput = createPageJumpInput(state.page, state.pageMax)
+                    jumpToPageInput.addEventListener('change', () => {
+                        const newPage = parseInt(jumpToPageInput.value)
+                        if (newPage >= 1 && newPage <= state.pageMax) {
+                            state.page = newPage;
+                            renderView()
+                        } else {
+                            jumpToPageInput.value = state.page
+                        }
+                    })
+                    pager.appendChild(jumpToPageInput)
                 }
             }
 

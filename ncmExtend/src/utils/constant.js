@@ -4,10 +4,12 @@ export const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 
 export const defaultOfDEFAULT_LEVEL = 'jymaster'
 // 默认的批量操作的歌曲过滤条件
 const defaultOfBatchFilter = {
-    free: true, // 免费
+    free: true, // 极高音质试听+HiRes音质下载
     vip: true, // VIP
     pay: true, // 付费
-    lowfree: true, // 低码率免费
+    lowfree: true, // 极高音质试听
+    instrumental: true, // 纯音乐
+    live: true, // 现场版
     cloud: false, // 云盘歌曲
 }
 export const getBatchFilter = () => {

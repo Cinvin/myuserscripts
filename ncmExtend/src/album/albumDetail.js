@@ -25,7 +25,7 @@ class AlbumDetail {
                         id: content.songs[i].id,
                         title: content.songs[i].name,
                         artist: getArtistTextInSongDetail(content.songs[i]),
-                        album: getAlbumTextInSongDetail(content.songs[i]),
+                        album: content.album.name,
                         song: content.songs[i],
                         privilege: content.songs[i].privilege,
                     }

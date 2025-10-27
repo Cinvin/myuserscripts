@@ -5,6 +5,7 @@ import { myHomeMain } from './home/main'
 import { songDetailObj } from './song/songDetail'
 import { albumDetailObj } from './album/albumDetail'
 import { playlistDetailObj } from './playlist/playlistDetail'
+import { artistDetailObj } from './artist/artistDetail'
 
 import { hookWindowForCommentBox, observerCommentBox, addCommentWithCumstomIP } from './commentBox'
 
@@ -57,6 +58,9 @@ export const onDomReady = () => {
         }
         else if (url.includes('/album?')) {
             albumDetailObj.onDomReady()
+        }
+        else if (url.includes('/artist?')) {
+            artistDetailObj.onDomReady()
         }
     }
 

@@ -34,3 +34,8 @@ export const weapi = (object) => {
     encSecKey: rsaEncrypt(secretKey.split('').reverse().join(''), publicKey),
   }
 }
+export const getMD5 = (text) => {
+  const md = forge.md.md5.create();
+  md.update(text);
+  return md.digest().toHex()
+}
