@@ -367,14 +367,15 @@ export class ncmDownUploadBatch {
                             this.importSongsSub(index)
                         })
                     }
+                    return
                 }
                 console.log('歌曲导入云盘接口', content)
                 if (content.data.successSongs.length > 0) {
-                    let successSongs = []
                     content.data.successSongs.forEach(successSong => {
                         let songId = songCloudIdMap[successSong.songId]
                         this.songs[this.songIdIndexsMap[songId]].cloudSongId = successSong.song.songId
                     })
+                    this.addLog(`导入${content.data.successSongs.length} 首歌曲`)
                 }
                 if (content.data.failed.length > 0) {
                     console.error('导入歌曲接口，存在上传失败歌曲。', content.data.failed)

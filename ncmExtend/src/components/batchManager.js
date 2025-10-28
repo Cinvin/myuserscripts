@@ -51,7 +51,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
         }, defaultConfig),
         uploadConfig: Object.assign({
             level: _savedBatchUp.level || 'jymaster',
-            levelonly: !!_savedBatchUp.levelonly || false,
+            targetLevelOnly: !!_savedBatchUp.levelonly || false,
             // 转存相关设置占位
         }, defaultConfig)
     }
@@ -181,7 +181,13 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                         if (!state.filterOptions.lowfree) return false
                     }
                     // 纯音乐
-                    if ((s.song.mark & 131072) === 131072 && !state.filterOptions.instrumental) return false
+                    if (!state.filterOptions.instrumental) {
+                        if((s.song.mark & 131072) === 131072) return false
+                        if(s.song.additionalTitle){
+                            if(s.song.additionalTitle.toLowerCase().includes('instrumental')) return false
+                        }
+                        else if(s.title.toLowerCase().includes('instrumental')) return false
+                    }
                     // 现场版
                     if (!state.filterOptions.live){
                         if(s.song.album && s.song.album.subType === '现场版') return false
@@ -232,7 +238,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     row.innerHTML = ` 
   <!-- 复选框：固定宽度，居中 -->
   <div style="flex: 0 0 36px; display: flex; align-items: center; justify-content: center;">
-    <input type="checkbox" style="width: 16px; height: 16px; " ${s.selected ? 'checked' : ''}>
+    <input type="checkbox" style="width: 25px; height: 25px; " ${s.selected ? 'checked' : ''}>
   </div>
   
   <!-- 封面：固定宽度，居中 -->
@@ -277,6 +283,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     <div>
                         歌曲收费类型：
                       <div>
+                      （免费用户）
                       <label style="margin-right:12px"><input id="bm-filter-cb-lowfree" type="checkbox" ${state.filterOptions.lowfree ? 'checked' : ''}> 最高极高音质试听</label>
                       <label style="margin-right:12px"><input id="bm-filter-cb-free" type="checkbox" ${state.filterOptions.free ? 'checked' : ''}> 前者基础上+最高HiRes音质下载</label></div>
                       <div><label style="margin-right:12px"><input id="bm-filter-cb-vip" type="checkbox" ${state.filterOptions.vip ? 'checked' : ''}> VIP</label>
@@ -383,7 +390,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || '4'), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly })
                 })
                 cbLevelOnly.addEventListener('change', (e) => {
-                    state.downloadConfig.levelonly = e.target.checked
+                    state.downloadConfig.targetLevelOnly = e.target.checked
                     setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || '4'), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly })
                 })
             }
