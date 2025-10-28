@@ -92,7 +92,7 @@ tr th:nth-child(6),tr td:nth-child(7){
 width: 15%;
 }
 </style>
-<input id="text-filter" class="swal2-input" placeholder="歌曲过滤">
+<input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
 <div id="my-cbs">
 <input class="form-check-input" type="checkbox" value="" id="cb-copyright" checked><label class="form-check-label" for="cb-copyright">无版权</label>
 <input class="form-check-input" type="checkbox" value="" id="cb-vip" checked><label class="form-check-label" for="cb-vip">VIP</label>
@@ -153,6 +153,7 @@ width: 15%;
                 this.btnUploadBatch.addEventListener('click', () => {
                     if (this.batchUpload.working) {
                         this.batchUpload.stopFlag = true
+                        this.btnUploadBatch.innerHTML = "正在停止"
                         return
                     }
                     this.batchUpload.songIndexs = []

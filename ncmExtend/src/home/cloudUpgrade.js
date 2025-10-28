@@ -61,6 +61,7 @@ export const cloudUpgrade = (uiArea) => {
                 threadMax: 1,
                 threadCount: 1,
                 working: false,
+                stopFlag: false,
                 finnishThread: 0,
                 songIndexs: []
             }
@@ -123,7 +124,7 @@ tr th:nth-child(5),tr td:nth-child(6){
 width: 16%;
 }
 </style>
-<input id="text-filter" class="swal2-input" placeholder="歌曲过滤">
+<input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
 <button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upgrade-batch">全部提升音质</button>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>云盘音源</th><th>目标音源</th> </tr></thead><tbody></tbody></table>
 `,
@@ -149,6 +150,8 @@ width: 16%;
                     this.btnUpgradeBatch = container.querySelector('#btn-upgrade-batch')
                     this.btnUpgradeBatch.addEventListener('click', () => {
                         if (this.batchUpgrade.working) {
+                            this.batchUpgrade.stopFlag = true
+                            this.btnUpgradeBatch.innerHTML = "正在停止"
                             return
                         }
 
@@ -163,7 +166,9 @@ width: 16%;
                             showTips('没有需要提升的歌曲', 1)
                             return
                         }
+                        this.btnUpgradeBatch.innerHTML = "停止"
                         this.batchUpgrade.working = true
+                        this.batchUpgrade.stopFlag = false
                         this.batchUpgrade.finnishThread = 0
                         this.batchUpgrade.threadCount = Math.min(this.batchUpgrade.songIndexs.length, this.batchUpgrade.threadMax)
                         for (let i = 0; i < this.batchUpgrade.threadCount; i++) {
@@ -171,6 +176,9 @@ width: 16%;
                         }
                     })
                     this.fetchSongInfo()
+                },
+                willClose: () => {
+                    this.batchUpgrade.stopFlag = true
                 },
             })
         }
@@ -200,7 +208,7 @@ width: 16%;
                         upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲 找到${songIds.length}首可能有提升的歌曲`
                     })
                     if (res.hasMore) {
-                    //if (offset < 2000) {//testing
+                        //if (offset < 2000) {//testing
                         res = {}
                         upgrader.fetchCloudSongInfoSub(offset + 1000, songIds)
                     } else {
@@ -241,13 +249,13 @@ width: 16%;
                                 let cloudBr = content.songs[i].pc.br
                                 if (upgrader.targetLevel == 'lossless' && content.songs[i].sq) {
                                     songItem.fileinfo = { originalLevel: content.privileges[j].plLevel, originalBr: content.songs[i].pc.br, tagetBr: Math.round(content.songs[i].sq.br / 1000) }
-                                    if(songItem.fileinfo.originalBr+10<=songItem.fileinfo.tagetBr){
+                                    if (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr) {
                                         upgrader.songs.push(songItem)
                                     }
                                 }
                                 else if (upgrader.targetLevel == 'hires' && content.songs[i].hr) {
                                     songItem.fileinfo = { originalLevel: content.privileges[j].plLevel, originalBr: content.songs[i].pc.br, tagetBr: Math.round(content.songs[i].hr.br / 1000) }
-                                    if(songItem.fileinfo.originalBr+10<=songItem.fileinfo.tagetBr){
+                                    if (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr) {
                                         upgrader.songs.push(songItem)
                                     }
                                 }
@@ -388,12 +396,13 @@ width: 16%;
         onUpgradeFinnsh(songIndex) {
             if (this.batchUpgrade.working) {
                 let batchSongIdx = this.batchUpgrade.songIndexs.indexOf(songIndex)
-                if (batchSongIdx + this.batchUpgrade.threadCount < this.batchUpgrade.songIndexs.length) {
+                if (!this.batchUpgrade.stopFlag && batchSongIdx + this.batchUpgrade.threadCount < this.batchUpgrade.songIndexs.length) {
                     this.upgradeSong(this.batchUpgrade.songIndexs[batchSongIdx + this.batchUpgrade.threadCount])
                 } else {
                     this.batchUpgrade.finnishThread += 1
                     if (this.batchUpgrade.finnishThread == this.batchUpgrade.threadCount) {
                         this.batchUpgrade.working = false
+                        this.batchUpgrade.stopFlag = false
                         this.renderFilterInfo()
                         showTips('歌曲提升完成', 1)
                     }

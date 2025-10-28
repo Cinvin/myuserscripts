@@ -113,7 +113,7 @@ width: 15%;
     visibility: hidden;
   }
 </style>
-<input class="swal2-input" value="${this.filter.text}" id="text-filter" placeholder="歌曲过滤">
+<input class="swal2-input" value="${this.filter.text}" id="text-filter" placeholder="过滤：标题/歌手/专辑">
 <input class="form-check-input" type="checkbox" value="" id="cb-notmatch" ${this.filter.notMatch ? 'checked' : ''}><label class="form-check-label" for="cb-notmatch">未匹配歌曲</label>
 `,
                 footer: `<div id="page-area"></div><br><div id="cloud-desc">${this.controls.cloudDesc ? this.controls.cloudDesc.innerHTML : ''}</div>`,

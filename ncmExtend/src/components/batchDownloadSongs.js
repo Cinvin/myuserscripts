@@ -326,6 +326,7 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                 else if (songItem.ext == 'flac') {
                     const flac = new MetaFlac(songItem.download.musicFile);
                     flac.removeAllTags();
+                    flac.removeAllPictures();
                     flac.setTag(`TITLE=${songItem.title}`);
                     flac.setTag(`ARTIST=${songItem.artist}`);
                     if (songItem.album.length > 0) flac.setTag(`ALBUM=${songItem.album}`);

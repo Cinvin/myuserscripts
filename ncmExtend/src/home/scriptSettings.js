@@ -1,5 +1,5 @@
 import { createBigButton, showTips, showConfirmBox } from "../utils/common"
-import { getDownloadSettings,setDownloadSettings } from "../utils/constant"
+import { getDownloadSettings, setDownloadSettings } from "../utils/constant"
 
 export const scriptSettings = (uiArea) => {
     //设置请求头
@@ -91,9 +91,13 @@ export const scriptSettings = (uiArea) => {
                 }
             },
             didOpen: () => {
-                let container = Swal.getHtmlContainer()
-                let cookieInput = container.querySelector('#text-cookie')
-                let userAgentInput = container.querySelector('#text-userAgent')
+                const container = Swal.getHtmlContainer()
+                const actions = Swal.getActions()
+                actions.innerHTML = `<div class="swal2-loader"></div>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-cancel-set" style="display: inline-block;">清除设置</button>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-set" style="display: inline-block;">设置</button>`
+                const cookieInput = container.querySelector('#text-cookie')
+                const userAgentInput = container.querySelector('#text-userAgent')
                 const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
                 if (requestHeader.originalCookie) {
                     cookieInput.value = requestHeader.originalCookie
@@ -101,13 +105,22 @@ export const scriptSettings = (uiArea) => {
                 if (requestHeader.userAgent) {
                     userAgentInput.value = requestHeader.userAgent
                 }
-            },
+
+                const btnCancelSet = actions.querySelector('#btn-cancel-set')
+                const btnSet = actions.querySelector('#btn-set')
+                btnCancelSet.addEventListener('click', () => {
+                    removeHeader();
+                    Swal.close();
+                });
+                 btnSet.addEventListener('click', () => {
+                    setHeader({
+                        cookie: cookieInput.value.trim(),
+                        userAgent: userAgentInput.value.trim(),
+                    });
+                    Swal.close();
+                });
+            }
         })
-            .then((result) => {
-                if (result.isConfirmed) {
-                    setHeader(result.value)
-                }
-            })
     }
     function setHeader(config) {
         const cookieObject = tryParseJSON(config.cookie) || parseCookie(config.cookie)
@@ -167,6 +180,9 @@ export const scriptSettings = (uiArea) => {
                 console.error(error);
             }
         });
+    }
+    function removeHeader() {
+        GM_setValue('requestHeader', '{}')
     }
     function parseCookie(cookieString) {
         return cookieString
