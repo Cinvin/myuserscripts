@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         网易云音乐:云盘快传(含周杰伦)|歌曲下载&转存云盘|云盘匹配纠正|高音质试听
+// @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.3.1
+// @version      4.3.2
 // @author       cinvin
-// @description  无需文件云盘快传歌曲(含周杰伦)、歌曲下载&转存云盘(可批量)、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、专辑页加载Disc信息、限免VIP歌曲下载上传、云盘音质提升、本地文件上传云盘、云盘导入导出。
+// @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAALiSURBVHgBpVZLThtBEH3d40WkIGWWSSDSGMw6cAP7BBlOgDkB5gSYE2BOgDlBnBNgToCzDmQmii0iZYEXsRRBPJ1X6R4+Mz3IKLVxT1f1q9/rais8IQmiCLjZNlBNA8O1iqzGpAoqNcAnjfmgjh9pFYbyA7+ODIJjAjSxmPTp6MDnSJfBV3YzBOfPABdp88zpBd7ERcWjDC7xdp9bXfyXZHtruOqVHNjITW8RCGZ3xOSHClnITwaF6KFeQ7XqGA/tGrbmBO9W4E0tIFL33W9g0gmQpWuY9A30XvEAsT4mCMM7B3MEXf6EZUN8ZvM2BVAY47bPyK6QuvNLLCcGWdcTFPVLnX8OJHrWadsHXsOsKeuvWD6lza7ThHWkzEqJw4gRvodXzK5kodn92KNNa5hz/0Uo7BBGicOMtc0b2MA4ZnZ17h34HUgWL9uakX3wKIfCaVe6yDqcNWv4NUrINIkswfKGGK5j3K1yItkp1vEahfpr3GwCwZTRJ25rRxoqNbdlUS2gNspwe02Qdh2TEymj5+6MNDzNreMnDwfNe4ezwQXexS4bksLE0geOC9qhJxkR/ASeMmlUS1ilCIBXdmWm1m5pg/0Y+mzFQVrclIhY11H+zWbFDXwfkDlHjHrAHA7svMKGzWheFcxUmpwWdwWwxhqLgds6FEAyp7OK8Rbwm/3R+3BZBjCjP6hFRRxO4G96DnVWVMi9kBpzmbND6JpII8meYwbAZqu20/WFcQqmXcZRA2Vv5e01SmKH1hesdDXMPjzCQDiPZlvuviRFvdwTbdmAYfm4PpTxKzwXQ2EJ7UbusWE/sq1VTFr5ZfT4d5khH3bBOfzMqXxMeC/a/Dn0nEt5pnXnwBl3nLFXJEsZF7IWmnIdVwQEya6Bq4E7dy9P1XtRoeO9dUzKD04uLpM7Cj5DOGGznTzyXEo3mTOnJ29AxdWvkr59Nx6Di6inTrnmxzJx3a11WT382zIjW6bTKoy/H+Iy6oHlZ+kAAAAASUVORK5CYII=
 // @match        https://music.163.com/*
@@ -37,13 +37,17 @@
   const defaultOfDEFAULT_LEVEL = "jymaster";
   const defaultOfBatchFilter = {
     free: true,
-    // 免费
+    // 极高音质试听+HiRes音质下载
     vip: true,
     // VIP
     pay: true,
     // 付费
     lowfree: true,
-    // 低码率免费
+    // 极高音质试听
+    instrumental: true,
+    // 纯音乐
+    live: true,
+    // 现场版
     cloud: false
     // 云盘歌曲
   };
@@ -130,6 +134,11 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       ),
       encSecKey: rsaEncrypt(secretKey.split("").reverse().join(""), publicKey)
     };
+  };
+  const getMD5 = (text) => {
+    const md = forge.md.md5.create();
+    md.update(text);
+    return md.digest().toHex();
   };
   var CookieMap = {
     web: true,
@@ -402,6 +411,18 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     }
     return btn;
   };
+  const createPageJumpInput = (currentPage, maxPage) => {
+    const jumpToPageInput = document.createElement("input");
+    jumpToPageInput.setAttribute("type", "number");
+    jumpToPageInput.setAttribute("min", 1);
+    jumpToPageInput.setAttribute("max", maxPage);
+    jumpToPageInput.value = currentPage;
+    jumpToPageInput.style.width = "50px";
+    jumpToPageInput.style.margin = ".3125em";
+    jumpToPageInput.style.padding = ".625em 1.1em";
+    jumpToPageInput.placeholder = "跳转到页码";
+    return jumpToPageInput;
+  };
   const downloadFileSync = (url2, fileName) => {
     return new Promise((resolve, reject) => {
       GM_download({
@@ -527,9 +548,13 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
           };
         },
         didOpen: () => {
-          let container = Swal.getHtmlContainer();
-          let cookieInput = container.querySelector("#text-cookie");
-          let userAgentInput = container.querySelector("#text-userAgent");
+          const container = Swal.getHtmlContainer();
+          const actions = Swal.getActions();
+          actions.innerHTML = `<div class="swal2-loader"></div>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-cancel-set" style="display: inline-block;">清除设置</button>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-set" style="display: inline-block;">设置</button>`;
+          const cookieInput = container.querySelector("#text-cookie");
+          const userAgentInput = container.querySelector("#text-userAgent");
           const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
           if (requestHeader.originalCookie) {
             cookieInput.value = requestHeader.originalCookie;
@@ -537,10 +562,19 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
           if (requestHeader.userAgent) {
             userAgentInput.value = requestHeader.userAgent;
           }
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          setHeader(result.value);
+          const btnCancelSet = actions.querySelector("#btn-cancel-set");
+          const btnSet = actions.querySelector("#btn-set");
+          btnCancelSet.addEventListener("click", () => {
+            removeHeader();
+            Swal.close();
+          });
+          btnSet.addEventListener("click", () => {
+            setHeader({
+              cookie: cookieInput.value.trim(),
+              userAgent: userAgentInput.value.trim()
+            });
+            Swal.close();
+          });
         }
       });
     }
@@ -599,6 +633,9 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
           console.error(error);
         }
       });
+    }
+    function removeHeader() {
+      GM_setValue("requestHeader", "{}");
     }
     function parseCookie(cookieString) {
       return cookieString.split(";").map((part) => part.trim()).filter((part) => part).reduce((cookies, part) => {
@@ -714,7 +751,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       }
     };
     const notLyricLines = parseNotLyricLines(lrc);
-    console.log(LyricObj, notLyricLines);
     if (LyricObj.orilrc.parsedLyric.length > 0 && LyricObj.tlyriclrc.parsedLyric.length > 0) {
       LyricObj.oritlrc = combineLyric(LyricObj.tlyriclrc, LyricObj.orilrc);
       LyricObj.oritlrc.lyric = notLyricLines.before + LyricObj.oritlrc.lyric + notLyricLines.after;
@@ -1496,6 +1532,7 @@ width: 10%;
           } else if (songItem.ext == "flac") {
             const flac = new MetaFlac(songItem.download.musicFile);
             flac.removeAllTags();
+            flac.removeAllPictures();
             flac.setTag(`TITLE=${songItem.title}`);
             flac.setTag(`ARTIST=${songItem.artist}`);
             if (songItem.album.length > 0) flac.setTag(`ALBUM=${songItem.album}`);
@@ -1536,13 +1573,13 @@ width: 10%;
     }
   };
   const PAGE_SIZE = 50;
+  const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
   const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
     const songPlayableList = fullSongList.filter((item) => item.privilege.plLevel !== "none");
     if (!songPlayableList || songPlayableList.length === 0) {
       showTips("没有可操作的歌曲", 2);
       return;
     }
-    console.log(songPlayableList, defaultConfig);
     let _savedBatchDl = {};
     let _savedBatchUp = {};
     let _savedDl = {};
@@ -1583,7 +1620,7 @@ width: 10%;
       }, defaultConfig),
       uploadConfig: Object.assign({
         level: _savedBatchUp.level || "jymaster",
-        levelonly: !!_savedBatchUp.levelonly || false
+        targetLevelOnly: !!_savedBatchUp.levelonly || false
         // 转存相关设置占位
       }, defaultConfig)
     };
@@ -1592,7 +1629,7 @@ width: 10%;
       showConfirmButton: false,
       showCloseButton: true,
       html: `<div style="display:flex;gap:12px;">
-    <div style="width:260px;border-right:1px solid #eee;padding-right:8px;box-sizing:border-box;">
+    <div style="width:150px;border-right:1px solid #eee;padding-right:8px;box-sizing:border-box;">
       <ul id="bm-nav" style="list-style:none;padding:0;margin:0;">
         <li><button data-view="songs" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">歌曲列表</button></li>
         <li style="margin-top:6px;"><button data-view="filter" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">过滤条件</button></li>
@@ -1600,11 +1637,14 @@ width: 10%;
         <li style="margin-top:6px;"><button data-view="up" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">转存设置</button></li>
       </ul>
       <div id="bm-nav-desc" style="margin-top:16px;color:#666;font-size:13px;">仅显示可操作的歌曲</div>
+      ${defaultConfig.listType === "artist" ? '<div style="margin-top:16px;color:#666;font-size:13px;">对歌手歌曲进行了一定的去重。若一首歌的重复版本是云盘歌曲，其也视作云盘歌曲。</div>' : ""}
     </div>
     <div style="flex:1;padding-left:8px;box-sizing:border-box;">
       <div id="bm-toolbar" style="display:flex;gap:8px;margin-bottom:8px;">
+        <button id="bm-select-page-all" type="button" class="swal2-styled">本页全选择</button>
+        <button id="bm-clear-page-all" type="button" class="swal2-styled">本页全取消</button>
         <button id="bm-select-all" type="button" class="swal2-styled">全部选择</button>
-        <button id="bm-clear-select" type="button" class="swal2-styled">取消已选</button>
+        <button id="bm-clear-select" type="button" class="swal2-styled">全部取消</button>
         <button id="bm-download-all" type="button" class="swal2-styled">下载已选</button>
         <button id="bm-upload-all" type="button" class="swal2-styled">转存已选</button>
       </div>
@@ -1614,6 +1654,8 @@ width: 10%;
   </div>`,
       didOpen: () => {
         const container = Swal.getHtmlContainer();
+        const btnSelectPageAll = container.querySelector("#bm-select-page-all");
+        const btnClearPageAll = container.querySelector("#bm-clear-page-all");
         const btnSelectAll = container.querySelector("#bm-select-all");
         const btnClearSelect = container.querySelector("#bm-clear-select");
         const btnDownloadAll = container.querySelector("#bm-download-all");
@@ -1630,6 +1672,22 @@ width: 10%;
             renderView();
           });
         });
+        btnSelectPageAll.addEventListener("click", () => {
+          const filtered = filteredSongs();
+          const begin = (state.page - 1) * PAGE_SIZE;
+          for (let i = begin; i < begin + PAGE_SIZE && i < filtered.length; i++) {
+            filtered[i].selected = true;
+          }
+          renderView();
+        });
+        btnClearPageAll.addEventListener("click", () => {
+          const filtered = filteredSongs();
+          const begin = (state.page - 1) * PAGE_SIZE;
+          for (let i = begin; i < begin + PAGE_SIZE && i < filtered.length; i++) {
+            filtered[i].selected = false;
+          }
+          renderView();
+        });
         btnSelectAll.addEventListener("click", () => {
           const filtered = filteredSongs();
           filtered.forEach((s) => s.selected = true);
@@ -1642,12 +1700,10 @@ width: 10%;
         });
         btnDownloadAll.addEventListener("click", () => {
           const toDl = state.songs.filter((s) => s.selected);
-          console.log(toDl, state.downloadConfig);
           if (toDl.length === 0) {
             showTips("未选择歌曲", 2);
             return;
           }
-          console.log(toDl, state.downloadConfig);
           batchDownloadSongs(toDl, state.downloadConfig);
         });
         btnUploadAll.addEventListener("click", () => {
@@ -1677,6 +1733,22 @@ width: 10%;
             } else if (s.privilege.fee === 8) {
               if (!state.filterOptions.lowfree) return false;
             }
+            if (!state.filterOptions.instrumental) {
+              if ((s.song.mark & 131072) === 131072) return false;
+              if (s.song.additionalTitle) {
+                if (s.song.additionalTitle.toLowerCase().includes("instrumental")) return false;
+                if (s.song.additionalTitle.includes("伴奏")) return false;
+              } else {
+                if (s.title.toLowerCase().includes("instrumental")) return false;
+                if (s.title.includes("伴奏")) return false;
+              }
+            }
+            if (!state.filterOptions.live) {
+              if (s.song.album && s.song.album.subType === "现场版") return false;
+              if (s.song.additionalTitle) {
+                if (s.song.additionalTitle.toLowerCase().includes("live")) return false;
+              } else if (liveRegex.test(s.title.toLowerCase())) return false;
+            }
             if (s.privilege.cs && !state.filterOptions.cloud) return false;
             if (!state.filterText) return true;
             const t = state.filterText.toLowerCase();
@@ -1700,31 +1772,46 @@ width: 10%;
           }
         }
         function renderSongsView() {
-          mainContent.style.width = "625px";
+          mainContent.style.width = "735px";
           mainContent.style.boxSizing = "border-box";
           const pageSongs = currentPageSongs();
           mainContent.innerHTML = "";
           pageSongs.forEach((s) => {
             const row = document.createElement("div");
             row.style = "display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #f0f0f0;width:100%;box-sizing:border-box;min-width:0;";
-            row.innerHTML = `
-                      <div style="flex:0 0 36px;display:flex;align-items:center;justify-content:center;">
-                        <input type="checkbox" ${s.selected ? "checked" : ""} style="width:16px;height:16px;">
-                      </div>
-                      <div style="flex:0 0 56px;display:flex;align-items:center;justify-content:center;">
-                      <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" title="${s.album}">
-                        <img src="${s.song.al.picUrl + "?param=50y50&quality=100"}" alt="cover" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5">
-                      </a>
-                      </div>
-                      <!-- 文本区域：在固定总宽下使用弹性伸缩并保证溢出省略 -->
-                      <div style="flex:1 1 auto;min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:4px;">
-                        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">
-                          <a href="https://music.163.com/#/song?id=${s.song.id}" target="_blank">${s.title}</a>
-                        </div>
-                        <div style="font-size:12px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;">
-                          ${s.artist}
-                        </div>
-                      </div>
+            row.innerHTML = ` 
+  <!-- 复选框：固定宽度，居中 -->
+  <div style="flex: 0 0 36px; display: flex; align-items: center; justify-content: center;">
+    <input type="checkbox" style="width: 25px; height: 25px; " ${s.selected ? "checked" : ""}>
+  </div>
+  
+  <!-- 封面：固定宽度，居中 -->
+  <div style="flex: 0 0 56px; display: flex; align-items: center; justify-content: center;">
+    <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" title="${s.album}" style="display: block;">
+      <img src="${s.song.al.picUrl + "?param=50y50&quality=100"}" 
+           alt="cover" 
+           style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; background: #f5f5f5; transition: transform 0.2s ease;">
+    </a>
+  </div>
+  
+  <!-- 歌曲信息：弹性伸缩，优先占用空间 -->
+  <div style="flex: 2 1 200px; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
+    <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
+      <a href="https://music.163.com/#/song?id=${s.song.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${s.title}</a>
+    </div>
+    <div style="font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
+    ${(s.song.mark & 1048576) === 1048576 ? "🅴 " : ""}
+    ${s.privilege.cs ? '<i class="fa-regular fa-cloud"></i> ' : ""}
+      ${s.artist}
+    </div>
+  </div>
+  
+  <!-- 专辑信息：弹性伸缩，次要占用空间 -->
+  <div style="flex: 1 1 120px; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center;">
+    <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
+      <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${s.album}</a>
+    </div>
+  </div>
                     `;
             const chk = row.querySelector("input[type=checkbox]");
             chk.addEventListener("change", () => {
@@ -1738,14 +1825,23 @@ width: 10%;
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <input id="bm-filter-input" class="swal2-input" placeholder="过滤：标题/歌手/专辑" value="${state.filterText}">
                     <div>
-                      <label style="margin-right:12px"><input id="bm-filter-cb-free" type="checkbox" ${state.filterOptions.free ? "checked" : ""}> 免费</label>
-                      <label style="margin-right:12px"><input id="bm-filter-cb-lowfree" type="checkbox" ${state.filterOptions.lowfree ? "checked" : ""}> 128k音质免费</label>
-                      <label style="margin-right:12px"><input id="bm-filter-cb-vip" type="checkbox" ${state.filterOptions.vip ? "checked" : ""}> VIP</label>
-                      <label style="margin-right:12px"><input id="bm-filter-cb-pay" type="checkbox" ${state.filterOptions.pay ? "checked" : ""}> 数字专辑</label>
+                        歌曲收费类型：
+                      <div>
+                      （免费用户）
+                      <label style="margin-right:12px"><input id="bm-filter-cb-lowfree" type="checkbox" ${state.filterOptions.lowfree ? "checked" : ""}> 最高极高音质试听</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-free" type="checkbox" ${state.filterOptions.free ? "checked" : ""}> 前者基础上+最高HiRes音质下载</label></div>
+                      <div><label style="margin-right:12px"><input id="bm-filter-cb-vip" type="checkbox" ${state.filterOptions.vip ? "checked" : ""}> VIP</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-pay" type="checkbox" ${state.filterOptions.pay ? "checked" : ""}> 数字专辑</label></div>
                     </div>
                     <div>
                       <label style="margin-right:12px"><input id="bm-filter-cb-cloud" type="checkbox" ${state.filterOptions.cloud ? "checked" : ""}>显示云盘歌曲</label>
                     </div>
+                    <div>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-instrumental" type="checkbox" ${state.filterOptions.instrumental ? "checked" : ""}>纯音乐、伴奏</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-live" type="checkbox" ${state.filterOptions.live ? "checked" : ""}>歌曲标题含有(Live)或歌曲的专辑类型是现场版</label>
+                    </div>
+                    <div style="margin-top:16px;color:#666;font-size:13px;">专辑页面无法识别纯音乐</div>
+                    <div style="margin-top:16px;color:#666;font-size:13px;">”歌曲的专辑类型是现场版“仅在歌手页面能识别</div>
                   </div>
                 `;
           const input = mainContent.querySelector("#bm-filter-input");
@@ -1830,7 +1926,7 @@ width: 10%;
             setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
           });
           cbLevelOnly.addEventListener("change", (e) => {
-            state.downloadConfig.levelonly = e.target.checked;
+            state.downloadConfig.targetLevelOnly = e.target.checked;
             setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
           });
         }
@@ -1859,17 +1955,42 @@ width: 10%;
         }
         function renderPager() {
           pager.innerHTML = "";
-          for (let p = 1; p <= state.pageMax; p++) {
-            const btn = document.createElement("button");
-            btn.className = "swal2-styled";
-            btn.style.margin = "2px";
-            btn.textContent = p;
-            if (p === state.page) btn.style.background = "#fff";
-            else btn.addEventListener("click", () => {
-              state.page = p;
-              renderView();
+          let pageIndexs = [1];
+          let floor = Math.max(2, state.page - 2);
+          let ceil = Math.min(state.pageMax - 1, state.page + 2);
+          for (let i = floor; i <= ceil; i++) {
+            pageIndexs.push(i);
+          }
+          if (state.pageMax > 1) {
+            pageIndexs.push(state.pageMax);
+          }
+          pageIndexs.forEach((pageIndex) => {
+            let pageBtn = document.createElement("button");
+            pageBtn.setAttribute("type", "button");
+            pageBtn.className = "swal2-styled";
+            pageBtn.innerHTML = pageIndex;
+            if (pageIndex != state.page) {
+              pageBtn.addEventListener("click", () => {
+                state.page = pageIndex;
+                renderView();
+              });
+            } else {
+              pageBtn.style.background = "white";
+            }
+            pager.appendChild(pageBtn);
+          });
+          if (pageIndexs.length < state.pageMax) {
+            const jumpToPageInput = createPageJumpInput(state.page, state.pageMax);
+            jumpToPageInput.addEventListener("change", () => {
+              const newPage = parseInt(jumpToPageInput.value);
+              if (newPage >= 1 && newPage <= state.pageMax) {
+                state.page = newPage;
+                renderView();
+              } else {
+                jumpToPageInput.value = state.page;
+              }
             });
-            pager.appendChild(btn);
+            pager.appendChild(jumpToPageInput);
           }
         }
         renderView();
@@ -1905,7 +2026,7 @@ width: 10%;
               id: content.songs[i].id,
               title: content.songs[i].name,
               artist: getArtistTextInSongDetail(content.songs[i]),
-              album: getAlbumTextInSongDetail(content.songs[i]),
+              album: content.album.name,
               song: content.songs[i],
               privilege: content.songs[i].privilege
             };
@@ -2569,6 +2690,145 @@ width: 10%;
     }
   }
   const playlistDetailObj = new PlaylistDetail();
+  class ArtistDetail {
+    constructor() {
+      this.dataFetched = false;
+      this.artistSongList = [];
+      this.artistSongUniqueMap = {};
+      this.artistRes = null;
+      const params2 = new URLSearchParams(unsafeWindow.location.search);
+      this.artistId = Number(params2.get("id"));
+    }
+    onDomReady() {
+      this.AppendBtns();
+    }
+    AppendBtns() {
+      this.operationArea = document.querySelector("#content-operation");
+      const btnSongsDownUpLoad = createBigButton("批量下载 & 转存", this.operationArea, 1);
+      btnSongsDownUpLoad.addEventListener("click", () => {
+        if (!this.dataFetched) {
+          this.fetchArtistSongs();
+        } else {
+          showBatchManager(this.artistSongList, { listType: "artist", listId: this.artistId });
+        }
+      });
+      this.operationArea.appendChild(btnSongsDownUpLoad);
+    }
+    fetchArtistSongs() {
+      Swal.fire({
+        input: "textarea",
+        inputLabel: "获取歌手歌曲",
+        confirmButtonText: "关闭",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showCloseButton: false,
+        showConfirmButton: false,
+        footer: `<div>将根据标题歌手时长进行一定的去重处理</div>`,
+        inputAttributes: {
+          "readonly": true
+        },
+        didOpen: async () => {
+          const textarea = Swal.getInput();
+          textarea.style = "height: 300px;";
+          function addLog(log) {
+            textarea.value += log + "\n";
+            textarea.scrollTop = textarea.scrollHeight;
+          }
+          let offset = 0;
+          const limit = 200;
+          let more = true;
+          while (more) {
+            const content = await weapiRequestSync("/api/v2/artist/songs", {
+              data: {
+                id: this.artistId,
+                offset,
+                limit
+              }
+            });
+            if (offset === 0) {
+              addLog(`总共${content.total}首歌`);
+            }
+            addLog(`获取第${offset + 1}到第${offset + limit}首`);
+            content.songs.forEach((song) => {
+              song.al = {
+                id: song.album.id,
+                name: song.album.name,
+                pic: song.album.pic,
+                picUrl: song.album.picUrl,
+                pic_str: song.album.picId_str,
+                tns: song.album.alias
+              };
+              song.ar = song.artists.map((artist) => {
+                return {
+                  id: artist.id,
+                  name: artist.name
+                };
+              });
+              const songItem = {
+                id: song.id,
+                title: song.name,
+                artist: getArtistTextInSongDetail(song),
+                album: getAlbumTextInSongDetail(song),
+                song,
+                privilege: song.privilege
+              };
+              const songKey = this.getSongUniqueCode(songItem);
+              if (!this.artistSongUniqueMap[songKey]) {
+                this.artistSongUniqueMap[songKey] = [{ songs: [songItem], duration: songItem.song.duration }];
+                this.artistSongList.push(songItem);
+              } else {
+                let found = false;
+                for (const item of this.artistSongUniqueMap[songKey]) {
+                  if (Math.abs(songItem.song.duration - item.duration) <= 1e3) {
+                    if (songItem.privilege.cs) {
+                      item.songs[0].privilege.cs = true;
+                    }
+                    if (item.songs[0].otherVersions) {
+                      item.songs[0].otherVersions.push(songItem);
+                    } else {
+                      item.songs[0].otherVersions = [songItem];
+                    }
+                    item.songs.push(songItem);
+                    found = true;
+                    break;
+                  }
+                }
+                if (!found) {
+                  this.artistSongUniqueMap[songKey].push({ songs: [songItem], duration: songItem.song.duration });
+                  this.artistSongList.push(songItem);
+                }
+              }
+            });
+            offset += limit;
+            more = content.more;
+          }
+          this.dataFetched = true;
+          showBatchManager(this.artistSongList, { listType: "artist", listId: this.artistId });
+        }
+      });
+    }
+    updateSongsCloudStatus(songIds) {
+      songIds.forEach((songId) => {
+        for (let i = 0; i < this.artistSongList.length; i++) {
+          if (this.artistSongList[i].id == songId) {
+            this.artistSongList[i].privilege.cs = true;
+            break;
+          }
+        }
+      });
+    }
+    getSongUniqueCode(song) {
+      const item = {
+        //标题含有 (电影“xx”主题曲)时用主标题。
+        name: song.song.mainTitle && song.song.additionalTitle && !song.song.additionalTitle.toLowerCase().includes("live") ? song.song.mainTitle.trim() : song.song.name,
+        artists: song.song.ar.map((a) => a.name).sort(),
+        instrumental: (song.song.mark & 131072) === 131072,
+        explicit: (song.song.mark & 1048576) === 1048576
+      };
+      return getMD5(JSON.stringify(item));
+    }
+  }
+  const artistDetailObj = new ArtistDetail();
   const PlayAPIDataLimit = 1e3;
   const CheckAPIDataLimit = 100;
   const importAPIDataLimit = 10;
@@ -2668,7 +2928,7 @@ width: 10%;
                 this.skipSongs.push(this.songs[songIndex].title);
               }
             } else if (songFileData.md5) {
-              this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, this.config.out) + "." + songFileData.type.toLowerCase();
+              this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, "artist-title") + "." + songFileData.type.toLowerCase();
               this.songs[songIndex].md5 = songFileData.md5;
               this.songs[songIndex].size = songFileData.size;
               this.songs[songIndex].level = songFileData.level;
@@ -2740,7 +3000,7 @@ width: 10%;
             if (this.config.targetLevelOnly && this.config.level != content.data.level) {
               this.skipSongs.push(this.songs[songIndex].title);
             } else if (content.data.md5) {
-              this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, this.config.out) + "." + content.data.type.toLowerCase();
+              this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, "artist-title") + "." + content.data.type.toLowerCase();
               this.songs[songIndex].md5 = content.data.md5;
               this.songs[songIndex].size = content.data.size;
               this.songs[songIndex].level = content.data.level;
@@ -2909,6 +3169,7 @@ width: 10%;
                 this.importSongsSub(index);
               });
             }
+            return;
           }
           console.log("歌曲导入云盘接口", content);
           if (content.data.successSongs.length > 0) {
@@ -2916,6 +3177,7 @@ width: 10%;
               let songId = songCloudIdMap[successSong.songId];
               this.songs[this.songIdIndexsMap[songId]].cloudSongId = successSong.song.songId;
             });
+            this.addLog(`导入${content.data.successSongs.length} 首歌曲`);
           }
           if (content.data.failed.length > 0) {
             console.error("导入歌曲接口，存在上传失败歌曲。", content.data.failed);
@@ -3019,6 +3281,8 @@ width: 10%;
           playlistDetailObj.updateSongsCloudStatus(this.successSongsId);
         } else if (this.config.listType == "album") {
           albumDetailObj.updateSongsCloudStatus(this.successSongsId);
+        } else if (this.config.listType == "artist") {
+          artistDetailObj.updateSongsCloudStatus(this.successSongsId);
         }
       }
     }
@@ -3112,7 +3376,7 @@ tr th:nth-child(6),tr td:nth-child(7){
 width: 15%;
 }
 </style>
-<input id="text-filter" class="swal2-input" placeholder="歌曲过滤">
+<input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
 <div id="my-cbs">
 <input class="form-check-input" type="checkbox" value="" id="cb-copyright" checked><label class="form-check-label" for="cb-copyright">无版权</label>
 <input class="form-check-input" type="checkbox" value="" id="cb-vip" checked><label class="form-check-label" for="cb-vip">VIP</label>
@@ -3171,6 +3435,7 @@ width: 15%;
           this.btnUploadBatch.addEventListener("click", () => {
             if (this.batchUpload.working) {
               this.batchUpload.stopFlag = true;
+              this.btnUploadBatch.innerHTML = "正在停止";
               return;
             }
             this.batchUpload.songIndexs = [];
@@ -4076,7 +4341,7 @@ width: 15%;
     visibility: hidden;
   }
 </style>
-<input class="swal2-input" value="${this.filter.text}" id="text-filter" placeholder="歌曲过滤">
+<input class="swal2-input" value="${this.filter.text}" id="text-filter" placeholder="过滤：标题/歌手/专辑">
 <input class="form-check-input" type="checkbox" value="" id="cb-notmatch" ${this.filter.notMatch ? "checked" : ""}><label class="form-check-label" for="cb-notmatch">未匹配歌曲</label>
 `,
           footer: `<div id="page-area"></div><br><div id="cloud-desc">${this.controls.cloudDesc ? this.controls.cloudDesc.innerHTML : ""}</div>`,
@@ -4153,6 +4418,18 @@ width: 15%;
               }
               this.controls.pageArea.appendChild(pageBtn);
             });
+            if (pageIndexs.length < maxPage) {
+              const jumpToPageInput = createPageJumpInput(this.currentPage, maxPage);
+              jumpToPageInput.addEventListener("change", () => {
+                const newPage = parseInt(jumpToPageInput.value);
+                if (newPage >= 1 && newPage <= maxPage) {
+                  this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (newPage - 1));
+                } else {
+                  jumpToPageInput.value = this.currentPage;
+                }
+              });
+              this.controls.pageArea.appendChild(jumpToPageInput);
+            }
             this.fillCloudListTable(res.data);
           }
         });
@@ -4511,13 +4788,10 @@ width: 8%;
           resultSongs.forEach((resultSong) => {
             let tablerow = document.createElement("tr");
             let songName = resultSong.name;
-            if ("pc" in resultSong) {
-              songName += " ☁️";
-            }
             const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join();
             const needHighLight = Math.abs(resultSong.dt - this.fileDuringTime) < 1e3;
             const dtstyle = needHighLight ? "color:SpringGreen;" : "";
-            tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
+            tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}${resultSong.privilege.cs ? ' <i class="fa-regular fa-cloud"></i>' : ""}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
             let selectbtn = tablerow.querySelector(".selectbtn");
             selectbtn.addEventListener("click", () => {
               this.matchSong(cloudSongId, resultSong.id);
@@ -4702,7 +4976,7 @@ width: 70%;
             showTips(`(1/3)${song.title} 获取文件信息完成`, 1);
             let resData = content.data[0] || content.data;
             if (resData.url != null) {
-              song.fileFullName = nameFileWithoutExt(song.title, song.artist, this.out) + "." + resData.type.toLowerCase();
+              song.fileFullName = nameFileWithoutExt(song.title, song.artist, "artist-title") + "." + resData.type.toLowerCase();
               song.dlUrl = resData.url;
               song.md5 = resData.md5;
               song.size = resData.size;
@@ -5098,6 +5372,7 @@ width: 70%;
           threadMax: 1,
           threadCount: 1,
           working: false,
+          stopFlag: false,
           finnishThread: 0,
           songIndexs: []
         };
@@ -5159,7 +5434,7 @@ tr th:nth-child(5),tr td:nth-child(6){
 width: 16%;
 }
 </style>
-<input id="text-filter" class="swal2-input" placeholder="歌曲过滤">
+<input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
 <button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upgrade-batch">全部提升音质</button>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>云盘音源</th><th>目标音源</th> </tr></thead><tbody></tbody></table>
 `,
@@ -5185,6 +5460,8 @@ width: 16%;
             this.btnUpgradeBatch = container.querySelector("#btn-upgrade-batch");
             this.btnUpgradeBatch.addEventListener("click", () => {
               if (this.batchUpgrade.working) {
+                this.batchUpgrade.stopFlag = true;
+                this.btnUpgradeBatch.innerHTML = "正在停止";
                 return;
               }
               this.batchUpgrade.songIndexs = [];
@@ -5197,7 +5474,9 @@ width: 16%;
                 showTips("没有需要提升的歌曲", 1);
                 return;
               }
+              this.btnUpgradeBatch.innerHTML = "停止";
               this.batchUpgrade.working = true;
+              this.batchUpgrade.stopFlag = false;
               this.batchUpgrade.finnishThread = 0;
               this.batchUpgrade.threadCount = Math.min(this.batchUpgrade.songIndexs.length, this.batchUpgrade.threadMax);
               for (let i = 0; i < this.batchUpgrade.threadCount; i++) {
@@ -5205,6 +5484,9 @@ width: 16%;
               }
             });
             this.fetchSongInfo();
+          },
+          willClose: () => {
+            this.batchUpgrade.stopFlag = true;
           }
         });
       }
@@ -5415,12 +5697,13 @@ width: 16%;
       onUpgradeFinnsh(songIndex) {
         if (this.batchUpgrade.working) {
           let batchSongIdx = this.batchUpgrade.songIndexs.indexOf(songIndex);
-          if (batchSongIdx + this.batchUpgrade.threadCount < this.batchUpgrade.songIndexs.length) {
+          if (!this.batchUpgrade.stopFlag && batchSongIdx + this.batchUpgrade.threadCount < this.batchUpgrade.songIndexs.length) {
             this.upgradeSong(this.batchUpgrade.songIndexs[batchSongIdx + this.batchUpgrade.threadCount]);
           } else {
             this.batchUpgrade.finnishThread += 1;
             if (this.batchUpgrade.finnishThread == this.batchUpgrade.threadCount) {
               this.batchUpgrade.working = false;
+              this.batchUpgrade.stopFlag = false;
               this.renderFilterInfo();
               showTips("歌曲提升完成", 1);
             }
@@ -7424,6 +7707,8 @@ width: 50%;
         playlistDetailObj.onDomReady();
       } else if (url.includes("/album?")) {
         albumDetailObj.onDomReady();
+      } else if (url.includes("/artist?")) {
+        artistDetailObj.onDomReady();
       }
     }
     const commentBox = document.querySelector("#comment-box");

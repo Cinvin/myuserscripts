@@ -185,8 +185,12 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                         if((s.song.mark & 131072) === 131072) return false
                         if(s.song.additionalTitle){
                             if(s.song.additionalTitle.toLowerCase().includes('instrumental')) return false
+                            if(s.song.additionalTitle.includes('伴奏')) return false
                         }
-                        else if(s.title.toLowerCase().includes('instrumental')) return false
+                        else{
+                            if(s.title.toLowerCase().includes('instrumental')) return false
+                            if(s.title.includes('伴奏')) return false
+                        }
                     }
                     // 现场版
                     if (!state.filterOptions.live){
@@ -257,6 +261,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
     </div>
     <div style="font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
     ${(s.song.mark & 1048576) === 1048576 ? '🅴 ' : ''}
+    ${s.privilege.cs ? '<i class="fa-regular fa-cloud"></i> ': ''}
       ${s.artist}
     </div>
   </div>
@@ -293,7 +298,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                       <label style="margin-right:12px"><input id="bm-filter-cb-cloud" type="checkbox" ${state.filterOptions.cloud ? 'checked' : ''}>显示云盘歌曲</label>
                     </div>
                     <div>
-                      <label style="margin-right:12px"><input id="bm-filter-cb-instrumental" type="checkbox" ${state.filterOptions.instrumental ? 'checked' : ''}>纯音乐</label>
+                      <label style="margin-right:12px"><input id="bm-filter-cb-instrumental" type="checkbox" ${state.filterOptions.instrumental ? 'checked' : ''}>纯音乐、伴奏</label>
                       <label style="margin-right:12px"><input id="bm-filter-cb-live" type="checkbox" ${state.filterOptions.live ? 'checked' : ''}>歌曲标题含有(Live)或歌曲的专辑类型是现场版</label>
                     </div>
                     <div style="margin-top:16px;color:#666;font-size:13px;">专辑页面无法识别纯音乐</div>

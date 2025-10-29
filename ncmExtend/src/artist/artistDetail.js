@@ -40,6 +40,7 @@ class ArtistDetail {
             allowEscapeKey: false,
             showCloseButton: false,
             showConfirmButton: false,
+            footer: `<div>将根据标题歌手时长进行一定的去重处理</div>`,
             inputAttributes: {
                 "readonly": true
             },
@@ -64,7 +65,6 @@ class ArtistDetail {
                     })
                     if (offset === 0) {
                         addLog(`总共${content.total}首歌`)
-                        addLog(`将对获取的歌曲进行一定的去重处理`)
                     }
                     addLog(`获取第${offset + 1}到第${offset + limit}首`)
                     content.songs.forEach(song => {
@@ -144,11 +144,9 @@ class ArtistDetail {
 
     getSongUniqueCode(song) {
         const item = {
-            name: song.song.name,
-            artists: song.song.ar.sort((a, b) => {
-                if (a.id === b.id) return a.name.localeCompare(b.name)
-                return a.id - b.id
-            }),
+            //标题含有 (电影“xx”主题曲)时用主标题。
+            name: song.song.mainTitle && song.song.additionalTitle && !song.song.additionalTitle.toLowerCase().includes('live') ? song.song.mainTitle.trim() : song.song.name,
+            artists: song.song.ar.map(a => a.name).sort(),
             instrumental: (song.song.mark & 131072) === 131072,
             explicit: (song.song.mark & 1048576) === 1048576,
         }
