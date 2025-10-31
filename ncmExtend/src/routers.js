@@ -7,7 +7,7 @@ import { albumDetailObj } from './album/albumDetail'
 import { playlistDetailObj } from './playlist/playlistDetail'
 import { artistDetailObj } from './artist/artistDetail'
 
-import { hookWindowForCommentBox, observerCommentBox, addCommentWithCumstomIP } from './commentBox'
+import { hookContentFrame, observerCommentBox, addCommentWithCumstomIP } from './commentBox'
 
 import { registerMenuCommand } from './registerMenuCommand'
 import { InfoFirstPage } from './commentBox'
@@ -20,17 +20,18 @@ export const onStart = () => {
     console.log('[ncmExtend] onStart()')
     if (unsafeWindow.self === unsafeWindow.top) {
         GM_addStyle(GM_getResourceText('fa').replaceAll('../webfonts/', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/'))
-        unsafeWindow.GUserScriptObjects = { Swal: Swal }
+        unsafeWindow.GUserScriptObjects = { 
+            Swal: Swal,
+        }
         hookTopWindow()
         const iframes = document.getElementsByTagName("iframe")
         for (let iframe of iframes) {
-            hookWindowForCommentBox(iframe.contentWindow)
+            hookContentFrame(iframe.contentWindow)
         }
     }
     else if (unsafeWindow.name === 'contentFrame') {
         Swal = unsafeWindow.top.GUserScriptObjects.Swal
-
-        hookWindowForCommentBox(unsafeWindow)
+        hookContentFrame(unsafeWindow)
         if (paramId > 0) {
             if (url.includes('/song?')) {
                 songDetailObj.fetchSongData(paramId)

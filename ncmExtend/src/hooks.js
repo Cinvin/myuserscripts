@@ -5,6 +5,20 @@ import { levelDesc } from "./utils/descHelper"
 
 export const hookTopWindow = () => {
     ah.proxy({
+        onRequest: (config, handler) => {
+            if (config.url.includes('api/feedback/weblog')) {
+                //屏蔽日志接口请求
+                handler.resolve({
+                    config: config,
+                    status: 200,
+                    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+                    response: '{"code":200,"data":"success","message":""}'
+                })
+            }
+            else {
+                handler.next(config);
+            }
+        },
         onResponse: (response, handler) => {
             if (response.config.url.includes('/weapi/song/enhance/player/url/v1')) {
                 let content = JSON.parse(response.response)

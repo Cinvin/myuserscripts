@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.3.2
+// @version      4.3.3
 // @author       cinvin
 // @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
@@ -287,6 +287,18 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
   );
   const hookTopWindow = () => {
     ah.proxy({
+      onRequest: (config, handler) => {
+        if (config.url.includes("api/feedback/weblog")) {
+          handler.resolve({
+            config,
+            status: 200,
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            response: '{"code":200,"data":"success","message":""}'
+          });
+        } else {
+          handler.next(config);
+        }
+      },
       onResponse: (response, handler) => {
         if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
           let content = JSON.parse(response.response);
@@ -538,7 +550,9 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
         showCloseButton: true,
         html: `<div><label>Cookie<input class="swal2-input" id="text-cookie"></label></div>
             <div><label>UserAgent<input class="swal2-input" id="text-userAgent"></label></div>`,
-        footer: '<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div><div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>',
+        footer: `<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div>
+            <div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>
+            <div>设置请求头后，关闭卸载脚本前请自行清除网易云网页版cookie。以免被之后使用网页版时，被判断为“使用非法挂机软件”。</div>`,
         confirmButtonText: "设置",
         preConfirm: () => {
           const container = Swal.getHtmlContainer();
@@ -566,14 +580,12 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
           const btnSet = actions.querySelector("#btn-set");
           btnCancelSet.addEventListener("click", () => {
             removeHeader();
-            Swal.close();
           });
           btnSet.addEventListener("click", () => {
             setHeader({
               cookie: cookieInput.value.trim(),
               userAgent: userAgentInput.value.trim()
             });
-            Swal.close();
           });
         }
       });
@@ -581,15 +593,15 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     function setHeader(config) {
       const cookieObject = tryParseJSON(config.cookie) || parseCookie(config.cookie);
       if (config.userAgent.length == 0) {
-        showConfirmBox("请填写UserAgent");
+        showTips("请填写UserAgent", 2);
         return;
       }
       if (Object.keys(cookieObject).length == 0) {
-        showConfirmBox("cookie格式不正确，支持标准的cookie格式和JSON格式");
+        showTips("cookie格式不正确，支持标准的cookie格式和JSON格式", 2);
         return;
       }
       if (!(cookieObject.MUSIC_U && cookieObject.deviceId)) {
-        showConfirmBox("cookie内容不完整，cookie中一定会有MUSIC_U、deviceId等字段");
+        showTips("cookie内容不完整，cookie中一定会有MUSIC_U、deviceId等字段", 2);
         return;
       }
       const excludeCookie = ["MUSIC_U"];
@@ -635,7 +647,13 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       });
     }
     function removeHeader() {
+      const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
+      if (!requestHeader.appendCookie) {
+        showTips("并没有设置请求头", 2);
+        return;
+      }
       GM_setValue("requestHeader", "{}");
+      showConfirmBox("请求头设置已清除，刷新网页生效。");
     }
     function parseCookie(cookieString) {
       return cookieString.split(";").map((part) => part.trim()).filter((part) => part).reduce((cookies, part) => {
@@ -5782,6 +5800,7 @@ width: 16%;
           return;
         }
         let fileData = this.task[songIndex].songFile;
+        fileData = new File([fileData], fileData.name, { type: fileData.type });
         new jsmediatags.Reader(fileData).read({
           onSuccess: (res) => {
             if (res.tags.title) this.task[songIndex].title = res.tags.title;
@@ -7019,7 +7038,8 @@ width: 50%;
             let finishCount = 0;
             for (const song of this.selectedSongs) {
               song.progressDOM.innerHTML = "开始处理";
-              const fileBuffer = await song.file.arrayBuffer();
+              const fileData = new File([song.file], song.file.name, { type: song.file.type });
+              const fileBuffer = await fileData.arrayBuffer();
               const songTitle = song.mode === "netease" ? song.targetSong.name : song.customSong.name;
               const songArtist = song.mode === "netease" ? song.targetSong.ar.map((ar) => ar.name).join("") : song.customSong.artist;
               const songAlbum = song.mode === "netease" ? song.targetSong.al.name : song.customSong.album;
@@ -7542,8 +7562,20 @@ width: 50%;
     }
   }
   let songDetailObj = new SongDetail();
-  const hookWindowForCommentBox = (window) => {
+  const hookContentFrame = (window) => {
     ah.proxy({
+      onRequest: (config, handler) => {
+        if (config.url.includes("api/feedback/weblog")) {
+          handler.resolve({
+            config,
+            status: 200,
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            response: '{"code":200,"data":"success","message":""}'
+          });
+        } else {
+          handler.next(config);
+        }
+      },
       onResponse: (response, handler) => {
         if (response.config.url.includes("/weapi/comment/resource/comments/get")) {
           let content = JSON.parse(response.response);
@@ -7676,15 +7708,17 @@ width: 50%;
     console.log("[ncmExtend] onStart()");
     if (_unsafeWindow.self === _unsafeWindow.top) {
       GM_addStyle(GM_getResourceText("fa").replaceAll("../webfonts/", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/"));
-      _unsafeWindow.GUserScriptObjects = { Swal };
+      _unsafeWindow.GUserScriptObjects = {
+        Swal
+      };
       hookTopWindow();
       const iframes = document.getElementsByTagName("iframe");
       for (let iframe of iframes) {
-        hookWindowForCommentBox(iframe.contentWindow);
+        hookContentFrame(iframe.contentWindow);
       }
     } else if (_unsafeWindow.name === "contentFrame") {
       Swal = _unsafeWindow.top.GUserScriptObjects.Swal;
-      hookWindowForCommentBox(_unsafeWindow);
+      hookContentFrame(_unsafeWindow);
       if (paramId > 0) {
         if (url.includes("/song?")) {
           songDetailObj.fetchSongData(paramId);

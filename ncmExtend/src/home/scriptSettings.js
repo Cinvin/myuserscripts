@@ -81,7 +81,9 @@ export const scriptSettings = (uiArea) => {
             showCloseButton: true,
             html: `<div><label>Cookie<input class="swal2-input" id="text-cookie"></label></div>
             <div><label>UserAgent<input class="swal2-input" id="text-userAgent"></label></div>`,
-            footer: '<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div><div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>',
+            footer: `<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div>
+            <div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>
+            <div>设置请求头后，关闭卸载脚本前请自行清除网易云网页版cookie。以免被之后使用网页版时，被判断为“使用非法挂机软件”。</div>`,
             confirmButtonText: '设置',
             preConfirm: () => {
                 const container = Swal.getHtmlContainer()
@@ -110,14 +112,12 @@ export const scriptSettings = (uiArea) => {
                 const btnSet = actions.querySelector('#btn-set')
                 btnCancelSet.addEventListener('click', () => {
                     removeHeader();
-                    Swal.close();
                 });
-                 btnSet.addEventListener('click', () => {
+                btnSet.addEventListener('click', () => {
                     setHeader({
                         cookie: cookieInput.value.trim(),
                         userAgent: userAgentInput.value.trim(),
                     });
-                    Swal.close();
                 });
             }
         })
@@ -125,15 +125,15 @@ export const scriptSettings = (uiArea) => {
     function setHeader(config) {
         const cookieObject = tryParseJSON(config.cookie) || parseCookie(config.cookie)
         if (config.userAgent.length == 0) {
-            showConfirmBox('请填写UserAgent')
+            showTips('请填写UserAgent', 2)
             return
         }
         if (Object.keys(cookieObject).length == 0) {
-            showConfirmBox('cookie格式不正确，支持标准的cookie格式和JSON格式')
+            showTips('cookie格式不正确，支持标准的cookie格式和JSON格式', 2)
             return
         }
         if (!(cookieObject.MUSIC_U && cookieObject.deviceId)) {
-            showConfirmBox('cookie内容不完整，cookie中一定会有MUSIC_U、deviceId等字段')
+            showTips('cookie内容不完整，cookie中一定会有MUSIC_U、deviceId等字段', 2)
             return
         }
 
@@ -182,7 +182,15 @@ export const scriptSettings = (uiArea) => {
         });
     }
     function removeHeader() {
+        const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
+        if (!requestHeader.appendCookie) {
+            showTips('并没有设置请求头', 2)
+            return
+        }
+
         GM_setValue('requestHeader', '{}')
+
+        showConfirmBox('请求头设置已清除，刷新网页生效。')
     }
     function parseCookie(cookieString) {
         return cookieString

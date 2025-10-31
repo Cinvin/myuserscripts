@@ -1,9 +1,24 @@
 import { showConfirmBox } from "./utils/common"
 import { weapiRequest } from "./utils/request"
-//评论区增加IP信息
-export const hookWindowForCommentBox = (window) => {
+
+export const hookContentFrame = (window) => {
     ah.proxy({
+        onRequest: (config, handler) => {
+            //屏蔽日志接口请求
+            if (config.url.includes('api/feedback/weblog')) {
+                handler.resolve({
+                    config: config,
+                    status: 200,
+                    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+                    response: '{"code":200,"data":"success","message":""}'
+                })
+            }
+            else {
+                handler.next(config);
+            }
+        },
         onResponse: (response, handler) => {
+            //评论区增加IP信息
             if (response.config.url.includes('/weapi/comment/resource/comments/get')) {
                 let content = JSON.parse(response.response)
                 storageCommentInfo(content)

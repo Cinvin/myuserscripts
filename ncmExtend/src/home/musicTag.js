@@ -507,8 +507,10 @@ width: 50%;
                     for (const song of this.selectedSongs) {
 
                         song.progressDOM.innerHTML = '开始处理';
+                        // 解决因为window不同时读取文件的问题
+                        const fileData = new File([song.file], song.file.name, { type: song.file.type })
                         // 等待读取文件为 ArrayBuffer
-                        const fileBuffer = await song.file.arrayBuffer();
+                        const fileBuffer = await fileData.arrayBuffer();
                         const songTitle = song.mode === 'netease' ? song.targetSong.name : song.customSong.name;
                         const songArtist = song.mode === 'netease' ? song.targetSong.ar.map(ar => ar.name).join('') : song.customSong.artist;
                         const songAlbum = song.mode === 'netease' ? song.targetSong.al.name : song.customSong.album;

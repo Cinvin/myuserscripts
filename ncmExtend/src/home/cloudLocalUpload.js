@@ -76,6 +76,8 @@ export const cloudLocalUpload = (uiArea) => {
                 return
             }
             let fileData = this.task[songIndex].songFile
+            // 解决因为window不同时读取文件的问题
+            fileData = new File([fileData], fileData.name, { type: fileData.type })
             new jsmediatags.Reader(fileData)
                 .read({
                     onSuccess: (res) => {
