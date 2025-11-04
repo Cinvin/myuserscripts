@@ -4,6 +4,7 @@ import { fileSizeDesc, levelDesc, nameFileWithoutExt } from "../utils/descHelper
 import { handleLyric } from "../utils/lyric"
 import { MetaFlac } from "../utils/metaflac"
 import { levelWeight } from '../utils/constant'
+import { detectAudioFormat } from '../utils/file'
 
 export const batchDownloadSongs = (songList, config) => {
     if (songList.length == 0) {
@@ -80,7 +81,6 @@ width: 10%;
             config.skipSongs = []
             config.taskCount = songList.length
             config.threadList = threadList
-            console.log(config);
             for (let i = 0; i < config.threadCount; i++) {
                 downloadSongSub(i, songList, config)
             }
@@ -121,9 +121,9 @@ const downloadSongSub = (threadIndex, songList, config) => {
     let levelText = tableRowDOM.querySelector('.my-level')
     let sizeText = tableRowDOM.querySelector('.my-size')
     let prText = tableRowDOM.querySelector('.my-pr')
-    if(!song.api){
-            song.api = (song.privilege.fee == 0 && (levelWeight[song.privilege.plLevel] || 99) < (levelWeight[song.privilege.dlLevel] || -1)) ? 
-            { url: '/api/song/enhance/download/url/v1', data: { id: song.id, level: config.level, encodeType: 'mp3' } } : 
+    if (!song.api) {
+        song.api = (song.privilege.fee == 0 && (levelWeight[song.privilege.plLevel] || 99) < (levelWeight[song.privilege.dlLevel] || -1)) ?
+            { url: '/api/song/enhance/download/url/v1', data: { id: song.id, level: config.level, encodeType: 'mp3' } } :
             { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([song.id]), level: config.level, encodeType: 'mp3' } }
     }
     try {
@@ -166,7 +166,6 @@ const downloadSongSub = (threadIndex, songList, config) => {
                         appendMeta: config.appendMeta == "allAppend" || (config.appendMeta == "skipCloud" && !song.privilege.cs)
                     }
                     song.download.prText.innerHTML = '正在下载'
-                    console.log(song, config);
                     downloadSongFile(song, threadIndex, songList, config)
                     downloadSongCover(song, threadIndex, songList, config)
                     downloadSongLyric(song, threadIndex, songList, config)
@@ -213,14 +212,20 @@ const downloadSongFile = (songItem, threadIndex, songList, config) => {
         url: songItem.dlUrl,
         responseType: "arraybuffer",
         onload: function (response) {
-            console.log(response);
+            //console.log(response);
             const uint8 = new Uint8Array(response.response);
             songItem.download.musicFile = uint8.buffer
+            // 判断文件格式,wyy接口不一定准确
+            songItem.fileFormat = detectAudioFormat(songItem.download.musicFile)
+            if (songItem.fileFormat !== 'unknown') {
+                songItem.ext = songItem.fileFormat
+                songItem.fileFullName = `${songItem.fileNameWithOutExt}.${songItem.fileFormat}`
+            }
             songItem.download.finnnsh.music = true
             comcombineFile(songItem, threadIndex, songList, config)
         },
         onprogress: function (progress) {
-            songItem.download.prText.innerHTML=fileSizeDesc(progress.loaded)
+            songItem.download.prText.innerHTML = fileSizeDesc(progress.loaded)
         },
         onerror: function (error) {
             songItem.download.finnnsh.music = true
@@ -273,7 +278,7 @@ const downloadSongLyric = (songItem, threadIndex, songList, config) => {
             if (LyricObj.orilrc.parsedLyric.length == 0) comcombineFile(songItem, threadIndex, songList, config)
             const LyricItem = LyricObj.oritlrc || LyricObj.orilrc
             songItem.download.lyricText = LyricItem.lyric
-            if(config.downloadLyric && LyricItem.lyric.length > 0){
+            if (config.downloadLyric && LyricItem.lyric.length > 0) {
                 saveContentAsFile(LyricItem.lyric, songItem.fileNameWithOutExt + '.lrc')
             }
             comcombineFile(songItem, threadIndex, songList, config)
@@ -283,9 +288,9 @@ const downloadSongLyric = (songItem, threadIndex, songList, config) => {
 const comcombineFile = async (songItem, threadIndex, songList, config) => {
     if (songItem.download.finnnsh.music && songItem.download.finnnsh.cover && songItem.download.finnnsh.lyric) {
         if (songItem.download.musicFile) {
-            console.log(songItem);
-            if (songItem.download.appendMeta && (songItem.ext == 'mp3' || songItem.ext == 'flac')) {
-                if (songItem.ext == 'mp3') {
+            //console.log(songItem);
+            if (songItem.download.appendMeta && songItem.fileFormat !== 'unknown') {
+                if (songItem.fileFormat === 'mp3') {
                     const mp3tag = new MP3Tag(songItem.download.musicFile);
                     mp3tag.read();
                     mp3tag.tags.title = songItem.title;
@@ -323,7 +328,7 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                         }
                     });
                 }
-                else if (songItem.ext == 'flac') {
+                else if (songItem.fileFormat === 'flac') {
                     const flac = new MetaFlac(songItem.download.musicFile);
                     flac.removeAllTags();
                     flac.removeAllPictures();

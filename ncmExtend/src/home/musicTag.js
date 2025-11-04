@@ -3,6 +3,7 @@ import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { duringTimeDesc, nameFileWithoutExt } from '../utils/descHelper'
 import { handleLyric } from "../utils/lyric"
 import { MetaFlac } from "../utils/metaflac"
+import { detectAudioFormat } from "../utils/file"
 export const musicTag = (uiArea) => {
     //音乐标签
     let btnImport = createBigButton('音乐标签', uiArea, 2)
@@ -511,6 +512,16 @@ width: 50%;
                         const fileData = new File([song.file], song.file.name, { type: song.file.type })
                         // 等待读取文件为 ArrayBuffer
                         const fileBuffer = await fileData.arrayBuffer();
+                        // 判断文件格式
+                        const fileFormat = detectAudioFormat(fileBuffer)
+                        if (fileFormat !== 'unknown') {
+                            song.ext = fileFormat
+                        }
+                        else {
+                            song.progressDOM.innerHTML = '不支持该文件格式'
+                            continue
+                        }
+
                         const songTitle = song.mode === 'netease' ? song.targetSong.name : song.customSong.name;
                         const songArtist = song.mode === 'netease' ? song.targetSong.ar.map(ar => ar.name).join('') : song.customSong.artist;
                         const songAlbum = song.mode === 'netease' ? song.targetSong.al.name : song.customSong.album;
