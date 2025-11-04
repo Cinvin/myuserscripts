@@ -339,7 +339,7 @@ width: 8%;
                             name: songInput.value,
                             artist: artistInput.value,
                             album: albumInput.value,
-                            cover: coverInput.files.length > 0 ? { file: coverInput.files[0], url: URL.createObjectURL(coverInput.files[0]) } : null,
+                            cover: coverInput.files.length > 0 ? { file: new File([coverInput.files[0]], coverInput.files[0].name), url: URL.createObjectURL(coverInput.files[0]) } : null,
                             lyric: lyricInput.value
                         }
                         file.mode = 'custom'
