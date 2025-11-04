@@ -81,6 +81,7 @@ width: 10%;
             config.skipSongs = []
             config.taskCount = songList.length
             config.threadList = threadList
+            config.albumDetailCache = new Map()
             for (let i = 0; i < config.threadCount; i++) {
                 downloadSongSub(i, songList, config)
             }
@@ -269,18 +270,43 @@ const downloadSongLyric = (songItem, threadIndex, songList, config) => {
         comcombineFile(songItem, threadIndex, songList, config)
         return
     }
-    weapiRequest('/api/song/lyric/v1', {
-        data: { id: songItem.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, },
+    const requestData = {
+        '/api/song/lyric/v1': JSON.stringify({ id: songItem.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, }),
+    }
+    if (songItem.song.al.id > 0) {
+        if (config.albumDetailCache[songItem.song.al.id]) {
+            songItem.albumDetail = config.albumDetailCache[songItem.song.al.id]
+        }
+        else {
+            requestData[`/api/v1/album/${songItem.song.al.id}`] = '{}'
+        }
+    }
+    weapiRequest('/api/batch', {
+        data: requestData,
         onload: (content) => {
+            console.log(content);
+            const lyricContent = content['/api/song/lyric/v1']
             songItem.download.finnnsh.lyric = true
-            if (content.pureMusic) comcombineFile(songItem, threadIndex, songList, config)
-            const LyricObj = handleLyric(content)
+            if (lyricContent.pureMusic) comcombineFile(songItem, threadIndex, songList, config)
+            const LyricObj = handleLyric(lyricContent)
             if (LyricObj.orilrc.parsedLyric.length == 0) comcombineFile(songItem, threadIndex, songList, config)
             const LyricItem = LyricObj.oritlrc || LyricObj.orilrc
             songItem.download.lyricText = LyricItem.lyric
             if (config.downloadLyric && LyricItem.lyric.length > 0) {
                 saveContentAsFile(LyricItem.lyric, songItem.fileNameWithOutExt + '.lrc')
             }
+
+            const albumContent = content[`/api/v1/album/${songItem.song.al.id}`]
+            if (albumContent) {
+                const publishTime = new Date(albumContent.album.publishTime);
+                songItem.albumDetail = {
+                    publisher: albumContent.album.company.length > 0 ? albumContent.album.company : null,
+                    artists: albumContent.album.artists ? albumContent.album.artists.map(artist => artist.name).join('; ') : null,
+                    publishTime: albumContent.album.publishTime > 0 ? `${publishTime.getFullYear()}-${String(publishTime.getMonth() + 1).padStart(2, '0')}-${String(publishTime.getDate()).padStart(2, '0')}` : null
+                }
+                config.albumDetailCache[songItem.song.al.id] = songItem.albumDetail
+            }
+
             comcombineFile(songItem, threadIndex, songList, config)
         }
     })
@@ -288,14 +314,37 @@ const downloadSongLyric = (songItem, threadIndex, songList, config) => {
 const comcombineFile = async (songItem, threadIndex, songList, config) => {
     if (songItem.download.finnnsh.music && songItem.download.finnnsh.cover && songItem.download.finnnsh.lyric) {
         if (songItem.download.musicFile) {
-            //console.log(songItem);
+            // console.log(songItem);
             if (songItem.download.appendMeta && songItem.fileFormat !== 'unknown') {
+                // 处理音频文件
+                if (songItem.song.ar && songItem.song.ar[0].name && songItem.song.ar[0].name.length > 0) {
+                    //"; "分隔艺术家
+                    songItem.artist = songItem.song.ar.map(ar => ar.name).join('; ')
+                }
                 if (songItem.fileFormat === 'mp3') {
                     const mp3tag = new MP3Tag(songItem.download.musicFile);
                     mp3tag.read();
                     mp3tag.tags.title = songItem.title;
                     mp3tag.tags.artist = songItem.artist;
                     if (songItem.album.length > 0) mp3tag.tags.album = songItem.album;
+                    // 音轨编号
+                    if (songItem.song.no && songItem.song.no > 0) mp3tag.tags.v2.TRCK = String(songItem.song.no).padStart(2, '0');
+                    //光盘编号
+                    if(songItem.song.cd && songItem.song.cd.length > 0) mp3tag.tags.v2.TPOS = songItem.song.cd;
+                    if(songItem.albumDetail){
+                        if(songItem.albumDetail.publisher){
+                            // 发行公司
+                            mp3tag.tags.v2.TPUB = songItem.albumDetail.publisher;
+                        }
+                        if(songItem.albumDetail.artists){
+                            //专辑艺术家
+                            mp3tag.tags.v2.TPE2 = songItem.albumDetail.artists;
+                        }
+                        if(songItem.albumDetail.publishTime){
+                            //专辑发行时间
+                            mp3tag.tags.v2.TDRC = songItem.albumDetail.publishTime;
+                        }
+                    }
                     if (songItem.download.coverData) {
                         mp3tag.tags.v2.APIC = [{
                             description: "",
@@ -335,6 +384,24 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                     flac.setTag(`TITLE=${songItem.title}`);
                     flac.setTag(`ARTIST=${songItem.artist}`);
                     if (songItem.album.length > 0) flac.setTag(`ALBUM=${songItem.album}`);
+                    // 音轨编号
+                    if (songItem.song.no && songItem.song.no > 0) flac.setTag(`TRACKNUMBER=${String(songItem.song.no).padStart(2, '0')}`);
+                    //光盘编号
+                    if(songItem.song.cd && songItem.song.cd.length > 0) flac.setTag(`DISCNUMBER=${songItem.song.cd}`);
+                    if(songItem.albumDetail){
+                        if(songItem.albumDetail.publisher){
+                            // 发行公司
+                            flac.setTag(`PUBLISHER=${songItem.albumDetail.publisher}`);
+                        }
+                        if(songItem.albumDetail.artists){
+                            //专辑艺术家
+                            flac.setTag(`ALBUMARTIST=${songItem.albumDetail.artists}`);
+                        }
+                        if(songItem.albumDetail.publishTime){
+                            //专辑发行时间
+                            flac.setTag(`DATE=${songItem.albumDetail.publishTime}`);
+                        }
+                    }
                     if (songItem.download.lyricText.length > 0) flac.setTag(`LYRICS=${songItem.download.lyricText}`);
                     if (songItem.download.coverData) await flac.importPictureFromBuffer(songItem.download.coverData, "image/jpeg");
                     const newBuffer = flac.save();

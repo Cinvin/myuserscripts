@@ -45,6 +45,7 @@ export const musicTag = (uiArea) => {
             this.rename = config.rename;
             this.fileList = null;
             this.isAutoFillingSong = false;
+            this.albumDetailCache = new Map();
         }
 
         openFilesDialog() {
@@ -523,11 +524,14 @@ width: 50%;
                         }
 
                         const songTitle = song.mode === 'netease' ? song.targetSong.name : song.customSong.name;
-                        const songArtist = song.mode === 'netease' ? song.targetSong.ar.map(ar => ar.name).join('') : song.customSong.artist;
+                        let songArtist = song.mode === 'netease' ? song.targetSong.ar.map(ar => ar.name).join() : song.customSong.artist;
                         const songAlbum = song.mode === 'netease' ? song.targetSong.al.name : song.customSong.album;
                         if (this.rename) {
                             const nameWithoutExt = nameFileWithoutExt(songTitle, songArtist, 'artist-title');
                             if (nameWithoutExt && nameWithoutExt.length > 0) song.fileName = `${nameWithoutExt}.${song.ext}`;
+                        }
+                        if (song.mode === 'netease') {
+                            songArtist = song.targetSong.ar.map(ar => ar.name).join('; ');
                         }
                         let coverBuffer = null;
                         let coverFormat = "image/jpeg";
@@ -561,9 +565,21 @@ width: 50%;
 
                         let lyricText = '';
                         if (song.mode === 'netease') {
-                            const lyricRes = await weapiRequestSync('/api/song/lyric/v1', {
-                                data: { id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, }
+                            const requestData = {
+                                '/api/song/lyric/v1': JSON.stringify({ id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, }),
+                            }
+                            if (song.targetSong.al.id > 0) {
+                                if (this.albumDetailCache[song.targetSong.al.id]) {
+                                    song.albumDetail = this.albumDetailCache[song.targetSong.al.id]
+                                }
+                                else {
+                                    requestData[`/api/v1/album/${song.targetSong.al.id}`] = '{}'
+                                }
+                            }
+                            const res = await weapiRequestSync('/api/batch', {
+                                data: requestData,
                             })
+                            const lyricRes = res['/api/song/lyric/v1'];
                             if (lyricRes && !lyricRes.pureMusic) {
                                 const LyricObj = handleLyric(lyricRes);
                                 if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
@@ -573,6 +589,17 @@ width: 50%;
                                     lyricText = LyricObj.orilrc.lyric;
                                     song.progressDOM.innerHTML = '已获取歌词';
                                 }
+                            }
+
+                            const albumRes = res[`/api/v1/album/${song.targetSong.al.id}`];
+                            if (albumRes) {
+                                const publishTime = new Date(albumRes.album.publishTime);
+                                song.albumDetail = {
+                                    publisher: albumRes.album.company.length > 0 ? albumRes.album.company : null,
+                                    artists: albumRes.album.artists ? albumRes.album.artists.map(artist => artist.name).join('; ') : null,
+                                    publishTime: albumRes.album.publishTime > 0 ? `${publishTime.getFullYear()}-${String(publishTime.getMonth() + 1).padStart(2, '0')}-${String(publishTime.getDate()).padStart(2, '0')}` : null
+                                }
+                                this.albumDetailCache[song.targetSong.al.id] = song.albumDetail
                             }
                         }
                         else {
@@ -584,6 +611,26 @@ width: 50%;
                             mp3tag.read();
                             mp3tag.tags.title = songTitle;
                             mp3tag.tags.artist = songArtist;
+                            if (song.mode === 'netease') {
+                                // 音轨编号
+                                if (song.targetSong.no && song.targetSong.no > 0) mp3tag.tags.v2.TRCK = String(song.targetSong.no).padStart(2, '0');
+                                //光盘编号
+                                if (song.targetSong.cd && song.targetSong.cd.length > 0) mp3tag.tags.v2.TPOS = song.targetSong.cd;
+                                if (song.albumDetail) {
+                                    if (song.albumDetail.publisher) {
+                                        // 发行公司
+                                        mp3tag.tags.v2.TPUB = song.albumDetail.publisher;
+                                    }
+                                    if (song.albumDetail.artists) {
+                                        //专辑艺术家
+                                        mp3tag.tags.v2.TPE2 = song.albumDetail.artists;
+                                    }
+                                    if (song.albumDetail.publishTime) {
+                                        //专辑发行时间
+                                        mp3tag.tags.v2.TDRC = song.albumDetail.publishTime;
+                                    }
+                                }
+                            }
                             if (songAlbum.length > 0) mp3tag.tags.album = songAlbum;
                             if (coverBuffer) {
                                 mp3tag.tags.v2.APIC = [{
@@ -620,6 +667,26 @@ width: 50%;
                             flac.removeAllPictures();
                             flac.setTag(`TITLE=${songTitle}`);
                             flac.setTag(`ARTIST=${songArtist}`);
+                            if (song.mode === 'netease') {
+                                // 音轨编号
+                                if (song.targetSong.no && song.targetSong.no > 0) flac.setTag(`TRACKNUMBER=${String(song.targetSong.no).padStart(2, '0')}`);
+                                //光盘编号
+                                if (song.targetSong.cd && song.targetSong.cd.length > 0) flac.setTag(`DISCNUMBER=${song.targetSong.cd}`);
+                                if (song.albumDetail) {
+                                    if (song.albumDetail.publisher) {
+                                        // 发行公司
+                                        flac.setTag(`PUBLISHER=${song.albumDetail.publisher}`);
+                                    }
+                                    if (song.albumDetail.artists) {
+                                        //专辑艺术家
+                                        flac.setTag(`ALBUMARTIST=${song.albumDetail.artists}`);
+                                    }
+                                    if (song.albumDetail.publishTime) {
+                                        //专辑发行时间
+                                        flac.setTag(`DATE=${song.albumDetail.publishTime}`);
+                                    }
+                                }
+                            }
                             if (songAlbum.length > 0) flac.setTag(`ALBUM=${songAlbum}`);
                             if (lyricText.length > 0) flac.setTag(`LYRICS=${lyricText}`);
                             if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, coverFormat);
