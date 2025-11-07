@@ -1,7 +1,7 @@
 {
   "name": "ncmextend",
   "private": true,
-  "version": "4.3.3",
+  "version": "4.3.4",
   "type": "module",
   "scripts": {
     "dev": "vite",

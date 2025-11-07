@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.3.3
+// @version      4.3.4
 // @author       cinvin
 // @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
@@ -1240,6 +1240,31 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       return bb.toUint8Array();
     }
   }
+  const detectAudioFormat = (arrayBuffer) => {
+    if (!arrayBuffer) return "unknown";
+    const bytes = new Uint8Array(arrayBuffer);
+    if (bytes.length < 4) return "unknown";
+    if (bytes[0] === 102 && bytes[1] === 76 && bytes[2] === 97 && bytes[3] === 67) {
+      return "flac";
+    }
+    let scanStart = 0;
+    if (bytes[0] === 73 && bytes[1] === 68 && bytes[2] === 51) {
+      if (bytes.length >= 10) {
+        const size = (bytes[6] & 127) << 21 | (bytes[7] & 127) << 14 | (bytes[8] & 127) << 7 | bytes[9] & 127;
+        scanStart = 10 + size;
+        if (scanStart >= bytes.length) return "unknown";
+      } else {
+        return "unknown";
+      }
+    }
+    const MAX_SCAN = Math.min(bytes.length - 1, scanStart + 65536);
+    for (let i = scanStart; i < MAX_SCAN; i++) {
+      if (bytes[i] === 255 && (bytes[i + 1] & 224) === 224) {
+        return "mp3";
+      }
+    }
+    return "unknown";
+  };
   const batchDownloadSongs = (songList, config) => {
     if (songList.length == 0) {
       showConfirmBox("没有可下载的歌曲");
@@ -1315,7 +1340,7 @@ width: 10%;
         config.skipSongs = [];
         config.taskCount = songList.length;
         config.threadList = threadList;
-        console.log(config);
+        config.albumDetailCache = /* @__PURE__ */ new Map();
         for (let i = 0; i < config.threadCount; i++) {
           downloadSongSub(i, songList, config);
         }
@@ -1399,7 +1424,6 @@ width: 10%;
               appendMeta: config.appendMeta == "allAppend" || config.appendMeta == "skipCloud" && !song.privilege.cs
             };
             song.download.prText.innerHTML = "正在下载";
-            console.log(song, config);
             downloadSongFile(song, threadIndex, songList, config);
             downloadSongCover(song, threadIndex, songList, config);
             downloadSongLyric(song, threadIndex, songList, config);
@@ -1442,9 +1466,13 @@ width: 10%;
       url: songItem.dlUrl,
       responseType: "arraybuffer",
       onload: function(response) {
-        console.log(response);
         const uint8 = new Uint8Array(response.response);
         songItem.download.musicFile = uint8.buffer;
+        songItem.fileFormat = detectAudioFormat(songItem.download.musicFile);
+        if (songItem.fileFormat !== "unknown") {
+          songItem.ext = songItem.fileFormat;
+          songItem.fileFullName = `${songItem.fileNameWithOutExt}.${songItem.fileFormat}`;
+        }
         songItem.download.finnnsh.music = true;
         comcombineFile(songItem, threadIndex, songList, config);
       },
@@ -1490,17 +1518,39 @@ width: 10%;
       comcombineFile(songItem, threadIndex, songList, config);
       return;
     }
-    weapiRequest("/api/song/lyric/v1", {
-      data: { id: songItem.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 },
+    const requestData = {
+      "/api/song/lyric/v1": JSON.stringify({ id: songItem.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 })
+    };
+    if (songItem.song.al.id > 0) {
+      if (config.albumDetailCache[songItem.song.al.id]) {
+        songItem.albumDetail = config.albumDetailCache[songItem.song.al.id];
+      } else {
+        requestData[`/api/v1/album/${songItem.song.al.id}`] = "{}";
+      }
+    }
+    weapiRequest("/api/batch", {
+      data: requestData,
       onload: (content) => {
+        console.log(content);
+        const lyricContent = content["/api/song/lyric/v1"];
         songItem.download.finnnsh.lyric = true;
-        if (content.pureMusic) comcombineFile(songItem, threadIndex, songList, config);
-        const LyricObj = handleLyric(content);
+        if (lyricContent.pureMusic) comcombineFile(songItem, threadIndex, songList, config);
+        const LyricObj = handleLyric(lyricContent);
         if (LyricObj.orilrc.parsedLyric.length == 0) comcombineFile(songItem, threadIndex, songList, config);
         const LyricItem = LyricObj.oritlrc || LyricObj.orilrc;
         songItem.download.lyricText = LyricItem.lyric;
         if (config.downloadLyric && LyricItem.lyric.length > 0) {
           saveContentAsFile(LyricItem.lyric, songItem.fileNameWithOutExt + ".lrc");
+        }
+        const albumContent = content[`/api/v1/album/${songItem.song.al.id}`];
+        if (albumContent) {
+          const publishTime = new Date(albumContent.album.publishTime);
+          songItem.albumDetail = {
+            publisher: albumContent.album.company.length > 0 ? albumContent.album.company : null,
+            artists: albumContent.album.artists ? albumContent.album.artists.map((artist) => artist.name).join("; ") : null,
+            publishTime: albumContent.album.publishTime > 0 ? `${publishTime.getFullYear()}-${String(publishTime.getMonth() + 1).padStart(2, "0")}-${String(publishTime.getDate()).padStart(2, "0")}` : null
+          };
+          config.albumDetailCache[songItem.song.al.id] = songItem.albumDetail;
         }
         comcombineFile(songItem, threadIndex, songList, config);
       }
@@ -1509,14 +1559,29 @@ width: 10%;
   const comcombineFile = async (songItem, threadIndex, songList, config) => {
     if (songItem.download.finnnsh.music && songItem.download.finnnsh.cover && songItem.download.finnnsh.lyric) {
       if (songItem.download.musicFile) {
-        console.log(songItem);
-        if (songItem.download.appendMeta && (songItem.ext == "mp3" || songItem.ext == "flac")) {
-          if (songItem.ext == "mp3") {
+        if (songItem.download.appendMeta && songItem.fileFormat !== "unknown") {
+          if (songItem.song.ar && songItem.song.ar[0].name && songItem.song.ar[0].name.length > 0) {
+            songItem.artist = songItem.song.ar.map((ar) => ar.name).join("; ");
+          }
+          if (songItem.fileFormat === "mp3") {
             const mp3tag = new MP3Tag(songItem.download.musicFile);
             mp3tag.read();
             mp3tag.tags.title = songItem.title;
             mp3tag.tags.artist = songItem.artist;
             if (songItem.album.length > 0) mp3tag.tags.album = songItem.album;
+            if (songItem.song.no && songItem.song.no > 0) mp3tag.tags.v2.TRCK = String(songItem.song.no).padStart(2, "0");
+            if (songItem.song.cd && songItem.song.cd.length > 0) mp3tag.tags.v2.TPOS = songItem.song.cd;
+            if (songItem.albumDetail) {
+              if (songItem.albumDetail.publisher) {
+                mp3tag.tags.v2.TPUB = songItem.albumDetail.publisher;
+              }
+              if (songItem.albumDetail.artists) {
+                mp3tag.tags.v2.TPE2 = songItem.albumDetail.artists;
+              }
+              if (songItem.albumDetail.publishTime) {
+                mp3tag.tags.v2.TDRC = songItem.albumDetail.publishTime;
+              }
+            }
             if (songItem.download.coverData) {
               mp3tag.tags.v2.APIC = [{
                 description: "",
@@ -1547,13 +1612,26 @@ width: 10%;
                 downloadSongSub(threadIndex, songList, config);
               }
             });
-          } else if (songItem.ext == "flac") {
+          } else if (songItem.fileFormat === "flac") {
             const flac = new MetaFlac(songItem.download.musicFile);
             flac.removeAllTags();
             flac.removeAllPictures();
             flac.setTag(`TITLE=${songItem.title}`);
             flac.setTag(`ARTIST=${songItem.artist}`);
             if (songItem.album.length > 0) flac.setTag(`ALBUM=${songItem.album}`);
+            if (songItem.song.no && songItem.song.no > 0) flac.setTag(`TRACKNUMBER=${String(songItem.song.no).padStart(2, "0")}`);
+            if (songItem.song.cd && songItem.song.cd.length > 0) flac.setTag(`DISCNUMBER=${songItem.song.cd}`);
+            if (songItem.albumDetail) {
+              if (songItem.albumDetail.publisher) {
+                flac.setTag(`PUBLISHER=${songItem.albumDetail.publisher}`);
+              }
+              if (songItem.albumDetail.artists) {
+                flac.setTag(`ALBUMARTIST=${songItem.albumDetail.artists}`);
+              }
+              if (songItem.albumDetail.publishTime) {
+                flac.setTag(`DATE=${songItem.albumDetail.publishTime}`);
+              }
+            }
             if (songItem.download.lyricText.length > 0) flac.setTag(`LYRICS=${songItem.download.lyricText}`);
             if (songItem.download.coverData) await flac.importPictureFromBuffer(songItem.download.coverData, "image/jpeg");
             const newBuffer = flac.save();
@@ -6603,6 +6681,7 @@ width: 8%;
         this.rename = config.rename;
         this.fileList = null;
         this.isAutoFillingSong = false;
+        this.albumDetailCache = /* @__PURE__ */ new Map();
       }
       openFilesDialog() {
         Swal.fire({
@@ -6880,7 +6959,7 @@ width: 8%;
                 name: songInput.value,
                 artist: artistInput.value,
                 album: albumInput.value,
-                cover: coverInput.files.length > 0 ? { file: coverInput.files[0], url: URL.createObjectURL(coverInput.files[0]) } : null,
+                cover: coverInput.files.length > 0 ? { file: new File([coverInput.files[0]], coverInput.files[0].name), url: URL.createObjectURL(coverInput.files[0]) } : null,
                 lyric: lyricInput.value
               };
               file.mode = "custom";
@@ -7040,12 +7119,22 @@ width: 50%;
               song.progressDOM.innerHTML = "开始处理";
               const fileData = new File([song.file], song.file.name, { type: song.file.type });
               const fileBuffer = await fileData.arrayBuffer();
+              const fileFormat = detectAudioFormat(fileBuffer);
+              if (fileFormat !== "unknown") {
+                song.ext = fileFormat;
+              } else {
+                song.progressDOM.innerHTML = "不支持该文件格式";
+                continue;
+              }
               const songTitle = song.mode === "netease" ? song.targetSong.name : song.customSong.name;
-              const songArtist = song.mode === "netease" ? song.targetSong.ar.map((ar) => ar.name).join("") : song.customSong.artist;
+              let songArtist = song.mode === "netease" ? song.targetSong.ar.map((ar) => ar.name).join() : song.customSong.artist;
               const songAlbum = song.mode === "netease" ? song.targetSong.al.name : song.customSong.album;
               if (this.rename) {
                 const nameWithoutExt = nameFileWithoutExt(songTitle, songArtist, "artist-title");
                 if (nameWithoutExt && nameWithoutExt.length > 0) song.fileName = `${nameWithoutExt}.${song.ext}`;
+              }
+              if (song.mode === "netease") {
+                songArtist = song.targetSong.ar.map((ar) => ar.name).join("; ");
               }
               let coverBuffer = null;
               let coverFormat = "image/jpeg";
@@ -7077,9 +7166,20 @@ width: 50%;
               }
               let lyricText = "";
               if (song.mode === "netease") {
-                const lyricRes = await weapiRequestSync("/api/song/lyric/v1", {
-                  data: { id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 }
+                const requestData = {
+                  "/api/song/lyric/v1": JSON.stringify({ id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 })
+                };
+                if (song.targetSong.al.id > 0) {
+                  if (this.albumDetailCache[song.targetSong.al.id]) {
+                    song.albumDetail = this.albumDetailCache[song.targetSong.al.id];
+                  } else {
+                    requestData[`/api/v1/album/${song.targetSong.al.id}`] = "{}";
+                  }
+                }
+                const res = await weapiRequestSync("/api/batch", {
+                  data: requestData
                 });
+                const lyricRes = res["/api/song/lyric/v1"];
                 if (lyricRes && !lyricRes.pureMusic) {
                   const LyricObj = handleLyric(lyricRes);
                   if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
@@ -7090,6 +7190,16 @@ width: 50%;
                     song.progressDOM.innerHTML = "已获取歌词";
                   }
                 }
+                const albumRes = res[`/api/v1/album/${song.targetSong.al.id}`];
+                if (albumRes) {
+                  const publishTime = new Date(albumRes.album.publishTime);
+                  song.albumDetail = {
+                    publisher: albumRes.album.company.length > 0 ? albumRes.album.company : null,
+                    artists: albumRes.album.artists ? albumRes.album.artists.map((artist) => artist.name).join("; ") : null,
+                    publishTime: albumRes.album.publishTime > 0 ? `${publishTime.getFullYear()}-${String(publishTime.getMonth() + 1).padStart(2, "0")}-${String(publishTime.getDate()).padStart(2, "0")}` : null
+                  };
+                  this.albumDetailCache[song.targetSong.al.id] = song.albumDetail;
+                }
               } else {
                 lyricText = song.customSong.lyric.trim();
               }
@@ -7098,6 +7208,21 @@ width: 50%;
                 mp3tag.read();
                 mp3tag.tags.title = songTitle;
                 mp3tag.tags.artist = songArtist;
+                if (song.mode === "netease") {
+                  if (song.targetSong.no && song.targetSong.no > 0) mp3tag.tags.v2.TRCK = String(song.targetSong.no).padStart(2, "0");
+                  if (song.targetSong.cd && song.targetSong.cd.length > 0) mp3tag.tags.v2.TPOS = song.targetSong.cd;
+                  if (song.albumDetail) {
+                    if (song.albumDetail.publisher) {
+                      mp3tag.tags.v2.TPUB = song.albumDetail.publisher;
+                    }
+                    if (song.albumDetail.artists) {
+                      mp3tag.tags.v2.TPE2 = song.albumDetail.artists;
+                    }
+                    if (song.albumDetail.publishTime) {
+                      mp3tag.tags.v2.TDRC = song.albumDetail.publishTime;
+                    }
+                  }
+                }
                 if (songAlbum.length > 0) mp3tag.tags.album = songAlbum;
                 if (coverBuffer) {
                   mp3tag.tags.v2.APIC = [{
@@ -7133,6 +7258,21 @@ width: 50%;
                 flac.removeAllPictures();
                 flac.setTag(`TITLE=${songTitle}`);
                 flac.setTag(`ARTIST=${songArtist}`);
+                if (song.mode === "netease") {
+                  if (song.targetSong.no && song.targetSong.no > 0) flac.setTag(`TRACKNUMBER=${String(song.targetSong.no).padStart(2, "0")}`);
+                  if (song.targetSong.cd && song.targetSong.cd.length > 0) flac.setTag(`DISCNUMBER=${song.targetSong.cd}`);
+                  if (song.albumDetail) {
+                    if (song.albumDetail.publisher) {
+                      flac.setTag(`PUBLISHER=${song.albumDetail.publisher}`);
+                    }
+                    if (song.albumDetail.artists) {
+                      flac.setTag(`ALBUMARTIST=${song.albumDetail.artists}`);
+                    }
+                    if (song.albumDetail.publishTime) {
+                      flac.setTag(`DATE=${song.albumDetail.publishTime}`);
+                    }
+                  }
+                }
                 if (songAlbum.length > 0) flac.setTag(`ALBUM=${songAlbum}`);
                 if (lyricText.length > 0) flac.setTag(`LYRICS=${lyricText}`);
                 if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, coverFormat);
