@@ -1,7 +1,7 @@
 {
   "name": "ncmextend",
   "private": true,
-  "version": "4.3.4",
+  "version": "4.3.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "vite": "^6.0.0",
-    "vite-plugin-monkey": "^5.0.8"
+    "vite-plugin-monkey": "^7.1.5"
   },
   "dependencies": {
     "ajax-hook": "^3.0.3",

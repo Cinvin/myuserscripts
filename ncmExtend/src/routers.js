@@ -1,5 +1,5 @@
 import { unsafeWindow } from '$'
-import { hookTopWindow } from './hooks'
+import { hookTopWindow,hookContentFrame,hookOtherWindow } from './hooks'
 import { myHomeMain } from './home/main'
 
 import { songDetailObj } from './song/songDetail'
@@ -7,10 +7,9 @@ import { albumDetailObj } from './album/albumDetail'
 import { playlistDetailObj } from './playlist/playlistDetail'
 import { artistDetailObj } from './artist/artistDetail'
 
-import { hookContentFrame, observerCommentBox, addCommentWithCumstomIP } from './commentBox'
+import { observerCommentBox, addCommentWithCumstomIP,InfoFirstPage } from './commentBox'
 
 import { registerMenuCommand } from './registerMenuCommand'
-import { InfoFirstPage } from './commentBox'
 
 const url = unsafeWindow.location.href
 const params = new URLSearchParams(unsafeWindow.location.search)
@@ -24,14 +23,10 @@ export const onStart = () => {
             Swal: Swal,
         }
         hookTopWindow()
-        const iframes = document.getElementsByTagName("iframe")
-        for (let iframe of iframes) {
-            hookContentFrame(iframe.contentWindow)
-        }
     }
     else if (unsafeWindow.name === 'contentFrame') {
         Swal = unsafeWindow.top.GUserScriptObjects.Swal
-        hookContentFrame(unsafeWindow)
+        hookContentFrame()
         if (paramId > 0) {
             if (url.includes('/song?')) {
                 songDetailObj.fetchSongData(paramId)
@@ -43,6 +38,9 @@ export const onStart = () => {
                 albumDetailObj.fetchAlbumData(paramId)
             }
         }
+    }
+    else{
+        hookOtherWindow()
     }
 }
 export const onDomReady = () => {

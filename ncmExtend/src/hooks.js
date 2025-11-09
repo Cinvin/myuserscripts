@@ -1,94 +1,159 @@
-import { GM_getValue, unsafeWindow } from "$"
+import { GM_getValue, unsafeWindow } from "$";
 import { defaultOfDEFAULT_LEVEL, levelWeight } from "./utils/constant";
-import { weapiRequest } from "./utils/request";
-import { levelDesc } from "./utils/descHelper"
+import { isSettedHeader, weapiRequestSync } from "./utils/request";
+import { levelDesc } from "./utils/descHelper";
+import { storageCommentInfo } from "./commentBox";
 
 export const hookTopWindow = () => {
-    ah.proxy({
-        onRequest: (config, handler) => {
-            if (config.url.includes('api/feedback/weblog')) {
-                //屏蔽日志接口请求
-                handler.resolve({
-                    config: config,
-                    status: 200,
-                    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-                    response: '{"code":200,"data":"success","message":""}'
-                })
-            }
-            else {
-                handler.next(config);
-            }
+    ah.proxy(
+        {
+            onRequest: (config, handler) => {
+                if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
+                    //屏蔽日志接口请求
+                    handler.resolve({
+                        config: config,
+                        status: 200,
+                        headers: { "content-type": "application/x-www-form-urlencoded" },
+                        response: '{"code":200,"data":"success","message":""}',
+                    });
+                } else {
+                    handler.next(config);
+                }
+            },
+            onResponse: (response, handler) => {
+                if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
+                    handlePlayResponse(response.response).then((res) => {
+                        response.response = res;
+                        handler.next(response);
+                    });
+                } else {
+                    handler.next(response);
+                }
+            },
         },
-        onResponse: (response, handler) => {
-            if (response.config.url.includes('/weapi/song/enhance/player/url/v1')) {
-                let content = JSON.parse(response.response)
-                let songId = content.data[0].id
-                let targetLevel = GM_getValue('DEFAULT_LEVEL', defaultOfDEFAULT_LEVEL)
-                if (content.data[0].type.toLowerCase() !== "mp3" && content.data[0].type.toLowerCase() !== "m4a") {
-                    content.data[0].type = 'mp3'
+        unsafeWindow
+    );
+};
+
+export const hookContentFrame = () => {
+    ah.proxy(
+        {
+            onRequest: (config, handler) => {
+                //屏蔽日志接口请求
+                if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
+                    handler.resolve({
+                        config: config,
+                        status: 200,
+                        headers: { "content-type": "application/x-www-form-urlencoded" },
+                        response: '{"code":200,"data":"success","message":""}',
+                    });
+                } else {
+                    handler.next(config);
                 }
-                if (content.data[0].url) {
-                    if (content.data[0].level == 'standard') {
-                        if (targetLevel != 'standard') {
-                            let apiData = {
-                                '/api/song/enhance/player/url/v1': JSON.stringify({
-                                    ids: JSON.stringify([songId]),
-                                    level: targetLevel,
-                                    encodeType: 'mp3'
-                                }),
-                            }
-                            if (content.data[0].fee == 0) {
-                                apiData['/api/song/enhance/download/url/v1'] = JSON.stringify({
-                                    id: songId,
-                                    level: levelWeight[targetLevel] > levelWeight.hires ? 'hires' : targetLevel,
-                                    encodeType: 'mp3'
-                                })
-                            }
-                            weapiRequest("/api/batch", {
-                                data: apiData,
-                                onload: (res) => {
-                                    let songUrl = res['/api/song/enhance/player/url/v1'].data[0].url
-                                    let songLevel = res["/api/song/enhance/player/url/v1"].data[0].level
-                                    if (res['/api/song/enhance/download/url/v1']) {
-                                        let songDLLevel = res["/api/song/enhance/download/url/v1"].data.level
-                                        if (res["/api/song/enhance/download/url/v1"].data.url && (levelWeight[songDLLevel] || -1) > (levelWeight[songLevel] || 99)) {
-                                            songUrl = res["/api/song/enhance/download/url/v1"].data.url
-                                            songLevel = songDLLevel
-                                        }
-                                    }
-                                    if (songLevel != 'standard') {
-                                        content.data[0].url = songUrl
-                                        unsafeWindow.player.tipPlay(levelDesc(songLevel) + '音质')
-                                    }
-                                    response.response = JSON.stringify(content)
-                                    handler.next(response)
-                                },
-                                onerror: (res) => {
-                                    console.error('/api/batch', apiData, res)
-                                    response.response = JSON.stringify(content)
-                                    handler.next(response)
-                                }
-                            })
-                        }
-                        else {
-                            response.response = JSON.stringify(content)
-                            handler.next(response)
+            },
+            onResponse: (response, handler) => {
+                if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
+                    handlePlayResponse(response.response).then((res) => {
+                        response.response = res;
+                        handler.next(response);
+                    });
+                }
+                //评论区增加IP信息
+                else if (
+                    response.config.url.includes("/weapi/comment/resource/comments/get")
+                ) {
+                    let content = JSON.parse(response.response);
+                    storageCommentInfo(content);
+                    handler.next(response);
+                } else {
+                    handler.next(response);
+                }
+            },
+        },
+        unsafeWindow
+    );
+};
+
+export const hookOtherWindow = () => {
+    ah.proxy(
+        {
+            onRequest: (config, handler) => {
+                if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
+                    //屏蔽日志接口请求
+                    handler.resolve({
+                        config: config,
+                        status: 200,
+                        headers: { "content-type": "application/x-www-form-urlencoded" },
+                        response: '{"code":200,"data":"success","message":""}',
+                    });
+                } else {
+                    handler.next(config);
+                }
+            },
+            onResponse: (response, handler) => {
+                if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
+                    handlePlayResponse(response.response).then((res) => {
+                        response.response = res;
+                        handler.next(response);
+                    });
+                } else {
+                    handler.next(response);
+                }
+            },
+        },
+        unsafeWindow
+    );
+};
+
+/**
+ * 替换高音质音源
+ */
+const handlePlayResponse = async (response) => {
+    const content = JSON.parse(response);
+    const songId = content.data[0].id;
+    const targetLevel = GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL);
+    content.data[0].type = "mp3";
+    if (content.data[0].url) {
+        if (["standard", "higher", "exhigh"].includes(content.data[0].level)) {
+            if (levelWeight[targetLevel] > levelWeight[content.data[0].level]) {
+                let apiData = {
+                    "/api/song/enhance/player/url/v1": JSON.stringify({
+                        ids: JSON.stringify([songId]),
+                        level: targetLevel,
+                        encodeType: "mp3",
+                    }),
+                };
+                if (content.data[0].fee == 0) {
+                    apiData["/api/song/enhance/download/url/v1"] = JSON.stringify({
+                        id: songId,
+                        level:
+                            levelWeight[targetLevel] > levelWeight.hires
+                                ? "hires"
+                                : targetLevel,
+                        encodeType: "mp3",
+                    });
+                }
+                const BatchRes = await weapiRequestSync("/api/batch", { data: apiData });
+                if (BatchRes) {
+                    let songUrl = BatchRes["/api/song/enhance/player/url/v1"].data[0].url;
+                    let songLevel = BatchRes["/api/song/enhance/player/url/v1"].data[0].level;
+                    if (BatchRes["/api/song/enhance/download/url/v1"]) {
+                        let songDLLevel = BatchRes["/api/song/enhance/download/url/v1"].data.level;
+                        if (
+                            BatchRes["/api/song/enhance/download/url/v1"].data.url &&
+                            levelWeight[songDLLevel] > levelWeight[songLevel]
+                        ) {
+                            songUrl = BatchRes["/api/song/enhance/download/url/v1"].data.url;
+                            songLevel = songDLLevel;
                         }
                     }
-                    else {
-                        unsafeWindow.player.tipPlay(levelDesc(content.data[0].level) + '音质(云盘文件)')
-                        response.response = JSON.stringify(content)
-                        handler.next(response)
-                    }
-                }
-                else {
-                    response.response = JSON.stringify(content)
-                    handler.next(response)
+                    content.data[0].url = songUrl;
+                    unsafeWindow.top.player.tipPlay(levelDesc(songLevel));
                 }
             }
-            else {
-                handler.next(response)
-            }
+        } else {
+            unsafeWindow.top.player.tipPlay(levelDesc(content.data[0].level));
         }
-    }, unsafeWindow)
-}
+    }
+    return JSON.stringify(content);
+};

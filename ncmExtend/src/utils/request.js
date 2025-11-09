@@ -2,13 +2,15 @@ import { weapi } from "./crypto";
 var CookieMap = {
     web: true,
     android: 'os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;',
-    pc: 'os=pc;appver=3.0.18.203152;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;',
+    pc: 'os=pc;appver=3.1.22.204707;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;',
 }
 var UserAgentMap = {
     web: undefined,
     android: 'NeteaseMusic/9.1.78.241009150147(9001078);Dalvik/2.1.0 (Linux; U; Android 14; V2318A Build/TP1A.220624.014)',
-    pc: 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/3.0.18.203152',
+    pc: 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/3.1.22.204707',
 }
+
+export let isSettedHeader = false;
 
 const requestQueue = []
 // 定时器，每200毫秒执行一次，从队列中取出一个请求执行
@@ -71,6 +73,7 @@ function callAPI(data) {
 function setDeviceId() {
     const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
     if ('appendCookie' in requestHeader) {
+        isSettedHeader = true;
         CookieMap['pc'] = requestHeader.appendCookie
         UserAgentMap['pc'] = requestHeader.userAgent
     }

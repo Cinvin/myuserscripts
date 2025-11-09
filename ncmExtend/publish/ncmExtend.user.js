@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.3.4
+// @version      4.3.5
 // @author       cinvin
 // @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
@@ -30,27 +30,20 @@
 (function () {
   'use strict';
 
-  var _GM_getValue = /* @__PURE__ */ (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
-  var _unsafeWindow = /* @__PURE__ */ (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
+  var _GM_getValue = (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
+  var _unsafeWindow = (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
   const levelOptions = { jymaster: "超清母带", dolby: "杜比全景声", sky: "沉浸环绕声", jyeffect: "高清环绕声", hires: "Hi-Res", lossless: "无损", exhigh: "极高", higher: "较高", standard: "标准" };
   const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 5, lossless: 4, exhigh: 3, higher: 2, standard: 1, none: 0 };
   const defaultOfDEFAULT_LEVEL = "jymaster";
   const defaultOfBatchFilter = {
     free: true,
-    // 极高音质试听+HiRes音质下载
-    vip: true,
-    // VIP
-    pay: true,
-    // 付费
-    lowfree: true,
-    // 极高音质试听
-    instrumental: true,
-    // 纯音乐
-    live: true,
-    // 现场版
-    cloud: false
-    // 云盘歌曲
-  };
+vip: true,
+pay: true,
+lowfree: true,
+instrumental: true,
+live: true,
+cloud: false
+};
   const getBatchFilter = () => {
     return Object.assign(defaultOfBatchFilter, JSON.parse(GM_getValue("batchFilter", "{}")));
   };
@@ -59,12 +52,9 @@
   };
   const defaultOfDownloadSettings = {
     appendMeta: "notAppend",
-    // 是否附加元数据
-    out: "artist-title",
-    // 输出文件名格式
-    folder: "none"
-    // 输出文件夹
-  };
+out: "artist-title",
+folder: "none"
+};
   const getDownloadSettings = () => {
     return Object.assign(defaultOfDownloadSettings, JSON.parse(GM_getValue("downloadSettings", "{}")));
   };
@@ -73,14 +63,10 @@
   };
   const defaultOfBatchDownloadSettings = {
     concurrent: 4,
-    // 并发下载数
-    level: "jymaster",
-    // 下载音质
-    dllrc: false,
-    // 下载.lrc歌词文件
-    levelonly: false
-    // 仅获取到目标音质时下载
-  };
+level: "jymaster",
+dllrc: false,
+levelonly: false
+};
   const getBatchDownloadSettings = () => {
     return Object.assign(defaultOfBatchDownloadSettings, JSON.parse(GM_getValue("batchDownloadSettings", "{}")));
   };
@@ -89,10 +75,8 @@
   };
   const defaultOfBatchTransUploadSettings = {
     level: "jymaster",
-    // 转存音质
-    levelonly: false
-    // 仅获取到目标音质时下载
-  };
+levelonly: false
+};
   const getBatchTransUploadSettings = () => {
     return Object.assign(defaultOfBatchTransUploadSettings, JSON.parse(GM_getValue("batchTransUploadSettings", "{}")));
   };
@@ -143,13 +127,14 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
   var CookieMap = {
     web: true,
     android: "os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;",
-    pc: "os=pc;appver=3.0.18.203152;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;"
+    pc: "os=pc;appver=3.1.22.204707;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;"
   };
   var UserAgentMap = {
     web: void 0,
     android: "NeteaseMusic/9.1.78.241009150147(9001078);Dalvik/2.1.0 (Linux; U; Android 14; V2318A Build/TP1A.220624.014)",
-    pc: "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/3.0.18.203152"
+    pc: "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/3.1.22.204707"
   };
+  let isSettedHeader = false;
   const requestQueue = [];
   const REQUEST_INTERVAL = 50;
   setInterval(() => {
@@ -209,6 +194,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
   function setDeviceId() {
     const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
     if ("appendCookie" in requestHeader) {
+      isSettedHeader = true;
       CookieMap["pc"] = requestHeader.appendCookie;
       UserAgentMap["pc"] = requestHeader.userAgent;
     } else {
@@ -285,89 +271,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       '"': "&quot;"
     })[word] || word
   );
-  const hookTopWindow = () => {
-    ah.proxy({
-      onRequest: (config, handler) => {
-        if (config.url.includes("api/feedback/weblog")) {
-          handler.resolve({
-            config,
-            status: 200,
-            headers: { "content-type": "application/x-www-form-urlencoded" },
-            response: '{"code":200,"data":"success","message":""}'
-          });
-        } else {
-          handler.next(config);
-        }
-      },
-      onResponse: (response, handler) => {
-        if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
-          let content = JSON.parse(response.response);
-          let songId = content.data[0].id;
-          let targetLevel = _GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL);
-          if (content.data[0].type.toLowerCase() !== "mp3" && content.data[0].type.toLowerCase() !== "m4a") {
-            content.data[0].type = "mp3";
-          }
-          if (content.data[0].url) {
-            if (content.data[0].level == "standard") {
-              if (targetLevel != "standard") {
-                let apiData = {
-                  "/api/song/enhance/player/url/v1": JSON.stringify({
-                    ids: JSON.stringify([songId]),
-                    level: targetLevel,
-                    encodeType: "mp3"
-                  })
-                };
-                if (content.data[0].fee == 0) {
-                  apiData["/api/song/enhance/download/url/v1"] = JSON.stringify({
-                    id: songId,
-                    level: levelWeight[targetLevel] > levelWeight.hires ? "hires" : targetLevel,
-                    encodeType: "mp3"
-                  });
-                }
-                weapiRequest("/api/batch", {
-                  data: apiData,
-                  onload: (res) => {
-                    let songUrl = res["/api/song/enhance/player/url/v1"].data[0].url;
-                    let songLevel = res["/api/song/enhance/player/url/v1"].data[0].level;
-                    if (res["/api/song/enhance/download/url/v1"]) {
-                      let songDLLevel = res["/api/song/enhance/download/url/v1"].data.level;
-                      if (res["/api/song/enhance/download/url/v1"].data.url && (levelWeight[songDLLevel] || -1) > (levelWeight[songLevel] || 99)) {
-                        songUrl = res["/api/song/enhance/download/url/v1"].data.url;
-                        songLevel = songDLLevel;
-                      }
-                    }
-                    if (songLevel != "standard") {
-                      content.data[0].url = songUrl;
-                      _unsafeWindow.player.tipPlay(levelDesc(songLevel) + "音质");
-                    }
-                    response.response = JSON.stringify(content);
-                    handler.next(response);
-                  },
-                  onerror: (res) => {
-                    console.error("/api/batch", apiData, res);
-                    response.response = JSON.stringify(content);
-                    handler.next(response);
-                  }
-                });
-              } else {
-                response.response = JSON.stringify(content);
-                handler.next(response);
-              }
-            } else {
-              _unsafeWindow.player.tipPlay(levelDesc(content.data[0].level) + "音质(云盘文件)");
-              response.response = JSON.stringify(content);
-              handler.next(response);
-            }
-          } else {
-            response.response = JSON.stringify(content);
-            handler.next(response);
-          }
-        } else {
-          handler.next(response);
-        }
-      }
-    }, _unsafeWindow);
-  };
   const sleep = (millisec) => {
     return new Promise((resolve) => setTimeout(resolve, millisec));
   };
@@ -477,6 +380,236 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       source: null
     };
   };
+  const storageCommentInfo = (CommentRes) => {
+    var _a, _b, _c;
+    if (!unsafeWindow.top.GUserScriptObjects.storageCommentInfos) unsafeWindow.top.GUserScriptObjects.storageCommentInfos = {};
+    const comments = CommentRes.data.comments.concat(CommentRes.data.hotComments);
+    for (let comment of comments) {
+      if (!(comment == null ? void 0 : comment.commentId)) continue;
+      let appendText = "";
+      if ((_a = comment == null ? void 0 : comment.ipLocation) == null ? void 0 : _a.location) appendText += comment.ipLocation.location + " ";
+      if ((_c = (_b = comment == null ? void 0 : comment.extInfo) == null ? void 0 : _b.endpoint) == null ? void 0 : _c.OS_TYPE) appendText += comment.extInfo.endpoint.OS_TYPE;
+      unsafeWindow.top.GUserScriptObjects.storageCommentInfos[String(comment.commentId)] = appendText.trim();
+    }
+  };
+  const observerCommentBox = (commentBox) => {
+    let observer = new MutationObserver((mutations, observer2) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type == "childList" && mutation.addedNodes.length > 0) {
+          for (let node of mutation.addedNodes) {
+            if (node.className == "itm") {
+              commentItemAddInfo(node);
+            }
+          }
+        }
+      });
+    });
+    observer.observe(commentBox, {
+      childList: true,
+      subtree: true
+    });
+  };
+  const commentItemAddInfo = (commentItem) => {
+    if (commentItem.querySelector(".ipInfo")) return;
+    const commentId = commentItem.getAttribute("data-id");
+    let timeArea = commentItem.querySelector("div.time");
+    if (unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId]) {
+      timeArea.innerHTML += ` <span class="ipInfo">${unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId]}</span>`;
+    }
+  };
+  const InfoFirstPage = (commentBox) => {
+    const commentItems = commentBox.querySelectorAll("div.itm");
+    for (const commentItem of commentItems) {
+      commentItemAddInfo(commentItem);
+    }
+  };
+  const addCommentWithCumstomIP = (commentBox) => {
+    const commentTextarea = commentBox.querySelector("textarea");
+    const threadId = commentBox.getAttribute("data-tid");
+    const btnsArea = commentBox.querySelector(".btns");
+    let ipBtn = document.createElement("a");
+    ipBtn.className = "s-fc7";
+    ipBtn.innerHTML = "使用指定IP地址评论";
+    ipBtn.addEventListener("click", () => {
+      const content = commentTextarea.value.trim();
+      if (content.length == 0) {
+        showConfirmBox("评论内容不能为空");
+        return;
+      }
+      GM_getValue("lastIPValue", "");
+      Swal.fire({
+        input: "text",
+        inputLabel: "IP地址",
+        inputValue: GM_getValue("lastIPValue", ""),
+        inputValidator: (value) => {
+          if (!/((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))/.test(value)) {
+            return "IP格式不正确";
+          }
+        },
+        confirmButtonText: "发送评论",
+        showCloseButton: true,
+        footer: `
+            <div>可参考:<a href="https://zh-hans.ipshu.com/country-list" target="_blank">IP 国家/地区列表</a></div>
+            <div>需不显示属地请填 <b>127.0.0.1</b></div>
+            `
+      }).then((result) => {
+        if (result.isConfirmed) {
+          GM_setValue("lastIPValue", result.value);
+          weapiRequest("/api/resource/comments/add", {
+            data: {
+              threadId,
+              content
+            },
+            ip: result.value,
+            clientType: "web",
+            onload: (res) => {
+              console.log(res);
+              if (res.code == 200) {
+                showConfirmBox("评论成功，请刷新网页查看");
+              } else {
+                showConfirmBox("评论失败，" + JSON.stringify(res));
+              }
+            }
+          });
+        }
+      });
+    });
+    btnsArea.appendChild(ipBtn);
+  };
+  const hookTopWindow = () => {
+    ah.proxy(
+      {
+        onRequest: (config, handler) => {
+          if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
+            handler.resolve({
+              config,
+              status: 200,
+              headers: { "content-type": "application/x-www-form-urlencoded" },
+              response: '{"code":200,"data":"success","message":""}'
+            });
+          } else {
+            handler.next(config);
+          }
+        },
+        onResponse: (response, handler) => {
+          if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
+            handlePlayResponse(response.response).then((res) => {
+              response.response = res;
+              handler.next(response);
+            });
+          } else {
+            handler.next(response);
+          }
+        }
+      },
+      _unsafeWindow
+    );
+  };
+  const hookContentFrame = () => {
+    ah.proxy(
+      {
+        onRequest: (config, handler) => {
+          if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
+            handler.resolve({
+              config,
+              status: 200,
+              headers: { "content-type": "application/x-www-form-urlencoded" },
+              response: '{"code":200,"data":"success","message":""}'
+            });
+          } else {
+            handler.next(config);
+          }
+        },
+        onResponse: (response, handler) => {
+          if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
+            handlePlayResponse(response.response).then((res) => {
+              response.response = res;
+              handler.next(response);
+            });
+          } else if (response.config.url.includes("/weapi/comment/resource/comments/get")) {
+            let content = JSON.parse(response.response);
+            storageCommentInfo(content);
+            handler.next(response);
+          } else {
+            handler.next(response);
+          }
+        }
+      },
+      _unsafeWindow
+    );
+  };
+  const hookOtherWindow = () => {
+    ah.proxy(
+      {
+        onRequest: (config, handler) => {
+          if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
+            handler.resolve({
+              config,
+              status: 200,
+              headers: { "content-type": "application/x-www-form-urlencoded" },
+              response: '{"code":200,"data":"success","message":""}'
+            });
+          } else {
+            handler.next(config);
+          }
+        },
+        onResponse: (response, handler) => {
+          if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
+            handlePlayResponse(response.response).then((res) => {
+              response.response = res;
+              handler.next(response);
+            });
+          } else {
+            handler.next(response);
+          }
+        }
+      },
+      _unsafeWindow
+    );
+  };
+  const handlePlayResponse = async (response) => {
+    const content = JSON.parse(response);
+    const songId = content.data[0].id;
+    const targetLevel = _GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL);
+    content.data[0].type = "mp3";
+    if (content.data[0].url) {
+      if (["standard", "higher", "exhigh"].includes(content.data[0].level)) {
+        if (levelWeight[targetLevel] > levelWeight[content.data[0].level]) {
+          let apiData = {
+            "/api/song/enhance/player/url/v1": JSON.stringify({
+              ids: JSON.stringify([songId]),
+              level: targetLevel,
+              encodeType: "mp3"
+            })
+          };
+          if (content.data[0].fee == 0) {
+            apiData["/api/song/enhance/download/url/v1"] = JSON.stringify({
+              id: songId,
+              level: levelWeight[targetLevel] > levelWeight.hires ? "hires" : targetLevel,
+              encodeType: "mp3"
+            });
+          }
+          const BatchRes = await weapiRequestSync("/api/batch", { data: apiData });
+          if (BatchRes) {
+            let songUrl = BatchRes["/api/song/enhance/player/url/v1"].data[0].url;
+            let songLevel = BatchRes["/api/song/enhance/player/url/v1"].data[0].level;
+            if (BatchRes["/api/song/enhance/download/url/v1"]) {
+              let songDLLevel = BatchRes["/api/song/enhance/download/url/v1"].data.level;
+              if (BatchRes["/api/song/enhance/download/url/v1"].data.url && levelWeight[songDLLevel] > levelWeight[songLevel]) {
+                songUrl = BatchRes["/api/song/enhance/download/url/v1"].data.url;
+                songLevel = songDLLevel;
+              }
+            }
+            content.data[0].url = songUrl;
+            _unsafeWindow.top.player.tipPlay(levelDesc(songLevel));
+          }
+        }
+      } else {
+        _unsafeWindow.top.player.tipPlay(levelDesc(content.data[0].level));
+      }
+    }
+    return JSON.stringify(content);
+  };
   const scriptSettings = (uiArea) => {
     let btnExport = createBigButton("脚本设置", uiArea, 2);
     btnExport.addEventListener("click", openSettingPopup);
@@ -552,7 +685,8 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
             <div><label>UserAgent<input class="swal2-input" id="text-userAgent"></label></div>`,
         footer: `<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div>
             <div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>
-            <div>设置请求头后，关闭卸载脚本前请自行清除网易云网页版cookie。以免被之后使用网页版时，被判断为“使用非法挂机软件”。</div>`,
+            <div>为避免被风控，设置请求头后听歌将无法记录。</div>
+            <div>设置请求头后，清除请求头或关闭卸载脚本时请自行清空网易云网页版cookie。以免被之后使用网页版时，被判断为“使用非法挂机软件”。</div>`,
         confirmButtonText: "设置",
         preConfirm: () => {
           const container = Swal.getHtmlContainer();
@@ -653,7 +787,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
         return;
       }
       GM_setValue("requestHeader", "{}");
-      showConfirmBox("请求头设置已清除，刷新网页生效。");
+      showConfirmBox("请求头设置已清除，需手动清空网易云网页版cookie，以免以后被判断为“使用非法挂机软件”。");
     }
     function parseCookie(cookieString) {
       return cookieString.split(";").map((part) => part.trim()).filter((part) => part).reduce((cookies, part) => {
@@ -786,8 +920,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       }
       this._u8 = uint8;
     }
-    // static helpers
-    static from(input, enc) {
+static from(input, enc) {
       if (typeof input === "string") {
         if (!enc || enc === "utf8" || enc === "utf-8") {
           const encoder = new TextEncoder();
@@ -826,8 +959,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     static isBuffer(x) {
       return x instanceof BrowserBuffer;
     }
-    // getters
-    get length() {
+get length() {
       return this._u8.length;
     }
     get buffer() {
@@ -850,8 +982,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       const dec = new TextDecoder("utf-8");
       return dec.decode(this._u8);
     }
-    // read unsigned ints
-    readUInt8(offset) {
+readUInt8(offset) {
       return this._u8[offset];
     }
     readUInt16BE(offset) {
@@ -866,16 +997,14 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     readUInt32LE(offset) {
       return this._u8[offset] | this._u8[offset + 1] << 8 | this._u8[offset + 2] << 16 | this._u8[offset + 3] << 24 >>> 0;
     }
-    // read arbitrary BE integer (up to 6 bytes used in original code)
-    readUIntBE(offset, byteLength) {
+readUIntBE(offset, byteLength) {
       let val = 0;
       for (let i = 0; i < byteLength; i++) {
         val = (val << 8) + this._u8[offset + i];
       }
       return val >>> 0;
     }
-    // write unsigned ints BE
-    writeUIntBE(value, offset, byteLength) {
+writeUIntBE(value, offset, byteLength) {
       for (let i = byteLength - 1; i >= 0; i--) {
         this._u8[offset + i] = value & 255;
         value = value >>> 8;
@@ -890,8 +1019,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     writeUInt8(value, offset) {
       this._u8[offset] = value & 255;
     }
-    // expose underlying Uint8Array (read-only)
-    toUint8Array() {
+toUint8Array() {
       return this._u8;
     }
   }
@@ -1126,8 +1254,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       }
       this.tags.push(field);
     }
-    // Functions using file paths are NOT supported in browser build.
-    setTagFromFile(field) {
+setTagFromFile(field) {
       throw new Error('setTagFromFile is not supported in browser build. Use setTag("NAME=VALUE") directly or fetch file yourself.');
     }
     importTagsFrom(filename) {
@@ -1136,8 +1263,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     exportTagsTo(filename) {
       throw new Error("exportTagsTo is not supported in browser build.");
     }
-    // Import picture by filename is not supported: use importPictureFromBuffer
-    importPictureFrom(filename) {
+importPictureFrom(filename) {
       throw new Error("importPictureFrom(filename) is not supported in browser build. Use importPictureFromBuffer(buffer).");
     }
     importPictureFromBuffer(picture) {
@@ -1340,7 +1466,7 @@ width: 10%;
         config.skipSongs = [];
         config.taskCount = songList.length;
         config.threadList = threadList;
-        config.albumDetailCache = /* @__PURE__ */ new Map();
+        config.albumDetailCache = new Map();
         for (let i = 0; i < config.threadCount; i++) {
           downloadSongSub(i, songList, config);
         }
@@ -1703,8 +1829,7 @@ width: 10%;
       page: 1,
       pageMax: Math.ceil(songPlayableList.length / PAGE_SIZE),
       view: "songs",
-      // 当前视图：songs / filter / dl / up
-      downloadConfig: Object.assign({
+downloadConfig: Object.assign({
         threadCount: _savedBatchDl.concurrent !== void 0 ? _savedBatchDl.concurrent : 4,
         downloadLyric: !!_savedBatchDl.dllrc || false,
         folder: _savedDl.folder || "none",
@@ -1712,13 +1837,11 @@ width: 10%;
         level: _savedBatchDl.level || "jymaster",
         targetLevelOnly: !!_savedBatchUp.levelonly || false,
         appendMeta: _savedDl.appendMeta || "notAppend"
-        // 转存相关设置占位
-      }, defaultConfig),
+}, defaultConfig),
       uploadConfig: Object.assign({
         level: _savedBatchUp.level || "jymaster",
         targetLevelOnly: !!_savedBatchUp.levelonly || false
-        // 转存相关设置占位
-      }, defaultConfig)
+}, defaultConfig)
     };
     Swal.fire({
       width: "980px",
@@ -2915,8 +3038,7 @@ width: 10%;
     }
     getSongUniqueCode(song) {
       const item = {
-        //标题含有 (电影“xx”主题曲)时用主标题。
-        name: song.song.mainTitle && song.song.additionalTitle && !song.song.additionalTitle.toLowerCase().includes("live") ? song.song.mainTitle.trim() : song.song.name,
+name: song.song.mainTitle && song.song.additionalTitle && !song.song.additionalTitle.toLowerCase().includes("live") ? song.song.mainTitle.trim() : song.song.name,
         artists: song.song.ar.map((a) => a.name).sort(),
         instrumental: (song.song.mark & 131072) === 131072,
         explicit: (song.song.mark & 1048576) === 1048576
@@ -3370,8 +3492,7 @@ width: 10%;
       this.textarea.value = this.log;
       this.textarea.scrollTop = this.textarea.scrollHeight;
     }
-    //更新缓存歌曲的云盘状态
-    updateSongCloudStatus() {
+updateSongCloudStatus() {
       if (this.successSongsId.length > 0) {
         if (this.config.listType == "playlist") {
           playlistDetailObj.updateSongsCloudStatus(this.successSongsId);
@@ -3610,8 +3731,7 @@ width: 15%;
                 albumid: 0,
                 artists: "未知",
                 tns: "",
-                //翻译
-                dt: duringTimeDesc(0),
+dt: duringTimeDesc(0),
                 filename: "未知." + config.ext,
                 ext: config.ext,
                 md5: config.md5,
@@ -5643,8 +5763,7 @@ width: 16%;
                     albumid: content.songs[i].al.id || 0,
                     artists: getArtistTextInSongDetail(content.songs[i]),
                     tns: content.songs[i].tns ? content.songs[i].tns.join() : "",
-                    //翻译
-                    dt: duringTimeDesc(content.songs[i].dt || 0),
+dt: duringTimeDesc(content.songs[i].dt || 0),
                     picUrl: content.songs[i].al && content.songs[i].al.picUrl ? content.songs[i].al.picUrl : "http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg",
                     upgraded: false
                   };
@@ -6681,7 +6800,7 @@ width: 8%;
         this.rename = config.rename;
         this.fileList = null;
         this.isAutoFillingSong = false;
-        this.albumDetailCache = /* @__PURE__ */ new Map();
+        this.albumDetailCache = new Map();
       }
       openFilesDialog() {
         Swal.fire({
@@ -7702,127 +7821,6 @@ width: 50%;
     }
   }
   let songDetailObj = new SongDetail();
-  const hookContentFrame = (window) => {
-    ah.proxy({
-      onRequest: (config, handler) => {
-        if (config.url.includes("api/feedback/weblog")) {
-          handler.resolve({
-            config,
-            status: 200,
-            headers: { "content-type": "application/x-www-form-urlencoded" },
-            response: '{"code":200,"data":"success","message":""}'
-          });
-        } else {
-          handler.next(config);
-        }
-      },
-      onResponse: (response, handler) => {
-        if (response.config.url.includes("/weapi/comment/resource/comments/get")) {
-          let content = JSON.parse(response.response);
-          storageCommentInfo(content);
-          handler.next(response);
-        } else {
-          handler.next(response);
-        }
-      }
-    }, window);
-  };
-  const storageCommentInfo = (CommentRes) => {
-    var _a, _b, _c;
-    if (!unsafeWindow.top.GUserScriptObjects.storageCommentInfos) unsafeWindow.top.GUserScriptObjects.storageCommentInfos = {};
-    const comments = CommentRes.data.comments.concat(CommentRes.data.hotComments);
-    for (let comment of comments) {
-      if (!(comment == null ? void 0 : comment.commentId)) continue;
-      let appendText = "";
-      if ((_a = comment == null ? void 0 : comment.ipLocation) == null ? void 0 : _a.location) appendText += comment.ipLocation.location + " ";
-      if ((_c = (_b = comment == null ? void 0 : comment.extInfo) == null ? void 0 : _b.endpoint) == null ? void 0 : _c.OS_TYPE) appendText += comment.extInfo.endpoint.OS_TYPE;
-      unsafeWindow.top.GUserScriptObjects.storageCommentInfos[String(comment.commentId)] = appendText.trim();
-    }
-  };
-  const observerCommentBox = (commentBox) => {
-    let observer = new MutationObserver((mutations, observer2) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type == "childList" && mutation.addedNodes.length > 0) {
-          for (let node of mutation.addedNodes) {
-            if (node.className == "itm") {
-              commentItemAddInfo(node);
-            }
-          }
-        }
-      });
-    });
-    observer.observe(commentBox, {
-      childList: true,
-      subtree: true
-    });
-  };
-  const commentItemAddInfo = (commentItem) => {
-    if (commentItem.querySelector(".ipInfo")) return;
-    const commentId = commentItem.getAttribute("data-id");
-    let timeArea = commentItem.querySelector("div.time");
-    if (unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId]) {
-      timeArea.innerHTML += ` <span class="ipInfo">${unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId]}</span>`;
-    }
-  };
-  const InfoFirstPage = (commentBox) => {
-    const commentItems = commentBox.querySelectorAll("div.itm");
-    for (const commentItem of commentItems) {
-      commentItemAddInfo(commentItem);
-    }
-  };
-  const addCommentWithCumstomIP = (commentBox) => {
-    const commentTextarea = commentBox.querySelector("textarea");
-    const threadId = commentBox.getAttribute("data-tid");
-    const btnsArea = commentBox.querySelector(".btns");
-    let ipBtn = document.createElement("a");
-    ipBtn.className = "s-fc7";
-    ipBtn.innerHTML = "使用指定IP地址评论";
-    ipBtn.addEventListener("click", () => {
-      const content = commentTextarea.value.trim();
-      if (content.length == 0) {
-        showConfirmBox("评论内容不能为空");
-        return;
-      }
-      GM_getValue("lastIPValue", "");
-      Swal.fire({
-        input: "text",
-        inputLabel: "IP地址",
-        inputValue: GM_getValue("lastIPValue", ""),
-        inputValidator: (value) => {
-          if (!/((25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))/.test(value)) {
-            return "IP格式不正确";
-          }
-        },
-        confirmButtonText: "发送评论",
-        showCloseButton: true,
-        footer: `
-            <div>可参考:<a href="https://zh-hans.ipshu.com/country-list" target="_blank">IP 国家/地区列表</a></div>
-            <div>需不显示属地请填 <b>127.0.0.1</b></div>
-            `
-      }).then((result) => {
-        if (result.isConfirmed) {
-          GM_setValue("lastIPValue", result.value);
-          weapiRequest("/api/resource/comments/add", {
-            data: {
-              threadId,
-              content
-            },
-            ip: result.value,
-            clientType: "web",
-            onload: (res) => {
-              console.log(res);
-              if (res.code == 200) {
-                showConfirmBox("评论成功，请刷新网页查看");
-              } else {
-                showConfirmBox("评论失败，" + JSON.stringify(res));
-              }
-            }
-          });
-        }
-      });
-    });
-    btnsArea.appendChild(ipBtn);
-  };
   const registerMenuCommand = () => {
     GM_registerMenuCommand(`优先试听音质`, setLevel);
     function setLevel() {
@@ -7852,13 +7850,9 @@ width: 50%;
         Swal
       };
       hookTopWindow();
-      const iframes = document.getElementsByTagName("iframe");
-      for (let iframe of iframes) {
-        hookContentFrame(iframe.contentWindow);
-      }
     } else if (_unsafeWindow.name === "contentFrame") {
       Swal = _unsafeWindow.top.GUserScriptObjects.Swal;
-      hookContentFrame(_unsafeWindow);
+      hookContentFrame();
       if (paramId > 0) {
         if (url.includes("/song?")) {
           songDetailObj.fetchSongData(paramId);
@@ -7868,6 +7862,8 @@ width: 50%;
           albumDetailObj.fetchAlbumData(paramId);
         }
       }
+    } else {
+      hookOtherWindow();
     }
   };
   const onDomReady = () => {

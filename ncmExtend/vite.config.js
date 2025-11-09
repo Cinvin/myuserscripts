@@ -34,4 +34,8 @@ export default defineConfig({
       }
     }),
   ],
+  build: {
+    // if you want to minify xxx.user.js, set true
+    // minify: true,
+  },
 });
