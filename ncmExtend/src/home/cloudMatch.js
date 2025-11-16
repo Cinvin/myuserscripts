@@ -1,4 +1,4 @@
-import { createBigButton, showTips, songItemAddToFormat,createPageJumpInput } from "../utils/common"
+import { createBigButton, showTips, songItemAddToFormat, createPageJumpInput } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc } from '../utils/descHelper'
 
@@ -427,7 +427,7 @@ tr th:nth-child(4),tr td:nth-child(5){
 width: 8%;
 }
 </style>
-<div><input class="swal2-input" id="search-text" placeholder="搜索"><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
+<div><label>关键词/歌曲链接/歌曲ID:<input class="swal2-input" id="search-text" style="width: 400px;" placeholder="关键词/链接/ID"></label><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
 </div>
@@ -507,23 +507,63 @@ width: 8%;
 
                     this.searchBtn.addEventListener('click', () => {
                         const searchWord = this.searchDom.value.trim()
-                        this.tbody.innerHTML = '正在搜索...'
-                        weapiRequest("/api/cloudsearch/get/web", {
-                            data: {
+                        const isSongId = /^[1-9]\d*$/.test(searchWord)
+                        let songId = isSongId ? searchWord : ''
+                        //解析URL
+                        let URLObj = null
+                        if (searchWord.includes('song?')) {
+                            try {
+                                URLObj = new URL(searchWord)
+                            } catch (e) {
+                            }
+                        }
+                        if (URLObj && URLObj.hostname === 'music.163.com') {
+                            let urlParamsStr = URLObj.search.length > 0 ? URLObj.search : URLObj.href.slice(URLObj.href.lastIndexOf('?'))
+                            songId = new URLSearchParams(urlParamsStr).get('id') || ''
+                        }
+
+                        let requestData = {}
+                        if (URLObj === null) {
+                            requestData["/api/cloudsearch/get/web"] = JSON.stringify({
                                 s: searchWord,
                                 type: 1,
                                 limit: 30,
                                 offset: 0,
                                 total: true,
-                            },
-                            onload: (searchContent) => {
-                                //console.log(searchContent)
-                                if (searchContent.code != 200) {
-                                    return
+                            })
+                        }
+                        if (songId.length > 0) {
+                            requestData["/api/v3/song/detail"] = JSON.stringify({ c: JSON.stringify([{ 'id': songId }]) })
+                        }
+                        if (requestData["/api/cloudsearch/get/web"] || requestData["/api/v3/song/detail"]) {
+                            this.tbody.innerHTML = '正在搜索...'
+                            weapiRequest("/api/batch", {
+                                data: requestData,
+                                onload: (content) => {
+                                    console.log(content)
+                                    if (content.code != 200) {
+                                        return
+                                    }
+                                    const songDetailContent = content["/api/v3/song/detail"]
+                                    const searchContent = content["/api/cloudsearch/get/web"] || { result: { songCount: 0, songs: [] } }
+
+                                    if (songDetailContent && songDetailContent.songs && songDetailContent.songs.length > 0) {
+                                        songDetailContent.songs[0].privilege = songDetailContent.privileges[0]
+                                        if (searchContent.result.songCount > 0) {
+                                            searchContent.result.songs.push(songDetailContent.songs[0])
+                                        }
+                                        else {
+                                            searchContent.result.songCount = 1
+                                            searchContent.result.songs = songDetailContent.songs
+                                        }
+                                    }
+                                    this.fiilSearchTable(searchContent, song.simpleSong.id)
                                 }
-                                this.fiilSearchTable(searchContent, song.simpleSong.id)
-                            }
-                        })
+                            })
+                        }
+                        else {
+                            this.tbody.innerHTML = '无法解析链接'
+                        }
                     })
 
                 },
