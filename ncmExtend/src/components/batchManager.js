@@ -330,7 +330,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                         </select></label>
                     <label>优先下载音质
                     <select id="bm-dl-level" class="swal2-select">
-                        <option value="jymaster">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option>
+                        <option value="jymaster">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清臻音</option><option value="hires">高解析度无损</option><option value="lossless">无损</option><option value="exhigh">极高</option>
                     </select></label>
                     <label>文件名格式
                       <select id="bm-dl-out"  class="swal2-select">
@@ -405,7 +405,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <label>优先转存音质
                     <select id="bm-up-level" class="swal2-select">
-                        <option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option>
+                        <option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清臻音</option><option value="hires">高解析度无损</option><option value="lossless">无损</option><option value="exhigh">极高</option>
                     </select></label>
                     <label><input id="bm-up-target-only" type="checkbox" ${state.uploadConfig.targetLevelOnly ? 'checked' : ''}> 仅获取到目标音质时转存</label>
                   </div>

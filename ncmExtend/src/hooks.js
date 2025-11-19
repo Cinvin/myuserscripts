@@ -3,6 +3,7 @@ import { defaultOfDEFAULT_LEVEL, levelWeight } from "./utils/constant";
 import { isSettedHeader, weapiRequestSync } from "./utils/request";
 import { levelDesc } from "./utils/descHelper";
 import { storageCommentInfo } from "./commentBox";
+import { levelTipDOM } from "./webPlayer/main"
 
 export const hookTopWindow = () => {
     ah.proxy(
@@ -105,6 +106,34 @@ export const hookOtherWindow = () => {
     );
 };
 
+export const hookWebPlayerFetch = () => {
+    const origFetch = window.fetch;
+
+    const myCustomFetch = async function (resource, options = {}) {
+        const response = await origFetch(resource, options);
+
+        const resClone = response.clone();
+
+        const url = typeof resource === 'string' ? resource : resource.url;
+
+        if (url.includes('/weapi/song/enhance/player/url/v1')) {
+            const content = await resClone.text();
+            const res = await handlePlayResponse(content);
+            const newResponse = new Response(res, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+            });
+            return newResponse;
+        }
+        else {
+            return response;
+        }
+
+    };
+    unsafeWindow.fetch = myCustomFetch;
+};
+
 /**
  * 替换高音质音源
  */
@@ -148,12 +177,27 @@ const handlePlayResponse = async (response) => {
                         }
                     }
                     content.data[0].url = songUrl;
-                    unsafeWindow.top.player.tipPlay(levelDesc(songLevel));
+                    showLevelTips(songLevel);
                 }
             }
         } else {
-            unsafeWindow.top.player.tipPlay(levelDesc(content.data[0].level));
+            showLevelTips(content.data[0].level);
         }
     }
     return JSON.stringify(content);
 };
+
+const showLevelTips = (level) => {
+    const desc = levelDesc(level);
+    try {
+        if (unsafeWindow && unsafeWindow.top && unsafeWindow.top.player) {
+            unsafeWindow.top.player.tipPlay(desc);
+            return;
+        }
+    } catch (e) {
+    }
+
+    if (levelTipDOM) {
+        levelTipDOM.innerHTML = desc;
+    }
+}

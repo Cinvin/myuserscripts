@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.3.6
+// @version      4.3.7
 // @author       cinvin
 // @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
@@ -32,7 +32,7 @@
 
   var _GM_getValue = (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
   var _unsafeWindow = (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
-  const levelOptions = { jymaster: "超清母带", dolby: "杜比全景声", sky: "沉浸环绕声", jyeffect: "高清环绕声", hires: "Hi-Res", lossless: "无损", exhigh: "极高", higher: "较高", standard: "标准" };
+  const levelOptions = { jymaster: "超清母带", dolby: "杜比全景声", sky: "沉浸环绕声", jyeffect: "高清臻音", hires: "高解析度无损", lossless: "无损", exhigh: "极高", higher: "较高", standard: "标准" };
   const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 5, lossless: 4, exhigh: 3, higher: 2, standard: 1, none: 0 };
   const defaultOfDEFAULT_LEVEL = "jymaster";
   const defaultOfBatchFilter = {
@@ -476,6 +476,111 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     });
     btnsArea.appendChild(ipBtn);
   };
+  const observerWebPlayer = () => {
+    let observer = new MutationObserver((mutations, observer2) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type == "childList" && mutation.addedNodes.length > 0) {
+          for (let node of mutation.addedNodes) {
+            if (node.id === "page_pc_setting") {
+              AddQualitySetting(node);
+            } else if (node.id === "page_pc_mini_bar") {
+              AddLevelTips(node);
+            }
+          }
+        }
+      });
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  };
+  const AddQualitySetting = (node) => {
+    const mainDiv = node.querySelector("main");
+    const areaToAdd = mainDiv.querySelector("#play > div");
+    const radioChecked = mainDiv.querySelector(".cmd-radio-checked");
+    if (!radioChecked) return;
+    const radioCheckedClassName = radioChecked.className;
+    const radioClassName = radioCheckedClassName.replace("cmd-radio-checked", "");
+    const currentLevel = GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL);
+    const React = unsafeWindow.React;
+    const ReactDOM = unsafeWindow.ReactDOM;
+    if (!React || !ReactDOM) {
+      return;
+    }
+    const existContainer = mainDiv.querySelector(".ncmextend-quality-react-container");
+    if (existContainer) {
+      try {
+        ReactDOM.unmountComponentAtNode(existContainer);
+      } catch (e) {
+      }
+      existContainer.remove();
+    }
+    const container = document.createElement("section");
+    container.className = "item list ncmextend-quality-react-container";
+    areaToAdd.appendChild(container);
+    const { useState } = React;
+    const RadioList = () => {
+      const [level, setLevel] = useState(currentLevel);
+      const onSelect = (key) => {
+        setLevel(key);
+        try {
+          GM_setValue("DEFAULT_LEVEL", key);
+        } catch (e) {
+        }
+      };
+      const items = Object.keys(levelOptions).map((key) => {
+        const checked = level === key;
+        const labelClass = checked ? radioCheckedClassName : radioClassName;
+        const spanClass = checked ? "cmd-radio-inner-checked" : "";
+        return React.createElement(
+          "span",
+          { className: "option-item", key, style: { width: "50%", marginTop: "10px", boxSizing: "border-box" } },
+          React.createElement(
+            "label",
+            { className: labelClass, onClick: () => onSelect(key) },
+            React.createElement(
+              "span",
+              { className: `cmd-radio-inner ${spanClass}` },
+              React.createElement("input", { type: "radio", "aria-describedby": "", value: levelOptions[key], readOnly: true }),
+              React.createElement(
+                "span",
+                { className: "cmd-radio-inner-display" },
+                checked ? React.createElement(
+                  "span",
+                  { role: "img", "aria-label": "radio", className: "cmd-icon cmd-icon-default cmd-icon-radio IconStyle_i7u766h" },
+                  React.createElement(
+                    "svg",
+                    { viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg", width: "1em", height: "1em", focusable: "false", "aria-hidden": "true" },
+                    React.createElement("circle", { cx: 12, cy: 12, r: 5, fill: "currentColor" })
+                  )
+                ) : null
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "cmd-radio-content" },
+              React.createElement(
+                "span",
+                { className: "cmd-radio-addon", id: key },
+                React.createElement("span", { className: "text" }, levelOptions[key])
+              )
+            )
+          )
+        );
+      });
+      const grid = React.createElement("div", { className: "ncmextend-quality-grid", style: { display: "flex", flexWrap: "wrap" } }, ...items);
+      return React.createElement("h4", { className: "" }, "音质播放设置", grid);
+    };
+    ReactDOM.render(React.createElement(RadioList), container);
+  };
+  let levelTipDOM = null;
+  const AddLevelTips = (node) => {
+    const areaToAdd = node.querySelector(".side.right-side > div");
+    if (!areaToAdd) return;
+    levelTipDOM = document.createElement("div");
+    areaToAdd.insertBefore(levelTipDOM, areaToAdd.firstChild);
+  };
   const hookTopWindow = () => {
     ah.proxy(
       {
@@ -567,6 +672,27 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       _unsafeWindow
     );
   };
+  const hookWebPlayerFetch = () => {
+    const origFetch = window.fetch;
+    const myCustomFetch = async function(resource, options = {}) {
+      const response = await origFetch(resource, options);
+      const resClone = response.clone();
+      const url2 = typeof resource === "string" ? resource : resource.url;
+      if (url2.includes("/weapi/song/enhance/player/url/v1")) {
+        const content = await resClone.text();
+        const res = await handlePlayResponse(content);
+        const newResponse = new Response(res, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers
+        });
+        return newResponse;
+      } else {
+        return response;
+      }
+    };
+    _unsafeWindow.fetch = myCustomFetch;
+  };
   const handlePlayResponse = async (response) => {
     const content = JSON.parse(response);
     const songId = content.data[0].id;
@@ -601,14 +727,27 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
               }
             }
             content.data[0].url = songUrl;
-            _unsafeWindow.top.player.tipPlay(levelDesc(songLevel));
+            showLevelTips(songLevel);
           }
         }
       } else {
-        _unsafeWindow.top.player.tipPlay(levelDesc(content.data[0].level));
+        showLevelTips(content.data[0].level);
       }
     }
     return JSON.stringify(content);
+  };
+  const showLevelTips = (level) => {
+    const desc = levelDesc(level);
+    try {
+      if (_unsafeWindow && _unsafeWindow.top && _unsafeWindow.top.player) {
+        _unsafeWindow.top.player.tipPlay(desc);
+        return;
+      }
+    } catch (e) {
+    }
+    if (levelTipDOM) {
+      levelTipDOM.innerHTML = desc;
+    }
   };
   const scriptSettings = (uiArea) => {
     let btnExport = createBigButton("脚本设置", uiArea, 2);
@@ -617,13 +756,18 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       Swal.fire({
         title: "脚本设置",
         showConfirmButton: false,
-        html: `<div><button type="button" class="swal2-styled" id="btn-download-settings">通用下载设置</button></div>
+        html: `<div><button type="button" class="swal2-styled" id="btn-playlevel-settings">音质播放设置</button></div>
+            <div><button type="button" class="swal2-styled" id="btn-download-settings">通用下载设置</button></div>
             <div><button type="button" class="swal2-styled" id="btn-header-settings">设置请求头</button></div>`,
         confirmButtonText: "设置",
         didOpen: () => {
           let container = Swal.getHtmlContainer();
+          let btnPlayLevelSettings = container.querySelector("#btn-playlevel-settings");
           let btnDownloadSettings = container.querySelector("#btn-download-settings");
           let btnHeaderSettings = container.querySelector("#btn-header-settings");
+          btnPlayLevelSettings.addEventListener("click", () => {
+            setPlayLevel();
+          });
           btnDownloadSettings.addEventListener("click", () => {
             openDownloadSettingPopup();
           });
@@ -806,6 +950,21 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       }
       return false;
     }
+  };
+  const setPlayLevel = () => {
+    Swal.fire({
+      title: "音质播放设置",
+      input: "select",
+      inputOptions: levelOptions,
+      inputValue: GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL),
+      confirmButtonText: "确定",
+      showCloseButton: true,
+      footer: '<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        GM_setValue("DEFAULT_LEVEL", result.value);
+      }
+    });
   };
   const extractLrcRegex = /^(?<lyricTimestamps>(?:\[.+?\])+)(?!\[)(?<content>.+)$/gm;
   const extractTimestampRegex = /\[(?<min>\d+):(?<sec>\d+)(?:\.|:)*(?<ms>\d+)*\]/g;
@@ -2086,7 +2245,7 @@ downloadConfig: Object.assign({
                         </select></label>
                     <label>优先下载音质
                     <select id="bm-dl-level" class="swal2-select">
-                        <option value="jymaster">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option>
+                        <option value="jymaster">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清臻音</option><option value="hires">高解析度无损</option><option value="lossless">无损</option><option value="exhigh">极高</option>
                     </select></label>
                     <label>文件名格式
                       <select id="bm-dl-out"  class="swal2-select">
@@ -2154,7 +2313,7 @@ downloadConfig: Object.assign({
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <label>优先转存音质
                     <select id="bm-up-level" class="swal2-select">
-                        <option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清环绕声</option><option value="hires">Hi-Res</option><option value="lossless">无损</option><option value="exhigh">极高</option>
+                        <option value="jymaster" selected="">超清母带</option><option value="dolby">杜比全景声</option><option value="sky">沉浸环绕声</option><option value="jyeffect">高清臻音</option><option value="hires">高解析度无损</option><option value="lossless">无损</option><option value="exhigh">极高</option>
                     </select></label>
                     <label><input id="bm-up-target-only" type="checkbox" ${state.uploadConfig.targetLevelOnly ? "checked" : ""}> 仅获取到目标音质时转存</label>
                   </div>
@@ -5578,7 +5737,7 @@ width: 70%;
       Swal.fire({
         title: "云盘音质提升",
         input: "select",
-        inputOptions: { lossless: "无损", hires: "Hi-Res" },
+        inputOptions: { lossless: "无损", hires: "高解析度无损" },
         inputPlaceholder: "选择目标音质",
         confirmButtonText: "下一步",
         showCloseButton: true,
@@ -7858,79 +8017,82 @@ width: 50%;
   }
   let songDetailObj = new SongDetail();
   const registerMenuCommand = () => {
-    GM_registerMenuCommand(`优先试听音质`, setLevel);
-    function setLevel() {
-      Swal.fire({
-        title: "优先试听音质",
-        input: "select",
-        inputOptions: levelOptions,
-        inputValue: GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL),
-        confirmButtonText: "确定",
-        showCloseButton: true,
-        footer: '<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          GM_setValue("DEFAULT_LEVEL", result.value);
-        }
-      });
-    }
+    GM_registerMenuCommand(`音质播放设置`, setPlayLevel);
   };
   const url = _unsafeWindow.location.href;
   const params = new URLSearchParams(_unsafeWindow.location.search);
   const paramId = Number(params.get("id"));
+  const isWebPlayer = url === "https://music.163.com/st/webplayer";
   const onStart = () => {
     console.log("[ncmExtend] onStart()");
-    if (_unsafeWindow.self === _unsafeWindow.top) {
-      GM_addStyle(GM_getResourceText("fa").replaceAll("../webfonts/", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/"));
-      _unsafeWindow.GUserScriptObjects = {
-        Swal
-      };
-      hookTopWindow();
-    } else if (_unsafeWindow.name === "contentFrame") {
-      Swal = _unsafeWindow.top.GUserScriptObjects.Swal;
-      hookContentFrame();
-      if (paramId > 0) {
-        if (url.includes("/song?")) {
-          songDetailObj.fetchSongData(paramId);
-        } else if (url.includes("/playlist?")) {
-          playlistDetailObj.fetchPlaylistFullData(paramId);
-        } else if (url.includes("/album?")) {
-          albumDetailObj.fetchAlbumData(paramId);
-        }
-      }
+    if (isWebPlayer) {
+      hookWebPlayerFetch();
     } else {
-      hookOtherWindow();
+      if (_unsafeWindow.self === _unsafeWindow.top) {
+        GM_addStyle(GM_getResourceText("fa").replaceAll("../webfonts/", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/"));
+        _unsafeWindow.GUserScriptObjects = {
+          Swal
+        };
+        hookTopWindow();
+      } else if (_unsafeWindow.name === "contentFrame") {
+        Swal = _unsafeWindow.top.GUserScriptObjects.Swal;
+        hookContentFrame();
+        if (paramId > 0) {
+          if (url.includes("/song?")) {
+            songDetailObj.fetchSongData(paramId);
+          } else if (url.includes("/playlist?")) {
+            playlistDetailObj.fetchPlaylistFullData(paramId);
+          } else if (url.includes("/album?")) {
+            albumDetailObj.fetchAlbumData(paramId);
+          }
+        }
+      } else {
+        hookOtherWindow();
+      }
     }
   };
   const onDomReady = () => {
     console.log("[ncmExtend] onDomReady()");
-    if (paramId > 0) {
-      if (url.includes("/user/home?")) {
-        myHomeMain(paramId);
-      } else if (url.includes("/song?")) {
-        songDetailObj.onDomReady();
-      } else if (url.includes("/playlist?")) {
-        playlistDetailObj.onDomReady();
-      } else if (url.includes("/album?")) {
-        albumDetailObj.onDomReady();
-      } else if (url.includes("/artist?")) {
-        artistDetailObj.onDomReady();
+    if (isWebPlayer) ;
+    else {
+      if (paramId > 0) {
+        if (url.includes("/user/home?")) {
+          myHomeMain(paramId);
+        } else if (url.includes("/song?")) {
+          songDetailObj.onDomReady();
+        } else if (url.includes("/playlist?")) {
+          playlistDetailObj.onDomReady();
+        } else if (url.includes("/album?")) {
+          albumDetailObj.onDomReady();
+        } else if (url.includes("/artist?")) {
+          artistDetailObj.onDomReady();
+        }
+      }
+      const commentBox = document.querySelector("#comment-box");
+      if (commentBox) {
+        observerCommentBox(commentBox);
+        InfoFirstPage(commentBox);
+        addCommentWithCumstomIP(commentBox);
+      }
+      if (_unsafeWindow.name === "contentFrame") {
+        registerMenuCommand();
       }
     }
-    const commentBox = document.querySelector("#comment-box");
-    if (commentBox) {
-      observerCommentBox(commentBox);
-      InfoFirstPage(commentBox);
-      addCommentWithCumstomIP(commentBox);
-    }
-    if (_unsafeWindow.name === "contentFrame") {
-      registerMenuCommand();
+  };
+  const onPageLoaded = () => {
+    console.log("[ncmExtend] onPageLoaded()");
+    if (isWebPlayer) {
+      observerWebPlayer();
     }
   };
   const DOM_READY = "DOMContentLoaded";
+  const PAGE_LOADED = "load";
   onStart();
   _unsafeWindow.addEventListener(DOM_READY, () => {
     onDomReady();
+  });
+  _unsafeWindow.addEventListener(PAGE_LOADED, () => {
+    onPageLoaded();
   });
 
 })();

@@ -13,7 +13,7 @@ export const cloudUpgrade = (uiArea) => {
         Swal.fire({
             title: '云盘音质提升',
             input: 'select',
-            inputOptions: { lossless: '无损', hires: 'Hi-Res' },
+            inputOptions: { lossless: '无损', hires: '高解析度无损' },
             inputPlaceholder: '选择目标音质',
             confirmButtonText: '下一步',
             showCloseButton: true,

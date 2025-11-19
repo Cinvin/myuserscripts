@@ -1,5 +1,5 @@
 
-export const levelOptions = { jymaster: '超清母带', dolby: '杜比全景声', sky: '沉浸环绕声', jyeffect: '高清环绕声', hires: 'Hi-Res', lossless: '无损', exhigh: '极高', higher: '较高', standard: '标准' }
+export const levelOptions = { jymaster: '超清母带', dolby: '杜比全景声', sky: '沉浸环绕声', jyeffect: '高清臻音', hires: '高解析度无损', lossless: '无损', exhigh: '极高', higher: '较高', standard: '标准' }
 export const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 5, lossless: 4, exhigh: 3, higher: 2, standard: 1, none: 0 }
 export const defaultOfDEFAULT_LEVEL = 'jymaster'
 // 默认的批量操作的歌曲过滤条件

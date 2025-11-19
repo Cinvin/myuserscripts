@@ -1,5 +1,5 @@
 import { createBigButton, showTips, showConfirmBox } from "../utils/common"
-import { getDownloadSettings, setDownloadSettings } from "../utils/constant"
+import { getDownloadSettings, setDownloadSettings, levelOptions, defaultOfDEFAULT_LEVEL } from "../utils/constant"
 
 export const scriptSettings = (uiArea) => {
     //设置请求头
@@ -10,14 +10,19 @@ export const scriptSettings = (uiArea) => {
         Swal.fire({
             title: '脚本设置',
             showConfirmButton: false,
-            html: `<div><button type="button" class="swal2-styled" id="btn-download-settings">通用下载设置</button></div>
+            html: `<div><button type="button" class="swal2-styled" id="btn-playlevel-settings">音质播放设置</button></div>
+            <div><button type="button" class="swal2-styled" id="btn-download-settings">通用下载设置</button></div>
             <div><button type="button" class="swal2-styled" id="btn-header-settings">设置请求头</button></div>`,
             confirmButtonText: '设置',
             didOpen: () => {
                 let container = Swal.getHtmlContainer()
+                let btnPlayLevelSettings = container.querySelector('#btn-playlevel-settings')
                 let btnDownloadSettings = container.querySelector('#btn-download-settings')
                 let btnHeaderSettings = container.querySelector('#btn-header-settings')
 
+                btnPlayLevelSettings.addEventListener('click', () => {
+                    setPlayLevel()
+                })
                 btnDownloadSettings.addEventListener('click', () => {
                     openDownloadSettingPopup()
                 })
@@ -214,4 +219,23 @@ export const scriptSettings = (uiArea) => {
         catch (e) { }
         return false;
     }
+
+
+}
+
+export const setPlayLevel = () => {
+    Swal.fire({
+        title: '音质播放设置',
+        input: 'select',
+        inputOptions: levelOptions,
+        inputValue: GM_getValue('DEFAULT_LEVEL', defaultOfDEFAULT_LEVEL),
+        confirmButtonText: '确定',
+        showCloseButton: true,
+        footer: '<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
+    })
+        .then(result => {
+            if (result.isConfirmed) {
+                GM_setValue('DEFAULT_LEVEL', result.value)
+            }
+        })
 }
