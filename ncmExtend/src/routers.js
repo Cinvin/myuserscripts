@@ -1,12 +1,12 @@
 import { unsafeWindow } from '$'
-import { hookTopWindow, hookContentFrame, hookOtherWindow, hookWebPlayerFetch } from './hooks'
+import { hookTopWindow, hookContentFrame, hookOtherWindow } from './hooks'
 import { myHomeMain } from './home/main'
 
 import { songDetailObj } from './song/songDetail'
 import { albumDetailObj } from './album/albumDetail'
 import { playlistDetailObj } from './playlist/playlistDetail'
 import { artistDetailObj } from './artist/artistDetail'
-import { observerWebPlayer } from './webPlayer/main'
+import { onWebPlayerStart,onWebPlayerPageLoaded } from './webPlayer/main'
 
 import { observerCommentBox, addCommentWithCumstomIP, InfoFirstPage } from './commentBox'
 
@@ -20,7 +20,7 @@ const isWebPlayer = url === 'https://music.163.com/st/webplayer'
 export const onStart = () => {
     console.log('[ncmExtend] onStart()')
     if (isWebPlayer) {
-        hookWebPlayerFetch()
+        onWebPlayerStart()
     }
     else {
         if (unsafeWindow.self === unsafeWindow.top) {
@@ -89,6 +89,6 @@ export const onDomReady = () => {
 export const onPageLoaded = () => {
     console.log('[ncmExtend] onPageLoaded()')
     if (isWebPlayer) {
-        observerWebPlayer()
+        onWebPlayerPageLoaded()
     }
 }
