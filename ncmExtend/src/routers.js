@@ -6,7 +6,7 @@ import { songDetailObj } from './song/songDetail'
 import { albumDetailObj } from './album/albumDetail'
 import { playlistDetailObj } from './playlist/playlistDetail'
 import { artistDetailObj } from './artist/artistDetail'
-import { onWebPlayerStart,onWebPlayerPageLoaded } from './webPlayer/main'
+import { onWebPlayerStart, onWebPlayerPageLoaded } from './webPlayer/main'
 
 import { observerCommentBox, addCommentWithCumstomIP, InfoFirstPage } from './commentBox'
 
@@ -18,7 +18,9 @@ const paramId = Number(params.get('id'))
 const isWebPlayer = url === 'https://music.163.com/st/webplayer'
 
 export const onStart = () => {
-    console.log('[ncmExtend] onStart()')
+    if (unsafeWindow === unsafeWindow.top) {
+        console.log('[ncmExtend]脚本加载成功');
+    }
     if (isWebPlayer) {
         onWebPlayerStart()
     }
@@ -51,8 +53,6 @@ export const onStart = () => {
     }
 }
 export const onDomReady = () => {
-    console.log('[ncmExtend] onDomReady()')
-
     if (isWebPlayer) {
 
     }
@@ -87,7 +87,6 @@ export const onDomReady = () => {
     }
 }
 export const onPageLoaded = () => {
-    console.log('[ncmExtend] onPageLoaded()')
     if (isWebPlayer) {
         onWebPlayerPageLoaded()
     }

@@ -5,6 +5,7 @@ import { showConfirmBox } from '../utils/common';
 export const onWebPlayerStart = () => {
     hookWebpackJsonp();
     hookWebPlayerFetch();
+    setWebPlayerStyle()
 }
 
 export const onWebPlayerPageLoaded = () => {
@@ -61,6 +62,24 @@ const hookWebpackJsonp = () => {
     });
 }
 
+const setWebPlayerStyle = () => {
+    const webPlayerFontSetting = JSON.parse(GM_getValue('webPlayerFontSetting', '{}'));
+    const defaultFont = webPlayerFontSetting.default || '';
+    const lyricFont = webPlayerFontSetting.lyric || '';
+    if (defaultFont.length > 0) {
+        GM_addStyle(`
+            #root > div {
+            font-family: ${defaultFont};
+        }`);
+    }
+    if (lyricFont.length > 0) {
+        GM_addStyle(`
+            .lyric-mode {
+                font-family: ${lyricFont};
+        }`);
+    }
+}
+
 /**
  * 监控页面变化
  */
@@ -72,6 +91,7 @@ const observerWebPlayer = () => {
                 for (let node of mutation.addedNodes) {
                     if (node.id === "page_pc_setting") {
                         AddQualitySetting(node);
+                        AddFontSetting(node);
                     }
                     else if (node.id === 'page_pc_mini_bar') {
                         AddLevelTips(node);
@@ -161,6 +181,73 @@ const AddQualitySetting = (node) => {
     ReactDOM.render(React.createElement(RadioList), container);
 }
 
+/**
+ * 字体设置
+ */
+const AddFontSetting = (node) => {
+    const mainDiv = node.querySelector('main');
+    const areaToAdd = mainDiv.querySelector('#normal > div');
+    const buttonFound = mainDiv.querySelector('.cmd-button');
+    if (!buttonFound) return;
+    const buttonClassName = buttonFound.className;
+
+    const React = unsafeWindow.React;
+    const ReactDOM = unsafeWindow.ReactDOM;
+    if (!React || !ReactDOM) {
+        return;
+    }
+
+    const existContainer = mainDiv.querySelector('.ncmextend-font-react-container');
+    if (existContainer) {
+        try { ReactDOM.unmountComponentAtNode(existContainer); } catch (e) { }
+        existContainer.remove();
+    }
+
+    const container = document.createElement('section');
+    container.className = 'item list ncmextend-font-react-container';
+    areaToAdd.appendChild(container);
+
+    const Button = () => {
+        const onClick = () => {
+            Swal.fire({
+                title: '自定义字体',
+                html:
+                    `<div><label>通用字体<input id="ncm-font-default" class="swal2-input"></label></div>
+                    <div><label>滚动歌词字体<input id="ncm-font-lyric" class="swal2-input"></label></div>`,
+                footer: `<div>示例："SF Pro Rounded", "ui-rounded",  "PingFang SC"</div>
+                <div>字体之间以英文逗号分隔，字体格式请参考 <a href="https://developer.mozilla.org/zh-CN/docs/Web/CSS/font-family" target="_blank">MDN</a></div>`,
+                confirmButtonText: '保存',
+                showCloseButton: true,
+                focusConfirm: false,
+                didOpen: () => {
+                    const container = Swal.getHtmlContainer();
+                    const webPlayerFontSetting = JSON.parse(GM_getValue('webPlayerFontSetting', '{}'));
+                    container.querySelector('#ncm-font-default').value = webPlayerFontSetting.default || '';
+                    container.querySelector('#ncm-font-lyric').value = webPlayerFontSetting.lyric || '';
+                },
+                preConfirm: () => {
+                    const container = Swal.getHtmlContainer();
+                    const defaultFont = container.querySelector('#ncm-font-default').value;
+                    const lyricFont = container.querySelector('#ncm-font-lyric').value;
+                    return { defaultFont, lyricFont };
+                }
+            }).then((res) => {
+                if (res && res.isConfirmed) {
+                    const v = res.value || {};
+                    GM_setValue('webPlayerFontSetting', JSON.stringify({ default: v.defaultFont || '', lyric: v.lyricFont || '' }));
+
+                    showConfirmBox('保存成功，刷新网页生效。');
+                }
+            });
+        };
+
+        return React.createElement('button', { className: buttonClassName, onClick }, '自定义字体');
+    };
+
+    ReactDOM.render(React.createElement(Button), container);
+
+}
+
 export let levelTipDOM = null;
 
 /**
@@ -178,7 +265,6 @@ const AddLevelTips = (node) => {
  */
 const HandleCloudButton = (node) => {
     const button = node.querySelector('div > div > button:nth-child(2)');
-    console.log('button:', button);
     if (button) {
         button.addEventListener('click', function (event) {
             event.stopPropagation();  // 阻止事件冒泡
