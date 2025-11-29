@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.3.7
+// @version      4.3.8
 // @author       cinvin
 // @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
@@ -476,111 +476,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     });
     btnsArea.appendChild(ipBtn);
   };
-  const observerWebPlayer = () => {
-    let observer = new MutationObserver((mutations, observer2) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type == "childList" && mutation.addedNodes.length > 0) {
-          for (let node of mutation.addedNodes) {
-            if (node.id === "page_pc_setting") {
-              AddQualitySetting(node);
-            } else if (node.id === "page_pc_mini_bar") {
-              AddLevelTips(node);
-            }
-          }
-        }
-      });
-    });
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-  };
-  const AddQualitySetting = (node) => {
-    const mainDiv = node.querySelector("main");
-    const areaToAdd = mainDiv.querySelector("#play > div");
-    const radioChecked = mainDiv.querySelector(".cmd-radio-checked");
-    if (!radioChecked) return;
-    const radioCheckedClassName = radioChecked.className;
-    const radioClassName = radioCheckedClassName.replace("cmd-radio-checked", "");
-    const currentLevel = GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL);
-    const React = unsafeWindow.React;
-    const ReactDOM = unsafeWindow.ReactDOM;
-    if (!React || !ReactDOM) {
-      return;
-    }
-    const existContainer = mainDiv.querySelector(".ncmextend-quality-react-container");
-    if (existContainer) {
-      try {
-        ReactDOM.unmountComponentAtNode(existContainer);
-      } catch (e) {
-      }
-      existContainer.remove();
-    }
-    const container = document.createElement("section");
-    container.className = "item list ncmextend-quality-react-container";
-    areaToAdd.appendChild(container);
-    const { useState } = React;
-    const RadioList = () => {
-      const [level, setLevel] = useState(currentLevel);
-      const onSelect = (key) => {
-        setLevel(key);
-        try {
-          GM_setValue("DEFAULT_LEVEL", key);
-        } catch (e) {
-        }
-      };
-      const items = Object.keys(levelOptions).map((key) => {
-        const checked = level === key;
-        const labelClass = checked ? radioCheckedClassName : radioClassName;
-        const spanClass = checked ? "cmd-radio-inner-checked" : "";
-        return React.createElement(
-          "span",
-          { className: "option-item", key, style: { width: "50%", marginTop: "10px", boxSizing: "border-box" } },
-          React.createElement(
-            "label",
-            { className: labelClass, onClick: () => onSelect(key) },
-            React.createElement(
-              "span",
-              { className: `cmd-radio-inner ${spanClass}` },
-              React.createElement("input", { type: "radio", "aria-describedby": "", value: levelOptions[key], readOnly: true }),
-              React.createElement(
-                "span",
-                { className: "cmd-radio-inner-display" },
-                checked ? React.createElement(
-                  "span",
-                  { role: "img", "aria-label": "radio", className: "cmd-icon cmd-icon-default cmd-icon-radio IconStyle_i7u766h" },
-                  React.createElement(
-                    "svg",
-                    { viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg", width: "1em", height: "1em", focusable: "false", "aria-hidden": "true" },
-                    React.createElement("circle", { cx: 12, cy: 12, r: 5, fill: "currentColor" })
-                  )
-                ) : null
-              )
-            ),
-            React.createElement(
-              "div",
-              { className: "cmd-radio-content" },
-              React.createElement(
-                "span",
-                { className: "cmd-radio-addon", id: key },
-                React.createElement("span", { className: "text" }, levelOptions[key])
-              )
-            )
-          )
-        );
-      });
-      const grid = React.createElement("div", { className: "ncmextend-quality-grid", style: { display: "flex", flexWrap: "wrap" } }, ...items);
-      return React.createElement("h4", { className: "" }, "音质播放设置", grid);
-    };
-    ReactDOM.render(React.createElement(RadioList), container);
-  };
-  let levelTipDOM = null;
-  const AddLevelTips = (node) => {
-    const areaToAdd = node.querySelector(".side.right-side > div");
-    if (!areaToAdd) return;
-    levelTipDOM = document.createElement("div");
-    areaToAdd.insertBefore(levelTipDOM, areaToAdd.firstChild);
-  };
   const hookTopWindow = () => {
     ah.proxy(
       {
@@ -598,7 +493,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
         },
         onResponse: (response, handler) => {
           if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
-            handlePlayResponse(response.response).then((res) => {
+            handlePlayResponse(response.response, false).then((res) => {
               response.response = res;
               handler.next(response);
             });
@@ -627,7 +522,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
         },
         onResponse: (response, handler) => {
           if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
-            handlePlayResponse(response.response).then((res) => {
+            handlePlayResponse(response.response, false).then((res) => {
               response.response = res;
               handler.next(response);
             });
@@ -660,7 +555,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
         },
         onResponse: (response, handler) => {
           if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
-            handlePlayResponse(response.response).then((res) => {
+            handlePlayResponse(response.response, false).then((res) => {
               response.response = res;
               handler.next(response);
             });
@@ -680,8 +575,20 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       const url2 = typeof resource === "string" ? resource : resource.url;
       if (url2.includes("/weapi/song/enhance/player/url/v1")) {
         const content = await resClone.text();
-        const res = await handlePlayResponse(content);
+        const res = await handlePlayResponse(content, true);
         const newResponse = new Response(res, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers
+        });
+        return newResponse;
+      } else if (url2.includes("/weapi/aio/produce/material/group/get")) {
+        const content = await resClone.text();
+        let jsonContent = JSON.parse(content);
+        if (jsonContent && jsonContent.data) {
+          jsonContent.data.materialList = [];
+        }
+        const newResponse = new Response(JSON.stringify(jsonContent), {
           status: response.status,
           statusText: response.statusText,
           headers: response.headers
@@ -693,11 +600,10 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     };
     _unsafeWindow.fetch = myCustomFetch;
   };
-  const handlePlayResponse = async (response) => {
+  const handlePlayResponse = async (response, isWebPlayer2) => {
     const content = JSON.parse(response);
     const songId = content.data[0].id;
     const targetLevel = _GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL);
-    content.data[0].type = "mp3";
     if (content.data[0].url) {
       if (["standard", "higher", "exhigh"].includes(content.data[0].level)) {
         if (levelWeight[targetLevel] > levelWeight[content.data[0].level]) {
@@ -717,22 +623,28 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
           }
           const BatchRes = await weapiRequestSync("/api/batch", { data: apiData });
           if (BatchRes) {
-            let songUrl = BatchRes["/api/song/enhance/player/url/v1"].data[0].url;
             let songLevel = BatchRes["/api/song/enhance/player/url/v1"].data[0].level;
+            let selectedURL = "player";
             if (BatchRes["/api/song/enhance/download/url/v1"]) {
               let songDLLevel = BatchRes["/api/song/enhance/download/url/v1"].data.level;
               if (BatchRes["/api/song/enhance/download/url/v1"].data.url && levelWeight[songDLLevel] > levelWeight[songLevel]) {
-                songUrl = BatchRes["/api/song/enhance/download/url/v1"].data.url;
-                songLevel = songDLLevel;
+                selectedURL = "download";
               }
             }
-            content.data[0].url = songUrl;
-            showLevelTips(songLevel);
+            if (selectedURL === "download") {
+              content.data[0] = BatchRes["/api/song/enhance/download/url/v1"].data;
+            } else {
+              content.data[0] = BatchRes["/api/song/enhance/player/url/v1"].data[0];
+            }
+            if (!isWebPlayer2) showLevelTips(content.data[0].level);
           }
         }
       } else {
-        showLevelTips(content.data[0].level);
+        if (!isWebPlayer2) showLevelTips(content.data[0].level);
       }
+    }
+    if (!isWebPlayer2 && content.data[0].type !== "mp3" && content.data[0].type !== "m4a") {
+      content.data[0].type = "mp3";
     }
     return JSON.stringify(content);
   };
@@ -744,9 +656,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
         return;
       }
     } catch (e) {
-    }
-    if (levelTipDOM) {
-      levelTipDOM.innerHTML = desc;
     }
   };
   const scriptSettings = (uiArea) => {
@@ -829,7 +738,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
             <div><label>UserAgent<input class="swal2-input" id="text-userAgent"></label></div>`,
         footer: `<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div>
             <div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>
-            <div>为避免被风控，设置请求头后听歌将无法记录。</div>
+            <div>为避免被风控，请不要在设置请求头时用新网页版听歌，可能会被判定为“使用非法挂机软件”。</div>
             <div>设置请求头后，清除请求头或关闭卸载脚本时请自行清空网易云网页版cookie。以免被之后使用网页版时，被判断为“使用非法挂机软件”。</div>`,
         confirmButtonText: "设置",
         preConfirm: () => {
@@ -8016,6 +7925,244 @@ width: 50%;
     }
   }
   let songDetailObj = new SongDetail();
+  const onWebPlayerStart = () => {
+    hookWebpackJsonp();
+    hookWebPlayerFetch();
+    setWebPlayerStyle();
+  };
+  const onWebPlayerPageLoaded = () => {
+    observerWebPlayer();
+  };
+  const hookWebpackJsonp = () => {
+    let originalJsonp = unsafeWindow.webpackJsonp;
+    Object.defineProperty(unsafeWindow, "webpackJsonp", {
+      get() {
+        return originalJsonp;
+      },
+      set(value) {
+        if (value.push.__ncmExtendHasHooked) {
+          return;
+        }
+        originalJsonp = value;
+        const originPush = value.push;
+        value.push = function(...args) {
+          const chunk = args[0];
+          const modules = chunk[1];
+          for (const moduleId in modules) {
+            const moduleFunc = modules[moduleId];
+            let code = moduleFunc.toString();
+            let isChanged = false;
+            const showCloudRegex = /\[\s*(['"])download\1\s*,\s*(['"])localMusic\2\s*,\s*(['"])cloudDisk\3\s*\]/;
+            if (showCloudRegex.test(code)) {
+              code = code.replace(showCloudRegex, '["download","localMusic"]');
+              isChanged = true;
+            }
+            const showPlayModeRegex = /className\s*:\s*"right draggable"\s*,\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*"([^"]*)"\s*,\s*children\s*:\s*\[\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*&&\s*!\s*([a-zA-Z_][a-zA-Z0-9_.]*)\.isWeb\s*\?\s*Object\s*\(\s*([a-zA-Z_][a-zA-Z0-9_.]*)\.jsx\s*\)/g;
+            if (showPlayModeRegex.test(code)) {
+              code = code.replace(showPlayModeRegex, 'className : "right draggable", $1 : "$2", children : [ $3 ? Object( $5 .jsx )');
+              isChanged = true;
+            }
+            const showPlayingQuality = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*Object\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)\s*\|\|\s*([a-zA-Z_$][a-zA-Z0-9_$.]*)\.isWeb\s*\?\s*null\s*:\s*Object\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$.]*)\.jsx\s*\)\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*\{\s*ignoreClickRef\s*:\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*isDefaultMiniBar\s*:\s*!\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*_nk\s*:\s*"([^"]*)"\s*\}\s*\)\s*,/g;
+            if (showPlayingQuality.test(code)) {
+              code = code.replace(showPlayingQuality, '$1=Object($2.$3)($4)||Object($6.jsx)($7.$8,{ignoreClickRef:$9,isDefaultMiniBar:!$10,_nk:"$11"}),');
+              isChanged = true;
+            }
+            if (isChanged) {
+              const createFunc = new Function("return " + code);
+              modules[moduleId] = createFunc();
+            }
+          }
+          return originPush.apply(this, args);
+        };
+        value.push.__ncmExtendHasHooked = true;
+      }
+    });
+  };
+  const setWebPlayerStyle = () => {
+    const webPlayerFontSetting = JSON.parse(GM_getValue("webPlayerFontSetting", "{}"));
+    const defaultFont = webPlayerFontSetting.default || "";
+    const lyricFont = webPlayerFontSetting.lyric || "";
+    if (defaultFont.length > 0) {
+      GM_addStyle(`
+            #root > div {
+            font-family: ${defaultFont};
+        }`);
+    }
+    if (lyricFont.length > 0) {
+      GM_addStyle(`
+            #mod_pc_lyric_record, .lyric-line  {
+                font-family: ${lyricFont};
+        }`);
+    }
+  };
+  const observerWebPlayer = () => {
+    let observer = new MutationObserver((mutations, observer2) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type == "childList" && mutation.addedNodes.length > 0) {
+          for (let node of mutation.addedNodes) {
+            if (node.id === "page_pc_setting") {
+              AddQualitySetting(node);
+              AddFontSetting(node);
+            } else if (node.id === "page_pc_mini_bar") {
+              AddLevelTips(node);
+            } else if (node.localName === "div" && node.textContent.startsWith("已上传单曲正在上传网盘容量")) {
+              HandleCloudButton(node);
+            }
+          }
+        }
+      });
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  };
+  const AddQualitySetting = (node) => {
+    const mainDiv = node.querySelector("main");
+    const areaToAdd = mainDiv.querySelector("#play > div");
+    const radioChecked = mainDiv.querySelector(".cmd-radio-checked");
+    if (!radioChecked) return;
+    const radioCheckedClassName = radioChecked.className;
+    const radioClassName = radioCheckedClassName.replace("cmd-radio-checked", "");
+    const currentLevel = GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL);
+    const React = unsafeWindow.React;
+    const ReactDOM = unsafeWindow.ReactDOM;
+    if (!React || !ReactDOM) {
+      return;
+    }
+    const existContainer = mainDiv.querySelector(".ncmextend-quality-react-container");
+    if (existContainer) {
+      try {
+        ReactDOM.unmountComponentAtNode(existContainer);
+      } catch (e) {
+      }
+      existContainer.remove();
+    }
+    const container = document.createElement("section");
+    container.className = "item list ncmextend-quality-react-container";
+    areaToAdd.insertBefore(container, areaToAdd.firstChild);
+    const { useState } = React;
+    const RadioList = () => {
+      const [level, setLevel] = useState(currentLevel);
+      const onSelect = (key) => {
+        setLevel(key);
+        try {
+          GM_setValue("DEFAULT_LEVEL", key);
+        } catch (e) {
+        }
+      };
+      const items = Object.keys(levelOptions).map((key) => {
+        const checked = level === key;
+        const labelClass = checked ? radioCheckedClassName : radioClassName;
+        const spanClass = checked ? "cmd-radio-inner-checked" : "";
+        return React.createElement(
+          "span",
+          { className: "option-item", key, style: { width: "33.3%", marginTop: "10px", boxSizing: "border-box" } },
+          React.createElement(
+            "label",
+            { className: labelClass, onClick: () => onSelect(key) },
+            React.createElement(
+              "span",
+              { className: `cmd-radio-inner ${spanClass}` },
+              React.createElement("input", { type: "radio", "aria-describedby": "", value: levelOptions[key], readOnly: true }),
+              React.createElement(
+                "span",
+                { className: "cmd-radio-inner-display" },
+                checked ? React.createElement(
+                  "span",
+                  { role: "img", "aria-label": "radio", className: "cmd-icon cmd-icon-default cmd-icon-radio IconStyle_i7u766h" },
+                  React.createElement(
+                    "svg",
+                    { viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg", width: "1em", height: "1em", focusable: "false", "aria-hidden": "true" },
+                    React.createElement("circle", { cx: 12, cy: 12, r: 5, fill: "currentColor" })
+                  )
+                ) : null
+              )
+            ),
+            React.createElement(
+              "div",
+              { className: "cmd-radio-content" },
+              React.createElement(
+                "span",
+                { className: "cmd-radio-addon", id: key },
+                React.createElement("span", { className: "text" }, levelOptions[key])
+              )
+            )
+          )
+        );
+      });
+      const grid = React.createElement("div", { className: "ncmextend-quality-grid", style: { display: "flex", flexWrap: "wrap" } }, ...items);
+      return React.createElement("h4", { className: "" }, "音质播放设置", grid);
+    };
+    ReactDOM.render(React.createElement(RadioList), container);
+  };
+  const AddFontSetting = (node) => {
+    const mainDiv = node.querySelector("main");
+    const areaToAdd = mainDiv.querySelector("#normal > div");
+    const buttonFound = mainDiv.querySelector(".cmd-button");
+    if (!buttonFound) return;
+    const buttonClassName = buttonFound.className;
+    const React = unsafeWindow.React;
+    const ReactDOM = unsafeWindow.ReactDOM;
+    if (!React || !ReactDOM) {
+      return;
+    }
+    const existContainer = mainDiv.querySelector(".ncmextend-font-react-container");
+    if (existContainer) {
+      try {
+        ReactDOM.unmountComponentAtNode(existContainer);
+      } catch (e) {
+      }
+      existContainer.remove();
+    }
+    const container = document.createElement("section");
+    container.className = "item list ncmextend-font-react-container";
+    areaToAdd.appendChild(container);
+    const Button = () => {
+      const onClick = () => {
+        Swal.fire({
+          title: "自定义字体",
+          html: `<div><label>通用字体<input id="ncm-font-default" class="swal2-input"></label></div>
+                    <div><label>滚动歌词字体<input id="ncm-font-lyric" class="swal2-input"></label></div>`,
+          footer: `<div>示例："SF Pro Rounded", "ui-rounded",  "PingFang SC"</div>
+                <div>字体之间以英文逗号分隔，字体格式请参考 <a href="https://developer.mozilla.org/zh-CN/docs/Web/CSS/font-family" target="_blank">MDN</a></div>`,
+          confirmButtonText: "保存",
+          showCloseButton: true,
+          focusConfirm: false,
+          didOpen: () => {
+            const container2 = Swal.getHtmlContainer();
+            const webPlayerFontSetting = JSON.parse(GM_getValue("webPlayerFontSetting", "{}"));
+            container2.querySelector("#ncm-font-default").value = webPlayerFontSetting.default || "";
+            container2.querySelector("#ncm-font-lyric").value = webPlayerFontSetting.lyric || "";
+          },
+          preConfirm: () => {
+            const container2 = Swal.getHtmlContainer();
+            const defaultFont = container2.querySelector("#ncm-font-default").value;
+            const lyricFont = container2.querySelector("#ncm-font-lyric").value;
+            return { defaultFont, lyricFont };
+          }
+        }).then((res) => {
+          if (res && res.isConfirmed) {
+            const v = res.value || {};
+            GM_setValue("webPlayerFontSetting", JSON.stringify({ default: v.defaultFont || "", lyric: v.lyricFont || "" }));
+            showConfirmBox("保存成功，刷新网页生效。");
+          }
+        });
+      };
+      return React.createElement("button", { className: buttonClassName, onClick }, "自定义字体");
+    };
+    ReactDOM.render(React.createElement(Button), container);
+  };
+  const HandleCloudButton = (node) => {
+    const button = node.querySelector("div > div > button:nth-child(2)");
+    if (button) {
+      button.addEventListener("click", function(event) {
+        event.stopPropagation();
+        event.preventDefault();
+        showConfirmBox("新版网页端没有实现上传功能，估计网易云因此隐藏“我的音乐云盘”的。脚本在原版网页端的个人主页提供了上传功能。欢迎前去使用。");
+      }, true);
+    }
+  };
   const registerMenuCommand = () => {
     GM_registerMenuCommand(`音质播放设置`, setPlayLevel);
   };
@@ -8024,9 +8171,11 @@ width: 50%;
   const paramId = Number(params.get("id"));
   const isWebPlayer = url === "https://music.163.com/st/webplayer";
   const onStart = () => {
-    console.log("[ncmExtend] onStart()");
+    if (_unsafeWindow === _unsafeWindow.top) {
+      console.log("[ncmExtend]脚本加载成功");
+    }
     if (isWebPlayer) {
-      hookWebPlayerFetch();
+      onWebPlayerStart();
     } else {
       if (_unsafeWindow.self === _unsafeWindow.top) {
         GM_addStyle(GM_getResourceText("fa").replaceAll("../webfonts/", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/"));
@@ -8052,7 +8201,6 @@ width: 50%;
     }
   };
   const onDomReady = () => {
-    console.log("[ncmExtend] onDomReady()");
     if (isWebPlayer) ;
     else {
       if (paramId > 0) {
@@ -8080,9 +8228,8 @@ width: 50%;
     }
   };
   const onPageLoaded = () => {
-    console.log("[ncmExtend] onPageLoaded()");
     if (isWebPlayer) {
-      observerWebPlayer();
+      onWebPlayerPageLoaded();
     }
   };
   const DOM_READY = "DOMContentLoaded";
