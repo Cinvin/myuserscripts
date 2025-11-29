@@ -3,7 +3,6 @@ import { defaultOfDEFAULT_LEVEL, levelWeight } from "./utils/constant";
 import { isSettedHeader, weapiRequestSync } from "./utils/request";
 import { levelDesc } from "./utils/descHelper";
 import { storageCommentInfo } from "./commentBox";
-import { levelTipDOM } from "./webPlayer/main"
 
 export const hookTopWindow = () => {
     ah.proxy(
@@ -160,9 +159,6 @@ const handlePlayResponse = async (response, isWebPlayer) => {
     const content = JSON.parse(response);
     const songId = content.data[0].id;
     const targetLevel = GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL);
-    if (!isWebPlayer && content.data[0].type !== "mp3" && content.data[0].type !== "m4a") {
-        content.data[0].type = "mp3";
-    }
 
     if (content.data[0].url) {
         if (["standard", "higher", "exhigh"].includes(content.data[0].level)) {
@@ -186,25 +182,33 @@ const handlePlayResponse = async (response, isWebPlayer) => {
                 }
                 const BatchRes = await weapiRequestSync("/api/batch", { data: apiData });
                 if (BatchRes) {
-                    let songUrl = BatchRes["/api/song/enhance/player/url/v1"].data[0].url;
                     let songLevel = BatchRes["/api/song/enhance/player/url/v1"].data[0].level;
+                    let selectedURL = 'player'
                     if (BatchRes["/api/song/enhance/download/url/v1"]) {
                         let songDLLevel = BatchRes["/api/song/enhance/download/url/v1"].data.level;
                         if (
                             BatchRes["/api/song/enhance/download/url/v1"].data.url &&
                             levelWeight[songDLLevel] > levelWeight[songLevel]
                         ) {
-                            songUrl = BatchRes["/api/song/enhance/download/url/v1"].data.url;
-                            songLevel = songDLLevel;
+                            selectedURL = 'download';
                         }
                     }
-                    content.data[0].url = songUrl;
-                    showLevelTips(songLevel);
+
+                    if (selectedURL === 'download') {
+                        content.data[0] = BatchRes["/api/song/enhance/download/url/v1"].data;
+                    }
+                    else {
+                        content.data[0] = BatchRes["/api/song/enhance/player/url/v1"].data[0];
+                    }
+                    if (!isWebPlayer) showLevelTips(content.data[0].level);
                 }
             }
         } else {
-            showLevelTips(content.data[0].level);
+            if (!isWebPlayer) showLevelTips(content.data[0].level);
         }
+    }
+    if (!isWebPlayer && content.data[0].type !== "mp3" && content.data[0].type !== "m4a") {
+        content.data[0].type = "mp3";
     }
     return JSON.stringify(content);
 };
@@ -217,9 +221,5 @@ const showLevelTips = (level) => {
             return;
         }
     } catch (e) {
-    }
-
-    if (levelTipDOM) {
-        levelTipDOM.innerHTML = desc;
     }
 }

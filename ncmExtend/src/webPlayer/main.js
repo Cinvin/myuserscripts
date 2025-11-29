@@ -48,6 +48,12 @@ const hookWebpackJsonp = () => {
                         code = code.replace(showPlayModeRegex, 'className : "right draggable", $1 : "$2", children : [ $3 ? Object( $5 .jsx )');
                         isChanged = true;
                     }
+                    // 显示正在播放音质
+                    const showPlayingQuality = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*Object\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)\s*\|\|\s*([a-zA-Z_$][a-zA-Z0-9_$.]*)\.isWeb\s*\?\s*null\s*:\s*Object\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$.]*)\.jsx\s*\)\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*\{\s*ignoreClickRef\s*:\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*isDefaultMiniBar\s*:\s*!\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*_nk\s*:\s*"([^"]*)"\s*\}\s*\)\s*,/g;
+                    if (showPlayingQuality.test(code)) {
+                        code = code.replace(showPlayingQuality, '$1=Object($2.$3)($4)||Object($6.jsx)($7.$8,{ignoreClickRef:$9,isDefaultMiniBar:!$10,_nk:"$11"}),');
+                        isChanged = true;
+                    }
                     if (isChanged) {
                         const createFunc = new Function('return ' + code);
                         modules[moduleId] = createFunc();
@@ -247,18 +253,6 @@ const AddFontSetting = (node) => {
 
     ReactDOM.render(React.createElement(Button), container);
 
-}
-
-export let levelTipDOM = null;
-
-/**
- * 播放器添加音质提示
- */
-const AddLevelTips = (node) => {
-    const areaToAdd = node.querySelector('.side.right-side > div');
-    if (!areaToAdd) return;
-    levelTipDOM = document.createElement('div');
-    areaToAdd.insertBefore(levelTipDOM, areaToAdd.firstChild);
 }
 
 /**
