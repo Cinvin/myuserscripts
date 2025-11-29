@@ -23,7 +23,7 @@ export const hookTopWindow = () => {
             },
             onResponse: (response, handler) => {
                 if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
-                    handlePlayResponse(response.response).then((res) => {
+                    handlePlayResponse(response.response, false).then((res) => {
                         response.response = res;
                         handler.next(response);
                     });
@@ -54,7 +54,7 @@ export const hookContentFrame = () => {
             },
             onResponse: (response, handler) => {
                 if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
-                    handlePlayResponse(response.response).then((res) => {
+                    handlePlayResponse(response.response, false).then((res) => {
                         response.response = res;
                         handler.next(response);
                     });
@@ -93,7 +93,7 @@ export const hookOtherWindow = () => {
             },
             onResponse: (response, handler) => {
                 if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
-                    handlePlayResponse(response.response).then((res) => {
+                    handlePlayResponse(response.response, false).then((res) => {
                         response.response = res;
                         handler.next(response);
                     });
@@ -118,8 +118,25 @@ export const hookWebPlayerFetch = () => {
 
         if (url.includes('/weapi/song/enhance/player/url/v1')) {
             const content = await resClone.text();
-            const res = await handlePlayResponse(content);
+            const res = await handlePlayResponse(content, true);
             const newResponse = new Response(res, {
+                status: response.status,
+                statusText: response.statusText,
+                headers: response.headers,
+            });
+            return newResponse;
+        }
+        else if (url.includes('/weapi/aio/produce/material/group/get')) {
+            const content = await resClone.text();
+            let jsonContent = JSON.parse(content);
+            if (jsonContent && jsonContent.data) {
+                //网页无法加载特效模式，全部移除
+                jsonContent.data.materialList = [];
+                // for (let material of jsonContent.data.materialList) {
+                //     material.vipFlag = 'FREE';
+                // }
+            }
+            const newResponse = new Response(JSON.stringify(jsonContent), {
                 status: response.status,
                 statusText: response.statusText,
                 headers: response.headers,
@@ -136,12 +153,17 @@ export const hookWebPlayerFetch = () => {
 
 /**
  * 替换高音质音源
+ * @param {string} response 
+ * @param {boolean} isWebPlayer - 是否为新网页端
  */
-const handlePlayResponse = async (response) => {
+const handlePlayResponse = async (response, isWebPlayer) => {
     const content = JSON.parse(response);
     const songId = content.data[0].id;
     const targetLevel = GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL);
-    content.data[0].type = "mp3";
+    if (!isWebPlayer && content.data[0].type !== "mp3" && content.data[0].type !== "m4a") {
+        content.data[0].type = "mp3";
+    }
+
     if (content.data[0].url) {
         if (["standard", "higher", "exhigh"].includes(content.data[0].level)) {
             if (levelWeight[targetLevel] > levelWeight[content.data[0].level]) {

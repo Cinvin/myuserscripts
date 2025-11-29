@@ -22,42 +22,43 @@ const hookWebpackJsonp = () => {
             return originalJsonp;
         },
         set(value) {
-            // 1. 保存 Webpack 试图赋值的那个数组
-            // 注意：这里我们将 originalJsonp 更新为新的 value，确保后续 Webpack 能正常读取
+            if (value.push.__ncmExtendHasHooked) {
+                return;
+            }
             originalJsonp = value;
-
-            // 2. 获取原始的 push 方法
             const originPush = value.push;
-
-            // 3. 劫持（重写）push 方法
             value.push = function (...args) {
-                // args[0] 是当前加载的 chunk，通常结构为 [chunkIds, modules, ...]
                 const chunk = args[0];
-                const modules = chunk[1]; // modules 是一个对象或数组，存放具体的模块函数
+                const modules = chunk[1];
 
-                // 遍历所有模块
                 for (const moduleId in modules) {
                     const moduleFunc = modules[moduleId];
 
-                    // 将模块函数转换为字符串
                     let code = moduleFunc.toString();
-
-                    // 4. 检查是否包含目标字符串
-                    const targetStr = '["download","localMusic","cloudDisk"]';
-                    if (code.includes(targetStr)) {
-                        // 5. 执行替换
-                        // 显示我的音乐云盘
-                        code = code.replace(targetStr, '["download","localMusic"]');
-
-                        // 6. 将修改后的字符串还原为函数
+                    let isChanged = false;
+                    // 显示我的音乐云盘
+                    const showCloudRegex = /\[\s*(['"])download\1\s*,\s*(['"])localMusic\2\s*,\s*(['"])cloudDisk\3\s*\]/;
+                    if (showCloudRegex.test(code)) {
+                        code = code.replace(showCloudRegex, '["download","localMusic"]');
+                        isChanged = true;
+                    }
+                    // 显示播放模式按钮
+                    const showPlayModeRegex = /className\s*:\s*"right draggable"\s*,\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*"([^"]*)"\s*,\s*children\s*:\s*\[\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*&&\s*!\s*([a-zA-Z_][a-zA-Z0-9_.]*)\.isWeb\s*\?\s*Object\s*\(\s*([a-zA-Z_][a-zA-Z0-9_.]*)\.jsx\s*\)/g;
+                    if (showPlayModeRegex.test(code)) {
+                        code = code.replace(showPlayModeRegex, 'className : "right draggable", $1 : "$2", children : [ $3 ? Object( $5 .jsx )');
+                        isChanged = true;
+                    }
+                    if (isChanged) {
                         const createFunc = new Function('return ' + code);
                         modules[moduleId] = createFunc();
                     }
+
                 }
 
                 // 7. 调用原始的 push 方法，让 Webpack 继续正常加载
                 return originPush.apply(this, args);
             };
+            value.push.__ncmExtendHasHooked = true;
         }
     });
 }
@@ -74,7 +75,7 @@ const setWebPlayerStyle = () => {
     }
     if (lyricFont.length > 0) {
         GM_addStyle(`
-            .lyric-mode {
+            #mod_pc_lyric_record, .lyric-line  {
                 font-family: ${lyricFont};
         }`);
     }
