@@ -1,5 +1,6 @@
 import { createBigButton, showTips, showConfirmBox } from "../utils/common"
 import { getDownloadSettings, setDownloadSettings, levelOptions, defaultOfDEFAULT_LEVEL } from "../utils/constant"
+import { isOldSettedHeader } from "../utils/request"
 
 export const scriptSettings = (uiArea) => {
     //设置请求头
@@ -87,17 +88,8 @@ export const scriptSettings = (uiArea) => {
             html: `<div><label>Cookie<input class="swal2-input" id="text-cookie"></label></div>
             <div><label>UserAgent<input class="swal2-input" id="text-userAgent"></label></div>`,
             footer: `<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div>
-            <div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>
-            <div>为避免被风控，请不要在设置请求头时用新网页版听歌，可能会被判定为“使用非法挂机软件”。</div>
-            <div>设置请求头后，清除请求头或关闭卸载脚本时请自行清空网易云网页版cookie。以免被之后使用网页版时，被判断为“使用非法挂机软件”。</div>`,
+            <div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>`,
             confirmButtonText: '设置',
-            preConfirm: () => {
-                const container = Swal.getHtmlContainer()
-                return {
-                    cookie: container.querySelector('#text-cookie').value.trim(),
-                    userAgent: container.querySelector('#text-userAgent').value.trim(),
-                }
-            },
             didOpen: () => {
                 const container = Swal.getHtmlContainer()
                 const actions = Swal.getActions()
@@ -113,7 +105,6 @@ export const scriptSettings = (uiArea) => {
                 if (requestHeader.userAgent) {
                     userAgentInput.value = requestHeader.userAgent
                 }
-
                 const btnCancelSet = actions.querySelector('#btn-cancel-set')
                 const btnSet = actions.querySelector('#btn-set')
                 btnCancelSet.addEventListener('click', () => {
@@ -143,84 +134,58 @@ export const scriptSettings = (uiArea) => {
             return
         }
 
-        const excludeCookie = ['MUSIC_U']
-        let appendCookieText = ''
-        GM_cookie.list({}, function (cookies, error) {
-            if (!error) {
-                const webCoookieObject = {}
-                cookies.forEach(item => {
-                    webCoookieObject[item.name] = item
-                })
-                for (const key in cookieObject) {
-                    if (key in webCoookieObject) {
-                        //网页端客户端都有该cookie
-                        GM_cookie.set({
-                            name: key,
-                            value: cookieObject[key],
-                            domain: webCoookieObject[key].domain,
-                            path: webCoookieObject[key].path,
-                            secure: webCoookieObject[key].secure,
-                            httpOnly: webCoookieObject[key].httpOnly,
-                            expirationDate: webCoookieObject[key].expirationDate,
-                        })
-                    }
-                    else if (!excludeCookie.includes(key)) {
-                        appendCookieText += `${key}=${cookieObject[key]};`
-                    }
-                }
-                GM_cookie.set({
-                    name: 'MUSIC_U',
-                    value: cookieObject.MUSIC_U,
-                    domain: '.music.163.com',
-                    path: '/',
-                    httpOnly: true,
-                    expirationDate: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 400)
-                })
-                GM_setValue('requestHeader', JSON.stringify({
-                    originalCookie: config.cookie,
-                    appendCookie: appendCookieText,
-                    userAgent: config.userAgent,
-                }))
-                showConfirmBox('设置完成，刷新网页生效。')
-            } else {
-                console.error(error);
-            }
-        });
+        let cookieString = ''
+        for (const key in cookieObject) {
+            cookieString += `${key}=${cookieObject[key]}; `
+        }
+
+        GM_setValue('requestHeader', JSON.stringify({
+            originalCookie: config.cookie,
+            //appendCookie: appendCookieText,
+            coverCookie: cookieString,
+            userAgent: config.userAgent,
+        }))
+        showConfirmBox('设置完成，刷新网页生效。')
     }
     function removeHeader() {
         const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
-        if (!requestHeader.appendCookie) {
+        if (!requestHeader.originalCookie) {
             showTips('并没有设置请求头', 2)
             return
         }
 
         GM_setValue('requestHeader', '{}')
 
-        showConfirmBox('请求头设置已清除，需手动清空网易云网页版cookie，以免以后被判断为“使用非法挂机软件”。')
-    }
-    function parseCookie(cookieString) {
-        return cookieString
-            .split(";")
-            .map(part => part.trim())
-            .filter(part => part)
-            .reduce((cookies, part) => {
-                const [key, value] = part.split("=", 2);
-                cookies[key.trim()] = value ? value.trim() : "";
-                return cookies;
-            }, {});
-    }
-    function tryParseJSON(jsonString) {
-        try {
-            var o = JSON.parse(jsonString)
-            if (o && typeof o === "object") {
-                return o
-            }
+        let msg = '请求头设置已清除。'
+
+        if (requestHeader.appendCookie) {
+            msg += '需手动清空网易云网页版cookie，以免以后被判断为“使用非法挂机软件”。'
         }
-        catch (e) { }
-        return false;
+
+        showConfirmBox(msg)
     }
+}
 
-
+export const parseCookie = (cookieString) => {
+    return cookieString
+        .split(";")
+        .map(part => part.trim())
+        .filter(part => part)
+        .reduce((cookies, part) => {
+            const [key, value] = part.split("=", 2);
+            cookies[key.trim()] = value ? value.trim() : "";
+            return cookies;
+        }, {});
+}
+export const tryParseJSON = (jsonString) => {
+    try {
+        var o = JSON.parse(jsonString)
+        if (o && typeof o === "object") {
+            return o
+        }
+    }
+    catch (e) { }
+    return false;
 }
 
 export const setPlayLevel = () => {
@@ -238,4 +203,14 @@ export const setPlayLevel = () => {
                 GM_setValue('DEFAULT_LEVEL', result.value)
             }
         })
+}
+
+export const WarningOldHeaderSetting = () => {
+    if (isOldSettedHeader) {
+        Swal.fire({
+            text: '脚本请求头设置已更新为更安全的方式，请前往个人主页清除请求头设置以及清除music.163.com的cookie，然后重新登录。以免使用网页版听歌被判断为“使用非法挂机软件”。目前“请求头设置”没有太大作用，貌似不设置也能流畅上传云盘。',
+            icon: 'warning',
+            confirmButtonText: '确定'
+        })
+    }
 }

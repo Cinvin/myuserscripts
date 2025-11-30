@@ -12,6 +12,8 @@ import { observerCommentBox, addCommentWithCumstomIP, InfoFirstPage } from './co
 
 import { registerMenuCommand } from './registerMenuCommand'
 
+import { WarningOldHeaderSetting } from './home/scriptSettings'
+
 const url = unsafeWindow.location.href
 const params = new URLSearchParams(unsafeWindow.location.search)
 const paramId = Number(params.get('id'))
@@ -53,6 +55,9 @@ export const onStart = () => {
     }
 }
 export const onDomReady = () => {
+    if (unsafeWindow === unsafeWindow.top) {
+        WarningOldHeaderSetting()
+    }
     if (isWebPlayer) {
 
     }

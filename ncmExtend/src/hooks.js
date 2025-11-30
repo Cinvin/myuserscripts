@@ -1,25 +1,12 @@
 import { GM_getValue, unsafeWindow } from "$";
 import { defaultOfDEFAULT_LEVEL, levelWeight } from "./utils/constant";
-import { isSettedHeader, weapiRequestSync } from "./utils/request";
+import { weapiRequestSync } from "./utils/request";
 import { levelDesc } from "./utils/descHelper";
 import { storageCommentInfo } from "./commentBox";
 
 export const hookTopWindow = () => {
     ah.proxy(
         {
-            onRequest: (config, handler) => {
-                if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
-                    //屏蔽日志接口请求
-                    handler.resolve({
-                        config: config,
-                        status: 200,
-                        headers: { "content-type": "application/x-www-form-urlencoded" },
-                        response: '{"code":200,"data":"success","message":""}',
-                    });
-                } else {
-                    handler.next(config);
-                }
-            },
             onResponse: (response, handler) => {
                 if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
                     handlePlayResponse(response.response, false).then((res) => {
@@ -38,19 +25,6 @@ export const hookTopWindow = () => {
 export const hookContentFrame = () => {
     ah.proxy(
         {
-            onRequest: (config, handler) => {
-                //屏蔽日志接口请求
-                if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
-                    handler.resolve({
-                        config: config,
-                        status: 200,
-                        headers: { "content-type": "application/x-www-form-urlencoded" },
-                        response: '{"code":200,"data":"success","message":""}',
-                    });
-                } else {
-                    handler.next(config);
-                }
-            },
             onResponse: (response, handler) => {
                 if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
                     handlePlayResponse(response.response, false).then((res) => {
@@ -77,19 +51,6 @@ export const hookContentFrame = () => {
 export const hookOtherWindow = () => {
     ah.proxy(
         {
-            onRequest: (config, handler) => {
-                if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
-                    //屏蔽日志接口请求
-                    handler.resolve({
-                        config: config,
-                        status: 200,
-                        headers: { "content-type": "application/x-www-form-urlencoded" },
-                        response: '{"code":200,"data":"success","message":""}',
-                    });
-                } else {
-                    handler.next(config);
-                }
-            },
             onResponse: (response, handler) => {
                 if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
                     handlePlayResponse(response.response, false).then((res) => {

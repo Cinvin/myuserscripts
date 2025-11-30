@@ -1,4 +1,5 @@
 import { weapi } from "./crypto";
+import { tryParseJSON, parseCookie } from '../home/scriptSettings'
 var CookieMap = {
     web: true,
     android: 'os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;',
@@ -10,7 +11,8 @@ var UserAgentMap = {
     pc: 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/3.1.22.204707',
 }
 
-export let isSettedHeader = false;
+let isSettedHeader = false;
+export let isOldSettedHeader = false;
 
 const requestQueue = []
 // 定时器，每200毫秒执行一次，从队列中取出一个请求执行
@@ -33,6 +35,7 @@ export const weapiRequest = (url, config) => {
     let headers = {
         "content-type": "application/x-www-form-urlencoded",
         "user-agent": UserAgentMap[clientType],
+        "cookie": CookieMap[clientType],
     }
     if (config.ip) {
         headers["X-Real-IP"] = config.ip
@@ -44,6 +47,7 @@ export const weapiRequest = (url, config) => {
         responseType: "json",
         headers: headers,
         cookie: CookieMap[clientType],
+        anonymous: isSettedHeader,
         data: `params=${encodeURIComponent(encRes.params)}&encSecKey=${encodeURIComponent(encRes.encSecKey)}`,
         onload: res => { config.onload(res.response) },
         onerror: config.onerror,
@@ -72,12 +76,25 @@ function callAPI(data) {
 }
 function setDeviceId() {
     const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
-    if ('appendCookie' in requestHeader) {
+    if (!requestHeader.coverCookie && requestHeader.originalCookie) {
+        // 原版切换新版
+        const cookieObject = tryParseJSON(requestHeader.originalCookie) || parseCookie(requestHeader.originalCookie)
+        let cookieString = ''
+        for (const key in cookieObject) {
+            cookieString += `${key}=${cookieObject[key]}; `
+        }
+        requestHeader.coverCookie = cookieString
+        GM_setValue('requestHeader', JSON.stringify(requestHeader))
+    }
+    if (requestHeader.appendCookie) {
+        isOldSettedHeader = true;
+    }
+    if (requestHeader.coverCookie) {
         isSettedHeader = true;
-        CookieMap['pc'] = requestHeader.appendCookie
+        CookieMap['pc'] = requestHeader.coverCookie
         UserAgentMap['pc'] = requestHeader.userAgent
     }
-    else {
+    else if (GM_info.scriptHandler !== 'Violentmonkey') {
         GM_cookie.list({ name: 'sDeviceId' }, function (cookies, error) {
             if (!error) {
                 if (cookies.length > 0) {
