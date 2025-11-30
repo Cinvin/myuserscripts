@@ -4,7 +4,7 @@
 | ----------- | ----------- |
 |  [安装](https://fastly.jsdelivr.net/gh/Cinvin/myuserscripts@latest/ncmExtend/publish/ncmExtend.user.js)      | [安装](https://update.greasyfork.org/scripts/459633/%E7%BD%91%E6%98%93%E4%BA%91%E9%9F%B3%E4%B9%90%3A%E4%BA%91%E7%9B%98%E5%BF%AB%E4%BC%A0%28%E5%90%AB%E5%91%A8%E6%9D%B0%E4%BC%A6%29%7C%E6%AD%8C%E6%9B%B2%E4%B8%8B%E8%BD%BD%E8%BD%AC%E5%AD%98%E4%BA%91%E7%9B%98%7C%E4%BA%91%E7%9B%98%E5%8C%B9%E9%85%8D%E7%BA%A0%E6%AD%A3%7C%E9%AB%98%E9%9F%B3%E8%B4%A8%E8%AF%95%E5%90%AC.user.js)        |
 
-请确保浏览器已经安装了脚本管理器[篡改猴](https://www.tampermonkey.net/)或[脚本猫（除了Firefox）](https://docs.scriptcat.org/)，并将浏览器的`开发者模式`打开，浏览器的扩展管理界面 -> 你的脚本管理器的详情界面 -> `允许运行用户脚本`也要打开。
+请确保浏览器已经安装了脚本管理器如:[篡改猴](https://www.tampermonkey.net/)，并将浏览器的`开发者模式`打开，浏览器的扩展管理界面 -> 你的脚本管理器的详情界面 -> `允许运行用户脚本`也要打开。
 
  [![Greasy Fork](https://img.shields.io/greasyfork/dt/459633?label=greasyfork%20installs)](https://greasyfork.org/zh-CN/scripts/459633)
 
@@ -28,7 +28,6 @@
 
 ### 使用说明
 - 脚本安装完成后，登陆网易云。在原版网页端右上角用户头像的 `我的主页` 中，使用云盘相关功能。在单曲、专辑、歌手、歌单（并非`我的音乐`的歌单，而是 `我的主页` 的歌单）页面使用下载、转存云盘功能。
-- ⚠️请在`篡改猴`、`脚本猫（除了Firefox）`中使用脚本。在其他脚本管理器下使用，存在获取不到高级音质、用不了SVIP的6T空间等问题。
 
  ### 问题说明
 - 云盘快传:不保证内容的准确性、完整性。部分音质为算法升频。

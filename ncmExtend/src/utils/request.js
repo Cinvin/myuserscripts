@@ -1,7 +1,7 @@
 import { weapi } from "./crypto";
 import { tryParseJSON, parseCookie } from '../home/scriptSettings'
 var CookieMap = {
-    web: true,
+    web: '',
     android: 'os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;',
     pc: 'os=pc;appver=3.1.22.204707;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;',
 }

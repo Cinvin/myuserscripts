@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.3.8
+// @version      4.3.9
 // @author       cinvin
 // @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
@@ -20,6 +20,7 @@
 // @grant        GM_download
 // @grant        GM_getResourceText
 // @grant        GM_getValue
+// @grant        GM_info
 // @grant        GM_registerMenuCommand
 // @grant        GM_setValue
 // @grant        GM_xmlhttpRequest
@@ -124,153 +125,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     md.update(text);
     return md.digest().toHex();
   };
-  var CookieMap = {
-    web: true,
-    android: "os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;",
-    pc: "os=pc;appver=3.1.22.204707;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;"
-  };
-  var UserAgentMap = {
-    web: void 0,
-    android: "NeteaseMusic/9.1.78.241009150147(9001078);Dalvik/2.1.0 (Linux; U; Android 14; V2318A Build/TP1A.220624.014)",
-    pc: "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/3.1.22.204707"
-  };
-  let isSettedHeader = false;
-  const requestQueue = [];
-  const REQUEST_INTERVAL = 50;
-  setInterval(() => {
-    if (requestQueue.length > 0) {
-      const requestFn = requestQueue.shift();
-      requestFn();
-    }
-  }, REQUEST_INTERVAL);
-  setDeviceId();
-  const weapiRequest = (url2, config) => {
-    let data = config.data || {};
-    let clientType = config.clientType || "pc";
-    let csrfToken = document.cookie.match(/_csrf=([^(;|$)]+)/);
-    data.csrf_token = csrfToken ? csrfToken[1] : "";
-    const encRes = weapi(data);
-    let headers = {
-      "content-type": "application/x-www-form-urlencoded",
-      "user-agent": UserAgentMap[clientType]
-    };
-    if (config.ip) {
-      headers["X-Real-IP"] = config.ip;
-      headers["X-Forwarded-For"] = config.ip;
-    }
-    const details = {
-      url: url2.replace("api", "weapi") + `?csrf_token=${data.csrf_token}`,
-      method: "POST",
-      responseType: "json",
-      headers,
-      cookie: CookieMap[clientType],
-      data: `params=${encodeURIComponent(encRes.params)}&encSecKey=${encodeURIComponent(encRes.encSecKey)}`,
-      onload: (res) => {
-        config.onload(res.response);
-      },
-      onerror: config.onerror
-    };
-    enqueueAPIRequest(details);
-  };
-  function weapiRequestSync(url2, config) {
-    return new Promise((resolve, reject) => {
-      weapiRequest(url2, {
-        ...config,
-        onload: resolve,
-        onerror: reject
-      });
-    });
-  }
-  function enqueueAPIRequest(data) {
-    return new Promise((resolve, reject) => {
-      requestQueue.push(() => {
-        callAPI(data);
-      });
-    });
-  }
-  function callAPI(data) {
-    GM_xmlhttpRequest(data);
-  }
-  function setDeviceId() {
-    const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
-    if ("appendCookie" in requestHeader) {
-      isSettedHeader = true;
-      CookieMap["pc"] = requestHeader.appendCookie;
-      UserAgentMap["pc"] = requestHeader.userAgent;
-    } else {
-      GM_cookie.list({ name: "sDeviceId" }, function(cookies, error) {
-        if (!error) {
-          if (cookies.length > 0) {
-            CookieMap["android"] += `deviceId=${cookies[0].value};`;
-            CookieMap["pc"] += `deviceId=${cookies[0].value};`;
-          }
-        } else {
-          console.error(error);
-        }
-      });
-    }
-  }
-  const fileSizeDesc = (fileSize) => {
-    if (fileSize < 1024) {
-      return fileSize + "B";
-    } else if (fileSize >= 1024 && fileSize < Math.pow(1024, 2)) {
-      return (fileSize / 1024).toFixed(1).toString() + "K";
-    } else if (fileSize >= Math.pow(1024, 2) && fileSize < Math.pow(1024, 3)) {
-      return (fileSize / Math.pow(1024, 2)).toFixed(1).toString() + "M";
-    } else if (fileSize > Math.pow(1024, 3) && fileSize < Math.pow(1024, 4)) {
-      return (fileSize / Math.pow(1024, 3)).toFixed(2).toString() + "G";
-    } else if (fileSize > Math.pow(1024, 4)) {
-      return (fileSize / Math.pow(1024, 4)).toFixed(2).toString() + "T";
-    }
-  };
-  const duringTimeDesc = (dt) => {
-    let secondTotal = Math.floor(dt / 1e3);
-    let min = Math.floor(secondTotal / 60);
-    let sec = secondTotal % 60;
-    return min.toString().padStart(2, "0") + ":" + sec.toString().padStart(2, "0");
-  };
-  const levelDesc = (level) => {
-    return levelOptions[level] || level;
-  };
-  const getArtistTextInSongDetail = (song) => {
-    let artist = "";
-    if (song.ar && song.ar[0].name && song.ar[0].name.length > 0) {
-      artist = song.ar.map((ar) => ar.name).join();
-    } else if (song.pc && song.pc.ar && song.pc.ar.length > 0) {
-      artist = song.pc.ar;
-    }
-    return artist;
-  };
-  const getAlbumTextInSongDetail = (song) => {
-    let album = "";
-    if (song.al && song.al.name && song.al.name.length > 0) {
-      album = song.al.name;
-    } else if (song.pc && song.pc.alb && song.pc.alb.length > 0) {
-      album = song.pc.alb;
-    }
-    return album;
-  };
-  const nameFileWithoutExt = (title, artist, out) => {
-    if (out == "title" || !artist || artist.length == 0) {
-      return title;
-    }
-    if (out == "artist-title") {
-      return `${artist} - ${title}`;
-    }
-    if (out == "title-artist") {
-      return `${title} - ${artist}`;
-    }
-  };
-  const escapeHTML = (string) => string.replace(
-    /[&<>'"]/g,
-    (word) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      "'": "&#39;",
-      '"': "&quot;"
-    })[word] || word
-  );
   const sleep = (millisec) => {
     return new Promise((resolve) => setTimeout(resolve, millisec));
   };
@@ -380,6 +234,358 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       source: null
     };
   };
+  const scriptSettings = (uiArea) => {
+    let btnExport = createBigButton("脚本设置", uiArea, 2);
+    btnExport.addEventListener("click", openSettingPopup);
+    function openSettingPopup() {
+      Swal.fire({
+        title: "脚本设置",
+        showConfirmButton: false,
+        html: `<div><button type="button" class="swal2-styled" id="btn-playlevel-settings">音质播放设置</button></div>
+            <div><button type="button" class="swal2-styled" id="btn-download-settings">通用下载设置</button></div>
+            <div><button type="button" class="swal2-styled" id="btn-header-settings">设置请求头</button></div>`,
+        confirmButtonText: "设置",
+        didOpen: () => {
+          let container = Swal.getHtmlContainer();
+          let btnPlayLevelSettings = container.querySelector("#btn-playlevel-settings");
+          let btnDownloadSettings = container.querySelector("#btn-download-settings");
+          let btnHeaderSettings = container.querySelector("#btn-header-settings");
+          btnPlayLevelSettings.addEventListener("click", () => {
+            setPlayLevel();
+          });
+          btnDownloadSettings.addEventListener("click", () => {
+            openDownloadSettingPopup();
+          });
+          btnHeaderSettings.addEventListener("click", () => {
+            openHeaderSettingPopup();
+          });
+        }
+      });
+    }
+    function openDownloadSettingPopup() {
+      Swal.fire({
+        title: "通用下载设置",
+        showCloseButton: true,
+        html: `<div>
+                        <div><label>文件名格式
+                      <select id="dl-out"  class="swal2-select">
+                        <option value="artist-title">歌手 - 标题</option><option value="title-artist">标题 - 歌手</option><option value="title">仅标题</option>
+                      </select>
+                    </label></div>
+                    <div><label>文件夹格式
+                    <select id="dl-folder" class="swal2-select"><option value="none">不建立文件夹</option><option value="artist">建立歌手文件夹</option><option value="artist-album">建立歌手 \\ 专辑文件夹</option></select>
+                    </label></div>
+                    <div><label>音乐元数据
+                        <select id="dl-appendMeta" class="swal2-select">
+                            <option value="notAppend">不添加</option><option value="skipCloud">云盘歌曲不添加</option><option value="allAppend">全部添加</option>
+                        </select></div>
+                    </label>
+</div>`,
+        confirmButtonText: "确定",
+        preConfirm: () => {
+          const container = Swal.getHtmlContainer();
+          return {
+            appendMeta: container.querySelector("#dl-appendMeta").value.trim(),
+            out: container.querySelector("#dl-out").value.trim(),
+            folder: container.querySelector("#dl-folder").value.trim()
+          };
+        },
+        didOpen: () => {
+          const container = Swal.getHtmlContainer();
+          const downloadSettings = getDownloadSettings();
+          const metaInput = container.querySelector("#dl-appendMeta");
+          metaInput.value = downloadSettings.appendMeta;
+          const outinput = container.querySelector("#dl-out");
+          outinput.value = downloadSettings.out;
+          const folderInput = container.querySelector("#dl-folder");
+          folderInput.value = downloadSettings.folder;
+        }
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setDownloadSettings(result.value);
+        }
+      });
+    }
+    function openHeaderSettingPopup() {
+      Swal.fire({
+        title: "设置客户端请求头（Header）",
+        showCloseButton: true,
+        html: `<div><label>Cookie<input class="swal2-input" id="text-cookie"></label></div>
+            <div><label>UserAgent<input class="swal2-input" id="text-userAgent"></label></div>`,
+        footer: `<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div>
+            <div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>`,
+        confirmButtonText: "设置",
+        didOpen: () => {
+          const container = Swal.getHtmlContainer();
+          const actions = Swal.getActions();
+          actions.innerHTML = `<div class="swal2-loader"></div>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-cancel-set" style="display: inline-block;">清除设置</button>
+                    <button type="button" class="swal2-styled" aria-label="" id="btn-set" style="display: inline-block;">设置</button>`;
+          const cookieInput = container.querySelector("#text-cookie");
+          const userAgentInput = container.querySelector("#text-userAgent");
+          const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
+          if (requestHeader.originalCookie) {
+            cookieInput.value = requestHeader.originalCookie;
+          }
+          if (requestHeader.userAgent) {
+            userAgentInput.value = requestHeader.userAgent;
+          }
+          const btnCancelSet = actions.querySelector("#btn-cancel-set");
+          const btnSet = actions.querySelector("#btn-set");
+          btnCancelSet.addEventListener("click", () => {
+            removeHeader();
+          });
+          btnSet.addEventListener("click", () => {
+            setHeader({
+              cookie: cookieInput.value.trim(),
+              userAgent: userAgentInput.value.trim()
+            });
+          });
+        }
+      });
+    }
+    function setHeader(config) {
+      const cookieObject = tryParseJSON(config.cookie) || parseCookie(config.cookie);
+      if (config.userAgent.length == 0) {
+        showTips("请填写UserAgent", 2);
+        return;
+      }
+      if (Object.keys(cookieObject).length == 0) {
+        showTips("cookie格式不正确，支持标准的cookie格式和JSON格式", 2);
+        return;
+      }
+      if (!(cookieObject.MUSIC_U && cookieObject.deviceId)) {
+        showTips("cookie内容不完整，cookie中一定会有MUSIC_U、deviceId等字段", 2);
+        return;
+      }
+      let cookieString = "";
+      for (const key in cookieObject) {
+        cookieString += `${key}=${cookieObject[key]}; `;
+      }
+      GM_setValue("requestHeader", JSON.stringify({
+        originalCookie: config.cookie,
+coverCookie: cookieString,
+        userAgent: config.userAgent
+      }));
+      showConfirmBox("设置完成，刷新网页生效。");
+    }
+    function removeHeader() {
+      const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
+      if (!requestHeader.originalCookie) {
+        showTips("并没有设置请求头", 2);
+        return;
+      }
+      GM_setValue("requestHeader", "{}");
+      let msg = "请求头设置已清除。";
+      if (requestHeader.appendCookie) {
+        msg += "需手动清空网易云网页版cookie，以免以后被判断为“使用非法挂机软件”。";
+      }
+      showConfirmBox(msg);
+    }
+  };
+  const parseCookie = (cookieString) => {
+    return cookieString.split(";").map((part) => part.trim()).filter((part) => part).reduce((cookies, part) => {
+      const [key, value] = part.split("=", 2);
+      cookies[key.trim()] = value ? value.trim() : "";
+      return cookies;
+    }, {});
+  };
+  const tryParseJSON = (jsonString) => {
+    try {
+      var o = JSON.parse(jsonString);
+      if (o && typeof o === "object") {
+        return o;
+      }
+    } catch (e) {
+    }
+    return false;
+  };
+  const setPlayLevel = () => {
+    Swal.fire({
+      title: "音质播放设置",
+      input: "select",
+      inputOptions: levelOptions,
+      inputValue: GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL),
+      confirmButtonText: "确定",
+      showCloseButton: true,
+      footer: '<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        GM_setValue("DEFAULT_LEVEL", result.value);
+      }
+    });
+  };
+  const WarningOldHeaderSetting = () => {
+    if (isOldSettedHeader) {
+      Swal.fire({
+        text: "脚本请求头设置已更新为更安全的方式，请前往个人主页清除请求头设置以及清除music.163.com的cookie，然后重新登录。以免使用网页版听歌被判断为“使用非法挂机软件”。目前“请求头设置”没有太大作用，貌似不设置也能流畅上传云盘。",
+        icon: "warning",
+        confirmButtonText: "确定"
+      });
+    }
+  };
+  var CookieMap = {
+    web: "",
+    android: "os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;",
+    pc: "os=pc;appver=3.1.22.204707;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;"
+  };
+  var UserAgentMap = {
+    web: void 0,
+    android: "NeteaseMusic/9.1.78.241009150147(9001078);Dalvik/2.1.0 (Linux; U; Android 14; V2318A Build/TP1A.220624.014)",
+    pc: "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/3.1.22.204707"
+  };
+  let isSettedHeader = false;
+  let isOldSettedHeader = false;
+  const requestQueue = [];
+  const REQUEST_INTERVAL = 50;
+  setInterval(() => {
+    if (requestQueue.length > 0) {
+      const requestFn = requestQueue.shift();
+      requestFn();
+    }
+  }, REQUEST_INTERVAL);
+  setDeviceId();
+  const weapiRequest = (url2, config) => {
+    let data = config.data || {};
+    let clientType = config.clientType || "pc";
+    let csrfToken = document.cookie.match(/_csrf=([^(;|$)]+)/);
+    data.csrf_token = csrfToken ? csrfToken[1] : "";
+    const encRes = weapi(data);
+    let headers = {
+      "content-type": "application/x-www-form-urlencoded",
+      "user-agent": UserAgentMap[clientType],
+      "cookie": CookieMap[clientType]
+    };
+    if (config.ip) {
+      headers["X-Real-IP"] = config.ip;
+      headers["X-Forwarded-For"] = config.ip;
+    }
+    const details = {
+      url: url2.replace("api", "weapi") + `?csrf_token=${data.csrf_token}`,
+      method: "POST",
+      responseType: "json",
+      headers,
+      cookie: CookieMap[clientType],
+      anonymous: isSettedHeader,
+      data: `params=${encodeURIComponent(encRes.params)}&encSecKey=${encodeURIComponent(encRes.encSecKey)}`,
+      onload: (res) => {
+        config.onload(res.response);
+      },
+      onerror: config.onerror
+    };
+    enqueueAPIRequest(details);
+  };
+  function weapiRequestSync(url2, config) {
+    return new Promise((resolve, reject) => {
+      weapiRequest(url2, {
+        ...config,
+        onload: resolve,
+        onerror: reject
+      });
+    });
+  }
+  function enqueueAPIRequest(data) {
+    return new Promise((resolve, reject) => {
+      requestQueue.push(() => {
+        callAPI(data);
+      });
+    });
+  }
+  function callAPI(data) {
+    GM_xmlhttpRequest(data);
+  }
+  function setDeviceId() {
+    const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
+    if (!requestHeader.coverCookie && requestHeader.originalCookie) {
+      const cookieObject = tryParseJSON(requestHeader.originalCookie) || parseCookie(requestHeader.originalCookie);
+      let cookieString = "";
+      for (const key in cookieObject) {
+        cookieString += `${key}=${cookieObject[key]}; `;
+      }
+      requestHeader.coverCookie = cookieString;
+      GM_setValue("requestHeader", JSON.stringify(requestHeader));
+    }
+    if (requestHeader.appendCookie) {
+      isOldSettedHeader = true;
+    }
+    if (requestHeader.coverCookie) {
+      isSettedHeader = true;
+      CookieMap["pc"] = requestHeader.coverCookie;
+      UserAgentMap["pc"] = requestHeader.userAgent;
+    } else if (GM_info.scriptHandler !== "Violentmonkey") {
+      GM_cookie.list({ name: "sDeviceId" }, function(cookies, error) {
+        if (!error) {
+          if (cookies.length > 0) {
+            CookieMap["android"] += `deviceId=${cookies[0].value};`;
+            CookieMap["pc"] += `deviceId=${cookies[0].value};`;
+          }
+        } else {
+          console.error(error);
+        }
+      });
+    }
+  }
+  const fileSizeDesc = (fileSize) => {
+    if (fileSize < 1024) {
+      return fileSize + "B";
+    } else if (fileSize >= 1024 && fileSize < Math.pow(1024, 2)) {
+      return (fileSize / 1024).toFixed(1).toString() + "K";
+    } else if (fileSize >= Math.pow(1024, 2) && fileSize < Math.pow(1024, 3)) {
+      return (fileSize / Math.pow(1024, 2)).toFixed(1).toString() + "M";
+    } else if (fileSize > Math.pow(1024, 3) && fileSize < Math.pow(1024, 4)) {
+      return (fileSize / Math.pow(1024, 3)).toFixed(2).toString() + "G";
+    } else if (fileSize > Math.pow(1024, 4)) {
+      return (fileSize / Math.pow(1024, 4)).toFixed(2).toString() + "T";
+    }
+  };
+  const duringTimeDesc = (dt) => {
+    let secondTotal = Math.floor(dt / 1e3);
+    let min = Math.floor(secondTotal / 60);
+    let sec = secondTotal % 60;
+    return min.toString().padStart(2, "0") + ":" + sec.toString().padStart(2, "0");
+  };
+  const levelDesc = (level) => {
+    return levelOptions[level] || level;
+  };
+  const getArtistTextInSongDetail = (song) => {
+    let artist = "";
+    if (song.ar && song.ar[0].name && song.ar[0].name.length > 0) {
+      artist = song.ar.map((ar) => ar.name).join();
+    } else if (song.pc && song.pc.ar && song.pc.ar.length > 0) {
+      artist = song.pc.ar;
+    }
+    return artist;
+  };
+  const getAlbumTextInSongDetail = (song) => {
+    let album = "";
+    if (song.al && song.al.name && song.al.name.length > 0) {
+      album = song.al.name;
+    } else if (song.pc && song.pc.alb && song.pc.alb.length > 0) {
+      album = song.pc.alb;
+    }
+    return album;
+  };
+  const nameFileWithoutExt = (title, artist, out) => {
+    if (out == "title" || !artist || artist.length == 0) {
+      return title;
+    }
+    if (out == "artist-title") {
+      return `${artist} - ${title}`;
+    }
+    if (out == "title-artist") {
+      return `${title} - ${artist}`;
+    }
+  };
+  const escapeHTML = (string) => string.replace(
+    /[&<>'"]/g,
+    (word) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      "'": "&#39;",
+      '"': "&quot;"
+    })[word] || word
+  );
   const storageCommentInfo = (CommentRes) => {
     var _a, _b, _c;
     if (!unsafeWindow.top.GUserScriptObjects.storageCommentInfos) unsafeWindow.top.GUserScriptObjects.storageCommentInfos = {};
@@ -479,18 +685,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
   const hookTopWindow = () => {
     ah.proxy(
       {
-        onRequest: (config, handler) => {
-          if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
-            handler.resolve({
-              config,
-              status: 200,
-              headers: { "content-type": "application/x-www-form-urlencoded" },
-              response: '{"code":200,"data":"success","message":""}'
-            });
-          } else {
-            handler.next(config);
-          }
-        },
         onResponse: (response, handler) => {
           if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
             handlePlayResponse(response.response, false).then((res) => {
@@ -508,18 +702,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
   const hookContentFrame = () => {
     ah.proxy(
       {
-        onRequest: (config, handler) => {
-          if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
-            handler.resolve({
-              config,
-              status: 200,
-              headers: { "content-type": "application/x-www-form-urlencoded" },
-              response: '{"code":200,"data":"success","message":""}'
-            });
-          } else {
-            handler.next(config);
-          }
-        },
         onResponse: (response, handler) => {
           if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
             handlePlayResponse(response.response, false).then((res) => {
@@ -541,18 +723,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
   const hookOtherWindow = () => {
     ah.proxy(
       {
-        onRequest: (config, handler) => {
-          if (isSettedHeader && config.url.includes("api/feedback/weblog")) {
-            handler.resolve({
-              config,
-              status: 200,
-              headers: { "content-type": "application/x-www-form-urlencoded" },
-              response: '{"code":200,"data":"success","message":""}'
-            });
-          } else {
-            handler.next(config);
-          }
-        },
         onResponse: (response, handler) => {
           if (response.config.url.includes("/weapi/song/enhance/player/url/v1")) {
             handlePlayResponse(response.response, false).then((res) => {
@@ -657,223 +827,6 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       }
     } catch (e) {
     }
-  };
-  const scriptSettings = (uiArea) => {
-    let btnExport = createBigButton("脚本设置", uiArea, 2);
-    btnExport.addEventListener("click", openSettingPopup);
-    function openSettingPopup() {
-      Swal.fire({
-        title: "脚本设置",
-        showConfirmButton: false,
-        html: `<div><button type="button" class="swal2-styled" id="btn-playlevel-settings">音质播放设置</button></div>
-            <div><button type="button" class="swal2-styled" id="btn-download-settings">通用下载设置</button></div>
-            <div><button type="button" class="swal2-styled" id="btn-header-settings">设置请求头</button></div>`,
-        confirmButtonText: "设置",
-        didOpen: () => {
-          let container = Swal.getHtmlContainer();
-          let btnPlayLevelSettings = container.querySelector("#btn-playlevel-settings");
-          let btnDownloadSettings = container.querySelector("#btn-download-settings");
-          let btnHeaderSettings = container.querySelector("#btn-header-settings");
-          btnPlayLevelSettings.addEventListener("click", () => {
-            setPlayLevel();
-          });
-          btnDownloadSettings.addEventListener("click", () => {
-            openDownloadSettingPopup();
-          });
-          btnHeaderSettings.addEventListener("click", () => {
-            openHeaderSettingPopup();
-          });
-        }
-      });
-    }
-    function openDownloadSettingPopup() {
-      Swal.fire({
-        title: "通用下载设置",
-        showCloseButton: true,
-        html: `<div>
-                        <div><label>文件名格式
-                      <select id="dl-out"  class="swal2-select">
-                        <option value="artist-title">歌手 - 标题</option><option value="title-artist">标题 - 歌手</option><option value="title">仅标题</option>
-                      </select>
-                    </label></div>
-                    <div><label>文件夹格式
-                    <select id="dl-folder" class="swal2-select"><option value="none">不建立文件夹</option><option value="artist">建立歌手文件夹</option><option value="artist-album">建立歌手 \\ 专辑文件夹</option></select>
-                    </label></div>
-                    <div><label>音乐元数据
-                        <select id="dl-appendMeta" class="swal2-select">
-                            <option value="notAppend">不添加</option><option value="skipCloud">云盘歌曲不添加</option><option value="allAppend">全部添加</option>
-                        </select></div>
-                    </label>
-</div>`,
-        confirmButtonText: "确定",
-        preConfirm: () => {
-          const container = Swal.getHtmlContainer();
-          return {
-            appendMeta: container.querySelector("#dl-appendMeta").value.trim(),
-            out: container.querySelector("#dl-out").value.trim(),
-            folder: container.querySelector("#dl-folder").value.trim()
-          };
-        },
-        didOpen: () => {
-          const container = Swal.getHtmlContainer();
-          const downloadSettings = getDownloadSettings();
-          const metaInput = container.querySelector("#dl-appendMeta");
-          metaInput.value = downloadSettings.appendMeta;
-          const outinput = container.querySelector("#dl-out");
-          outinput.value = downloadSettings.out;
-          const folderInput = container.querySelector("#dl-folder");
-          folderInput.value = downloadSettings.folder;
-        }
-      }).then((result) => {
-        if (result.isConfirmed) {
-          setDownloadSettings(result.value);
-        }
-      });
-    }
-    function openHeaderSettingPopup() {
-      Swal.fire({
-        title: "设置客户端请求头（Header）",
-        showCloseButton: true,
-        html: `<div><label>Cookie<input class="swal2-input" id="text-cookie"></label></div>
-            <div><label>UserAgent<input class="swal2-input" id="text-userAgent"></label></div>`,
-        footer: `<div>以上内容需要自行使用<a target="_blank" target="_blank" href="https://reqable.com/zh-CN/">Reqable</a>等抓包工具，获取网易云音乐客户端的请求头。</div>
-            <div>设置的目的是尽量模拟客户端调用，避免被风控系统检测到。(提示操作频繁/网络拥挤)</div>
-            <div>为避免被风控，请不要在设置请求头时用新网页版听歌，可能会被判定为“使用非法挂机软件”。</div>
-            <div>设置请求头后，清除请求头或关闭卸载脚本时请自行清空网易云网页版cookie。以免被之后使用网页版时，被判断为“使用非法挂机软件”。</div>`,
-        confirmButtonText: "设置",
-        preConfirm: () => {
-          const container = Swal.getHtmlContainer();
-          return {
-            cookie: container.querySelector("#text-cookie").value.trim(),
-            userAgent: container.querySelector("#text-userAgent").value.trim()
-          };
-        },
-        didOpen: () => {
-          const container = Swal.getHtmlContainer();
-          const actions = Swal.getActions();
-          actions.innerHTML = `<div class="swal2-loader"></div>
-                    <button type="button" class="swal2-styled" aria-label="" id="btn-cancel-set" style="display: inline-block;">清除设置</button>
-                    <button type="button" class="swal2-styled" aria-label="" id="btn-set" style="display: inline-block;">设置</button>`;
-          const cookieInput = container.querySelector("#text-cookie");
-          const userAgentInput = container.querySelector("#text-userAgent");
-          const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
-          if (requestHeader.originalCookie) {
-            cookieInput.value = requestHeader.originalCookie;
-          }
-          if (requestHeader.userAgent) {
-            userAgentInput.value = requestHeader.userAgent;
-          }
-          const btnCancelSet = actions.querySelector("#btn-cancel-set");
-          const btnSet = actions.querySelector("#btn-set");
-          btnCancelSet.addEventListener("click", () => {
-            removeHeader();
-          });
-          btnSet.addEventListener("click", () => {
-            setHeader({
-              cookie: cookieInput.value.trim(),
-              userAgent: userAgentInput.value.trim()
-            });
-          });
-        }
-      });
-    }
-    function setHeader(config) {
-      const cookieObject = tryParseJSON(config.cookie) || parseCookie(config.cookie);
-      if (config.userAgent.length == 0) {
-        showTips("请填写UserAgent", 2);
-        return;
-      }
-      if (Object.keys(cookieObject).length == 0) {
-        showTips("cookie格式不正确，支持标准的cookie格式和JSON格式", 2);
-        return;
-      }
-      if (!(cookieObject.MUSIC_U && cookieObject.deviceId)) {
-        showTips("cookie内容不完整，cookie中一定会有MUSIC_U、deviceId等字段", 2);
-        return;
-      }
-      const excludeCookie = ["MUSIC_U"];
-      let appendCookieText = "";
-      GM_cookie.list({}, function(cookies, error) {
-        if (!error) {
-          const webCoookieObject = {};
-          cookies.forEach((item) => {
-            webCoookieObject[item.name] = item;
-          });
-          for (const key in cookieObject) {
-            if (key in webCoookieObject) {
-              GM_cookie.set({
-                name: key,
-                value: cookieObject[key],
-                domain: webCoookieObject[key].domain,
-                path: webCoookieObject[key].path,
-                secure: webCoookieObject[key].secure,
-                httpOnly: webCoookieObject[key].httpOnly,
-                expirationDate: webCoookieObject[key].expirationDate
-              });
-            } else if (!excludeCookie.includes(key)) {
-              appendCookieText += `${key}=${cookieObject[key]};`;
-            }
-          }
-          GM_cookie.set({
-            name: "MUSIC_U",
-            value: cookieObject.MUSIC_U,
-            domain: ".music.163.com",
-            path: "/",
-            httpOnly: true,
-            expirationDate: Math.floor(Date.now() / 1e3) + 60 * 60 * 24 * 400
-          });
-          GM_setValue("requestHeader", JSON.stringify({
-            originalCookie: config.cookie,
-            appendCookie: appendCookieText,
-            userAgent: config.userAgent
-          }));
-          showConfirmBox("设置完成，刷新网页生效。");
-        } else {
-          console.error(error);
-        }
-      });
-    }
-    function removeHeader() {
-      const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
-      if (!requestHeader.appendCookie) {
-        showTips("并没有设置请求头", 2);
-        return;
-      }
-      GM_setValue("requestHeader", "{}");
-      showConfirmBox("请求头设置已清除，需手动清空网易云网页版cookie，以免以后被判断为“使用非法挂机软件”。");
-    }
-    function parseCookie(cookieString) {
-      return cookieString.split(";").map((part) => part.trim()).filter((part) => part).reduce((cookies, part) => {
-        const [key, value] = part.split("=", 2);
-        cookies[key.trim()] = value ? value.trim() : "";
-        return cookies;
-      }, {});
-    }
-    function tryParseJSON(jsonString) {
-      try {
-        var o = JSON.parse(jsonString);
-        if (o && typeof o === "object") {
-          return o;
-        }
-      } catch (e) {
-      }
-      return false;
-    }
-  };
-  const setPlayLevel = () => {
-    Swal.fire({
-      title: "音质播放设置",
-      input: "select",
-      inputOptions: levelOptions,
-      inputValue: GM_getValue("DEFAULT_LEVEL", defaultOfDEFAULT_LEVEL),
-      confirmButtonText: "确定",
-      showCloseButton: true,
-      footer: '<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        GM_setValue("DEFAULT_LEVEL", result.value);
-      }
-    });
   };
   const extractLrcRegex = /^(?<lyricTimestamps>(?:\[.+?\])+)(?!\[)(?<content>.+)$/gm;
   const extractTimestampRegex = /\[(?<min>\d+):(?<sec>\d+)(?:\.|:)*(?<ms>\d+)*\]/g;
@@ -8003,8 +7956,6 @@ width: 50%;
             if (node.id === "page_pc_setting") {
               AddQualitySetting(node);
               AddFontSetting(node);
-            } else if (node.id === "page_pc_mini_bar") {
-              AddLevelTips(node);
             } else if (node.localName === "div" && node.textContent.startsWith("已上传单曲正在上传网盘容量")) {
               HandleCloudButton(node);
             }
@@ -8201,6 +8152,9 @@ width: 50%;
     }
   };
   const onDomReady = () => {
+    if (_unsafeWindow === _unsafeWindow.top) {
+      WarningOldHeaderSetting();
+    }
     if (isWebPlayer) ;
     else {
       if (paramId > 0) {
