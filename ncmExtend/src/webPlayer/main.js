@@ -100,9 +100,6 @@ const observerWebPlayer = () => {
                         AddQualitySetting(node);
                         AddFontSetting(node);
                     }
-                    else if (node.id === 'page_pc_mini_bar') {
-                        AddLevelTips(node);
-                    }
                     else if (node.localName === 'div' && node.textContent.startsWith('已上传单曲正在上传网盘容量')) {
                         HandleCloudButton(node);
                     }
