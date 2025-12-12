@@ -5,6 +5,7 @@ import { handleLyric } from "../utils/lyric"
 import { MetaFlac } from "../utils/metaflac"
 import { levelWeight } from '../utils/constant'
 import { detectAudioFormat } from '../utils/file'
+import { downloadCleanupManager } from '../utils/downloadCleanupManager'
 
 export const batchDownloadSongs = (songList, config) => {
     if (songList.length == 0) {
@@ -101,6 +102,12 @@ const downloadSongSub = (threadIndex, songList, config) => {
             }
         }
         if (allFinnsh) {
+            // 下载全部完成，清理所有待处理的缓存
+            downloadCleanupManager.cleanupAll()
+            // 清理专辑详情缓存
+            if (config.albumDetailCache) {
+              config.albumDetailCache.clear()
+            }
             let finnshText = '下载完成'
             if (config.skipSongs.length > 0) {
                 finnshText += '\n' + `有${config.skipSongs.length}首歌曲不是目标音质，未进行下载。`
@@ -373,6 +380,14 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                             config.finnshCount += 1
                             Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
                             songItem.download.prText.innerHTML = `完成`
+                            // 使用延迟清理，避免文件写入期间释放资源
+                            downloadCleanupManager.addPendingCleanup(songItem, url)
+                            downloadSongSub(threadIndex, songList, config)
+                        },
+                        onerror: function() {
+                            songItem.download.prText.innerHTML = `下载失败`
+                            // 错误时也延迟清理
+                            downloadCleanupManager.addPendingCleanup(songItem, url)
                             downloadSongSub(threadIndex, songList, config)
                         }
                     });
@@ -414,6 +429,14 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                             config.finnshCount += 1
                             Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
                             songItem.download.prText.innerHTML = `完成`
+                            // 使用延迟清理，避免文件写入期间释放资源
+                            downloadCleanupManager.addPendingCleanup(songItem, url)
+                            downloadSongSub(threadIndex, songList, config)
+                        },
+                        onerror: function() {
+                            songItem.download.prText.innerHTML = `下载失败`
+                            // 错误时也延迟清理
+                            downloadCleanupManager.addPendingCleanup(songItem, url)
                             downloadSongSub(threadIndex, songList, config)
                         }
                     });
@@ -429,6 +452,14 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                         config.finnshCount += 1
                         Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
                         songItem.download.prText.innerHTML = `完成`
+                        // 使用延迟清理，避免文件写入期间释放资源
+                        downloadCleanupManager.addPendingCleanup(songItem, url)
+                        downloadSongSub(threadIndex, songList, config)
+                    },
+                    onerror: function() {
+                        songItem.download.prText.innerHTML = `下载失败`
+                        // 错误时也延迟清理
+                        downloadCleanupManager.addPendingCleanup(songItem, url)
                         downloadSongSub(threadIndex, songList, config)
                     }
                 });

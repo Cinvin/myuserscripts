@@ -1412,6 +1412,36 @@ importPictureFrom(filename) {
     }
     return "unknown";
   };
+  const downloadCleanupManager = {
+MAX_PENDING_ITEMS: 16,
+pendingCleanup: [],
+addPendingCleanup: function(songItem, blobUrl) {
+      this.pendingCleanup.push({ songItem, blobUrl });
+      while (this.pendingCleanup.length > this.MAX_PENDING_ITEMS) {
+        const oldest = this.pendingCleanup.shift();
+        this.cleanupItem(oldest);
+      }
+    },
+cleanupItem: function(item) {
+      if (!item) return;
+      if (item.blobUrl) {
+        try {
+          URL.revokeObjectURL(item.blobUrl);
+        } catch (e) {
+        }
+      }
+      if (item.songItem && item.songItem.download) {
+        item.songItem.download.musicFile = null;
+        item.songItem.download.coverData = null;
+        item.songItem.download.lyricText = null;
+      }
+      if (item.songItem) {
+        item.songItem.albumDetail = null;
+      }
+    },
+cleanupAll: function() {
+    }
+  };
   const batchDownloadSongs = (songList, config) => {
     if (songList.length == 0) {
       showConfirmBox("没有可下载的歌曲");
@@ -1507,6 +1537,10 @@ width: 10%;
         }
       }
       if (allFinnsh) {
+        downloadCleanupManager.cleanupAll();
+        if (config.albumDetailCache) {
+          config.albumDetailCache.clear();
+        }
         let finnshText = "下载完成";
         if (config.skipSongs.length > 0) {
           finnshText += `
@@ -1756,6 +1790,12 @@ width: 10%;
                 config.finnshCount += 1;
                 Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`;
                 songItem.download.prText.innerHTML = `完成`;
+                downloadCleanupManager.addPendingCleanup(songItem, url2);
+                downloadSongSub(threadIndex, songList, config);
+              },
+              onerror: function() {
+                songItem.download.prText.innerHTML = `下载失败`;
+                downloadCleanupManager.addPendingCleanup(songItem, url2);
                 downloadSongSub(threadIndex, songList, config);
               }
             });
@@ -1791,6 +1831,12 @@ width: 10%;
                 config.finnshCount += 1;
                 Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`;
                 songItem.download.prText.innerHTML = `完成`;
+                downloadCleanupManager.addPendingCleanup(songItem, url2);
+                downloadSongSub(threadIndex, songList, config);
+              },
+              onerror: function() {
+                songItem.download.prText.innerHTML = `下载失败`;
+                downloadCleanupManager.addPendingCleanup(songItem, url2);
                 downloadSongSub(threadIndex, songList, config);
               }
             });
@@ -1805,6 +1851,12 @@ width: 10%;
               config.finnshCount += 1;
               Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`;
               songItem.download.prText.innerHTML = `完成`;
+              downloadCleanupManager.addPendingCleanup(songItem, url2);
+              downloadSongSub(threadIndex, songList, config);
+            },
+            onerror: function() {
+              songItem.download.prText.innerHTML = `下载失败`;
+              downloadCleanupManager.addPendingCleanup(songItem, url2);
               downloadSongSub(threadIndex, songList, config);
             }
           });

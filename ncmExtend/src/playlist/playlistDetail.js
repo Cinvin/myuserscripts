@@ -1,5 +1,5 @@
 import { weapiRequest } from "../utils/request"
-import { songsDownUpLoad } from "./SongsDownUpLoad"
+import { songsDownUpLoad } from "./songsDownUpLoad"
 import { sortSongs } from "./sortSongs"
 import { getAlbumTextInSongDetail, getArtistTextInSongDetail, escapeHTML, duringTimeDesc } from "../utils/descHelper"
 import { songItemAddToFormat } from "../utils/common"
