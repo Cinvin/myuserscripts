@@ -5,7 +5,7 @@ import { batchDownloadSongs } from "../components/batchDownloadSongs"
 
 // 每页显示数量
 const PAGE_SIZE = 50
-const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
+export const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
 
 export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
     const songPlayableList = fullSongList.filter(item => item.privilege.plLevel !== 'none');

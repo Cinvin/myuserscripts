@@ -7,6 +7,7 @@ import { freeVIPSong } from "./freeVIPSong"
 import { cloudExport } from "./cloudExport"
 import { cloudImport } from "./cloudImport"
 import { musicTag } from "./musicTag"
+import { cloudDeduplication } from "./cloudDeduplication"
 export const myHomeMain = (userId) => {
     const isUserHome = userId === unsafeWindow.GUser.userId
     let editArea = document.querySelector('#head-box > dd > div.name.f-cb > div > div.edit')
@@ -14,6 +15,7 @@ export const myHomeMain = (userId) => {
         cloudUpload(editArea)
         cloudMatch(editArea)
         cloudUpgrade(editArea)
+        cloudDeduplication(editArea)
         cloudLocalUpload(editArea)
         freeVIPSong(editArea)
         cloudExport(editArea)
