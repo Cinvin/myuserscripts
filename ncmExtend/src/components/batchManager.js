@@ -2,11 +2,10 @@ import { showTips, createPageJumpInput } from "../utils/common"
 import { getBatchFilter, setBatchFilter, getBatchDownloadSettings, getBatchTransUploadSettings, getDownloadSettings, setBatchDownloadSettings, setBatchTransUploadSettings, setDownloadSettings } from "../utils/constant"
 import { ncmDownUploadBatch } from "../components/ncmDownUploadBatch"
 import { batchDownloadSongs } from "../components/batchDownloadSongs"
+import { liveRegex } from "../utils/constant"
 
 // 每页显示数量
 const PAGE_SIZE = 50
-export const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
-
 export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
     const songPlayableList = fullSongList.filter(item => item.privilege.plLevel !== 'none');
     if (!songPlayableList || songPlayableList.length === 0) {

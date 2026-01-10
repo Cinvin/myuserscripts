@@ -61,7 +61,7 @@ export const cloudUpload = (uiArea) => {
             inputPlaceholder: '选择歌手',
             confirmButtonText: '下一步',
             showCloseButton: true,
-            footer: '<div>由于网易云增加限制，目前周杰伦等无版权歌曲已经无法关联封面歌词。</div><div>建议先设置好请求头，以避免上传失败。</div><div><a href="https://github.com/Cinvin/myuserscripts/issues"  target="_blank">问题反馈</a></div>',
+            footer: '<div>由于网易云增加限制，目前周杰伦等无版权歌曲已经无法关联封面歌词。</div><div>内容不会再更新，且许多是AI升频或时长对不上，建议还是在歌手页上传。</div><div>如果出现大量报错，可设置请求头，来避免上传失败。</div><div><a href="https://github.com/Cinvin/myuserscripts/issues"  target="_blank">问题反馈</a></div>',
             inputValidator: (value) => {
                 if (!value) {
                     return '请选择歌手'

@@ -14,7 +14,7 @@ export const cloudImport= (uiArea) => {
                 'aria-label': '选择文件'
             },
             confirmButtonText: '导入',
-            footer: '<div>建议先设置好请求头，以避免上传失败</div><div><a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a></div>',
+            footer: '<div>如果出现大量报错，可设置请求头，来避免上传失败。</div><div><a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a></div>',
         })
             .then((result) => {
                 if (result.isConfirmed) {

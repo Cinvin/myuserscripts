@@ -2,17 +2,22 @@ import { weapiRequest } from "../utils/request"
 import { getArtistTextInSongDetail, getAlbumTextInSongDetail, duringTimeDesc, nameFileWithoutExt, fileSizeDesc } from "../utils/descHelper"
 import { sleep, showTips } from "../utils/common"
 import { CheckAPIDataLimit, importAPIDataLimit } from "../components/ncmDownUploadBatch"
+import { liveRegex } from "../utils/constant";
+
 export class Uploader {
     constructor(config, showAll = false) {
         this.songs = []
         this.config = config
         this.filter = {
             text: '',
+            unmatch: true,
             noCopyright: true,
+            free: true,
             vip: true,
             pay: true,
+            instrumental:true,
+            live:true,
             lossless: false,
-            all: showAll,
             songIndexs: []
         }
         this.page = {
@@ -94,20 +99,23 @@ width: 15%;
 </style>
 <input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
 <div id="my-cbs">
+<input class="form-check-input" type="checkbox" value="" id="cb-unmatch" checked><label class="form-check-label" for="cb-unmatch">未关联</label>
 <input class="form-check-input" type="checkbox" value="" id="cb-copyright" checked><label class="form-check-label" for="cb-copyright">无版权</label>
+<input class="form-check-input" type="checkbox" value="" id="cb-free" checked><label class="form-check-label" for="cb-free">免费</label>
 <input class="form-check-input" type="checkbox" value="" id="cb-vip" checked><label class="form-check-label" for="cb-vip">VIP</label>
 <input class="form-check-input" type="checkbox" value="" id="cb-pay" checked><label class="form-check-label" for="cb-pay">数字专辑</label>
-<input class="form-check-input" type="checkbox" value="" id="cb-lossless"><label class="form-check-label" for="cb-lossless">无损资源</label>
-<input class="form-check-input" type="checkbox" value="" id="cb-all" ${this.filter.all ? "checked" : ""}><label class="form-check-label" for="cb-all">全部歌曲</label>
+<input class="form-check-input" type="checkbox" value="" id="cb-instrumental" checked><label class="form-check-label" for="cb-instrumental">纯音乐</label>
+<input class="form-check-input" type="checkbox" value="" id="cb-live" checked><label class="form-check-label" for="cb-live">live版</label>
+<input class="form-check-input" type="checkbox" value="" id="cb-lossless"><label class="form-check-label" for="cb-lossless">仅显示flac文件</label>
 </div>
 <button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upload-batch">全部上传</button>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>文件信息</th><th>备注</th> </tr></thead><tbody></tbody></table>
 `,
             footer: '<div></div>',
             didOpen: () => {
-                let container = Swal.getHtmlContainer()
-                let footer = Swal.getFooter()
-                let tbody = container.querySelector('tbody')
+                const container = Swal.getHtmlContainer()
+                const footer = Swal.getFooter()
+                const tbody = container.querySelector('tbody')
                 this.popupObj = {
                     container: container,
                     tbody: tbody,
@@ -115,37 +123,52 @@ width: 15%;
                 }
 
                 //this.filter={text:'',noCopyright:true,vip:true,pay:true,lossless:false,songIds:[]}
-                let filterInput = container.querySelector('#text-filter')
+                const filterInput = container.querySelector('#text-filter')
                 filterInput.addEventListener('change', () => {
-                    let filtertext = filterInput.value.trim()
+                    const filtertext = filterInput.value.trim()
                     if (this.filter.text != filtertext) {
                         this.filter.text = filtertext
                         this.applyFilter()
                     }
                 })
-                let copyrightInput = container.querySelector('#cb-copyright')
+                const unmatchInput = container.querySelector('#cb-unmatch')
+                unmatchInput.addEventListener('change', () => {
+                    this.filter.unmatch = unmatchInput.checked
+                    this.applyFilter()
+                })
+                const copyrightInput = container.querySelector('#cb-copyright')
                 copyrightInput.addEventListener('change', () => {
                     this.filter.noCopyright = copyrightInput.checked
                     this.applyFilter()
                 })
-                let vipInput = container.querySelector('#cb-vip')
+                const freeInput = container.querySelector('#cb-free')
+                freeInput.addEventListener('change', () => {
+                    this.filter.free = freeInput.checked
+                    this.applyFilter()
+                })
+                const vipInput = container.querySelector('#cb-vip')
                 vipInput.addEventListener('change', () => {
                     this.filter.vip = vipInput.checked
                     this.applyFilter()
                 })
-                let payInput = container.querySelector('#cb-pay')
+                const payInput = container.querySelector('#cb-pay')
                 payInput.addEventListener('change', () => {
                     this.filter.pay = payInput.checked
                     this.applyFilter()
                 })
-                let losslessInput = container.querySelector('#cb-lossless')
+                const losslessInput = container.querySelector('#cb-lossless')
                 losslessInput.addEventListener('change', () => {
                     this.filter.lossless = losslessInput.checked
                     this.applyFilter()
                 })
-                let allInput = container.querySelector('#cb-all')
-                allInput.addEventListener('change', () => {
-                    this.filter.all = allInput.checked
+                const instrumentalInput = container.querySelector('#cb-instrumental')
+                instrumentalInput.addEventListener('change', () => {
+                    this.filter.instrumental = instrumentalInput.checked
+                    this.applyFilter()
+                })
+                const liveInput = container.querySelector('#cb-live')
+                liveInput.addEventListener('change', () => {
+                    this.filter.live = liveInput.checked
                     this.applyFilter()
                 })
                 let uploader = this
@@ -247,9 +270,12 @@ width: 15%;
                             isNoCopyright: content.privileges[i].st < 0,
                             isVIP: false,
                             isPay: false,
+                            isLive: config.name ? liveRegex.test(config.name.toLowerCase()) : false,
+                            isInstrumental: false,
                             uploaded: false,
-                            needMatch: config.name == undefined,
+                            needMatch: config.name === undefined,
                         }
+                        let foundFlag = false
                         for (let j = 0; j < songslen; j++) {
                             if (content.songs[j].id == content.privileges[i].id) {
                                 item.name = content.songs[j].name
@@ -262,8 +288,14 @@ width: 15%;
                                 item.picUrl = (content.songs[j].al && content.songs[j].al.picUrl) ? content.songs[j].al.picUrl : 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
                                 item.isVIP = content.songs[j].fee == 1
                                 item.isPay = content.songs[j].fee == 4
+                                item.isLive = liveRegex.test(item.name.toLowerCase())
+                                item.isInstrumental = (content.songs[j].mark & 131072) === 131072 || item.name.includes('伴奏') || item.name.toLowerCase().includes('Instrumental')
+                                foundFlag = true
                                 break
                             }
+                        }
+                        if (!foundFlag) {
+                            item.needMatch = false
                         }
                         if (config.name) {
                             item.name = config.name
@@ -310,26 +342,36 @@ width: 15%;
     }
     applyFilter() {
         this.filter.songIndexs = []
-        let filterText = this.filter.text
-        let isNoCopyright = this.filter.noCopyright
-        let isVIP = this.filter.vip
-        let isPay = this.filter.pay
-        let isLossless = this.filter.lossless
-        let isALL = this.filter.all
+        const filterText = this.filter.text
+        const isUnmatch = this.filter.unmatch
+        const isNoCopyright = this.filter.noCopyright
+        const isFree = this.filter.free
+        const isVIP = this.filter.vip
+        const isPay = this.filter.pay
+        const isLossless = this.filter.lossless
         for (let i = 0; i < this.songs.length; i++) {
             let song = this.songs[i]
             if (filterText.length > 0 && !song.name.includes(filterText) && !song.album.includes(filterText) && !song.artists.includes(filterText) && !song.tns.includes(filterText)) {
                 continue
             }
-            if (isALL) {
+            if (isLossless && song.ext !== 'flac') {
+                continue;
+            }
+            if (!this.filter.instrumental && song.isInstrumental) {
+                continue;
+            }
+            if (!this.filter.live && song.isLive) {
+                continue;
+            }
+            if (isUnmatch && !song.needMatch) {
                 this.filter.songIndexs.push(i)
             } else if (isNoCopyright && song.isNoCopyright) {
+                this.filter.songIndexs.push(i)
+            } else if (isFree && !song.isVIP && !song.isPay) {
                 this.filter.songIndexs.push(i)
             } else if (isVIP && song.isVIP) {
                 this.filter.songIndexs.push(i)
             } else if (isPay && song.isPay) {
-                this.filter.songIndexs.push(i)
-            } else if (isLossless && song.ext == 'flac') {
                 this.filter.songIndexs.push(i)
             }
         }

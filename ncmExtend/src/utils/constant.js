@@ -56,3 +56,5 @@ export const setBatchTransUploadSettings = (value) => {
 }
 export const uploadChunkSize = 8 * 1024 * 1024
 export const songMark = { explicit: 1048576 }
+
+export const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;

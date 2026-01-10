@@ -2,7 +2,7 @@ import { createBigButton, showTips, showConfirmBox } from "../utils/common";
 import { weapiRequestSync } from "../utils/request";
 import { getMD5 } from "../utils/crypto";
 import { fileSizeDesc } from "../utils/descHelper";
-import { liveRegex } from "../components/batchManager";
+import { liveRegex } from "../utils/constant";
 
 export const cloudDeduplication = (uiArea) => {
     const btnDeduplication = createBigButton("云盘去重", uiArea, 2);
