@@ -126,7 +126,7 @@ width: 15%;
                 const filterInput = container.querySelector('#text-filter')
                 filterInput.addEventListener('change', () => {
                     const filtertext = filterInput.value.trim()
-                    if (this.filter.text != filtertext) {
+                    if (this.filter.text !== filtertext) {
                         this.filter.text = filtertext
                         this.applyFilter()
                     }
@@ -182,11 +182,11 @@ width: 15%;
                     this.batchUpload.songIndexs = []
                     this.filter.songIndexs.forEach(idx => {
                         const song = uploader.songs[idx]
-                        if (!song.uploaded && song.uploadType != 0) {
+                        if (!song.uploaded && song.uploadType !== 0) {
                             uploader.batchUpload.songIndexs.push(idx)
                         }
                     })
-                    if (this.batchUpload.songIndexs.length == 0) {
+                    if (this.batchUpload.songIndexs.length === 0) {
                         showTips('没有需要上传的歌曲', 1)
                         return
                     }
@@ -218,13 +218,13 @@ width: 15%;
     }
     fetchSongInfoSub(ids, startIndex) {
         if (startIndex >= ids.length) {
-            if (this.songs.length == 0) {
+            if (this.songs.length === 0) {
                 this.popupObj.tbody.innerHTML = '没有可以上传的歌曲'
                 return
             }
             //排序
             this.songs.sort((a, b) => {
-                if (a.albumid != b.albumid) {
+                if (a.albumid !== b.albumid) {
                     return b.albumid - a.albumid
                 }
                 return a.id - b.id
@@ -241,7 +241,7 @@ width: 15%;
             },
             onload: function (content) {
                 //console.log(content)
-                if (content.code != 200 || !content.songs) {
+                if (content.code !== 200 || !content.songs) {
                     //重试
                     setTimeout(uploader.fetchSongInfoSub(ids, startIndex), 1000)
                     return
@@ -251,7 +251,7 @@ width: 15%;
                 for (let i = 0; i < privilegelen; i++) {
                     if (!content.privileges[i].cs) {
                         let config = uploader.config.data.find(item => {
-                            return item.id == content.privileges[i].id
+                            return item.id === content.privileges[i].id
                         })
                         let item = {
                             id: content.privileges[i].id,
@@ -277,7 +277,7 @@ width: 15%;
                         }
                         let foundFlag = false
                         for (let j = 0; j < songslen; j++) {
-                            if (content.songs[j].id == content.privileges[i].id) {
+                            if (content.songs[j].id === content.privileges[i].id) {
                                 item.name = content.songs[j].name
                                 item.album = getAlbumTextInSongDetail(content.songs[j])
                                 item.albumid = content.songs[j].al.id || 0
@@ -286,8 +286,8 @@ width: 15%;
                                 item.dt = duringTimeDesc(content.songs[j].dt || 0)
                                 item.filename = nameFileWithoutExt(item.name, item.artists, 'artist-title') + '.' + config.ext
                                 item.picUrl = (content.songs[j].al && content.songs[j].al.picUrl) ? content.songs[j].al.picUrl : 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
-                                item.isVIP = content.songs[j].fee == 1
-                                item.isPay = content.songs[j].fee == 4
+                                item.isVIP = content.songs[j].fee === 1
+                                item.isPay = content.songs[j].fee === 4
                                 item.isLive = liveRegex.test(item.name.toLowerCase())
                                 item.isInstrumental = (content.songs[j].mark & 131072) === 131072 || item.name.includes('伴奏') || item.name.toLowerCase().includes('Instrumental')
                                 foundFlag = true
@@ -381,7 +381,7 @@ width: 15%;
         this.renderFilterInfo()
     }
     renderData() {
-        if (this.filter.songIndexs.length == 0) {
+        if (this.filter.songIndexs.length === 0) {
             this.popupObj.tbody.innerHTML = '空空如也'
             this.popupObj.footer.innerHTML = ''
             return
@@ -410,7 +410,7 @@ width: 15%;
             pageBtn.setAttribute("type", "button")
             pageBtn.className = "swal2-styled"
             pageBtn.innerHTML = pageIndex
-            if (pageIndex != uploader.page.current) {
+            if (pageIndex !== uploader.page.current) {
                 pageBtn.addEventListener('click', () => {
                     uploader.page.current = pageIndex
                     uploader.renderData()
@@ -428,7 +428,7 @@ width: 15%;
         let countCanUpload = 0
         this.filter.songIndexs.forEach(idx => {
             let song = this.songs[idx]
-            if (!song.uploaded && song.uploadType != 0) {
+            if (!song.uploaded && song.uploadType !== 0) {
                 countCanUpload += 1
                 sizeTotal += song.size
             }
@@ -448,10 +448,10 @@ width: 15%;
     uploadSong(songIndex) {
         let song = this.songs[songIndex]
         if (song.cloudId) {
-            if (song.uploadType == 1) {
+            if (song.uploadType === 1) {
                 this.uploadSongImport(songIndex)
             }
-            else if (song.uploadType == 0) {
+                    else if (song.uploadType === 0) {
                 this.uploadSongWay2Part1(songIndex)
             }
             return
@@ -470,7 +470,7 @@ width: 15%;
                     songs: JSON.stringify(songCheckData),
                 },
                 onload: (res1) => {
-                    if (res1.code != 200) {
+                    if (res1.code !== 200) {
                         console.error(song.name, '1.检查资源', res1)
                         uploader.onUploadFail(songIndex)
                         return
@@ -490,13 +490,13 @@ width: 15%;
 
                     console.log(song.name, '1.检查资源', res1)
                     song.uploadType = res1.data[0].upload
-                    if (song.uploadType == 1) {
+                    if (song.uploadType === 1) {
                         console.log(song.name, '1.检查资源', res1)
                         showTips(`(1/3)${song.name} 检查资源`, 1)
                         song.cloudId = res1.data[0].songId
                         uploader.uploadSongImport(songIndex)
                     }
-                    else if (song.uploadType == 0) {
+                    else if (song.uploadType === 0) {
                         uploader.setReUploadButtonViewable(songIndex)
                         song.cloudId = res1.data[0].songId
                         uploader.onUploadFinnsh()

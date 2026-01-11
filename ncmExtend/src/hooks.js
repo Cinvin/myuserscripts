@@ -131,7 +131,7 @@ const handlePlayResponse = async (response, isWebPlayer) => {
                         encodeType: "mp3",
                     }),
                 };
-                if (content.data[0].fee == 0) {
+                if (content.data[0].fee === 0) {
                     apiData["/api/song/enhance/download/url/v1"] = JSON.stringify({
                         id: songId,
                         level:

@@ -25,7 +25,7 @@ export const cloudLocalUpload = (uiArea) => {
             preConfirm: () => {
                 const container = Swal.getHtmlContainer()
                 const files = container.querySelector('#song-file').files
-                if (files.length == 0) return Swal.showValidationMessage('请选择文件')
+                if (files.length === 0) return Swal.showValidationMessage('请选择文件')
                 return {
                     files: files,
                     needFillInfo: container.querySelector('#need-fill-info-radio').checked,
@@ -172,7 +172,7 @@ width: 27%;
                 preConfirm: () => {
                     const container = Swal.getHtmlContainer()
                     let songTitle = container.querySelector('#text-title').value.trim()
-                    if (songTitle.length == 0) return Swal.showValidationMessage('歌名不能为空')
+                    if (songTitle.length === 0) return Swal.showValidationMessage('歌名不能为空')
                     return {
                         title: songTitle,
                         artist: container.querySelector('#text-artist').value.trim(),
@@ -217,7 +217,7 @@ width: 27%;
                             },
                             onload: (res1) => {
                                 console.log(song.title, '1.检查资源', res1)
-                                if (res1.code != 200) {
+                                if (res1.code !== 200) {
                                     console.error(song.title, '1.检查资源', res1)
                                     self.uploadFail()
                                     return
@@ -236,7 +236,7 @@ width: 27%;
                                         md5: song.md5
                                     },
                                     onload: (res2) => {
-                                        if (res2.code != 200) {
+                                        if (res2.code !== 200) {
                                             console.error(song.title, '2.获取令牌', res2)
                                             self.uploadFail()
                                             return
@@ -334,7 +334,7 @@ width: 27%;
                         resourceId: song.resourceId,
                     },
                     onload: (res3) => {
-                        if (res3.code != 200) {
+                        if (res3.code !== 200) {
                             if (song.expireTime < Date.now() || (res3.msg && res3.msg.includes('rep create failed'))) {
                                 console.error(song.title, '3.提交文件', res3)
                                 self.uploadFail()
@@ -357,7 +357,7 @@ width: 27%;
                                 songid: res3.songId,
                             },
                             onload: (res4) => {
-                                if (res4.code != 200 && res4.code != 201) {
+                                if (res4.code !== 200 && res4.code !== 201) {
                                     console.error(song.title, '4.发布资源', res4)
                                     self.uploadFail()
                                     return

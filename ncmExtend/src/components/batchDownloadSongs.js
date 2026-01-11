@@ -8,7 +8,7 @@ import { detectAudioFormat } from '../utils/file'
 import { downloadCleanupManager } from '../utils/downloadCleanupManager'
 
 export const batchDownloadSongs = (songList, config) => {
-    if (songList.length == 0) {
+    if (songList.length === 0) {
         showConfirmBox('没有可下载的歌曲')
         return
     }
@@ -92,7 +92,7 @@ width: 10%;
 const downloadSongSub = (threadIndex, songList, config) => {
     let song = songList.shift()
     let tableRowDOM = config.threadList[threadIndex].tableRowDOM
-    if (song == undefined) {
+    if (song === undefined) {
         config.threadList[threadIndex].working = false
         let allFinnsh = true
         for (let i = 0; i < config.threadCount; i++) {
@@ -130,7 +130,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
     let sizeText = tableRowDOM.querySelector('.my-size')
     let prText = tableRowDOM.querySelector('.my-pr')
     if (!song.api) {
-        song.api = (song.privilege.fee == 0 && (levelWeight[song.privilege.plLevel] || 99) < (levelWeight[song.privilege.dlLevel] || -1)) ?
+        song.api = (song.privilege.fee === 0 && (levelWeight[song.privilege.plLevel] || 99) < (levelWeight[song.privilege.dlLevel] || -1)) ?
             { url: '/api/song/enhance/download/url/v1', data: { id: song.id, level: config.level, encodeType: 'mp3' } } :
             { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([song.id]), level: config.level, encodeType: 'mp3' } }
     }
@@ -139,19 +139,19 @@ const downloadSongSub = (threadIndex, songList, config) => {
             data: song.api.data,
             onload: (content) => {
                 let resData = content.data[0] || content.data
-                if (resData.url != null) {
+                if (resData.url !== null) {
                     //跳过未到达音质的歌曲
-                    if (config.targetLevelOnly && config.level != resData.level) {
+                    if (config.targetLevelOnly && config.level !== resData.level) {
                         prText.innerHTML = `跳过下载`
                         config.skipSongs.push(song)
                         downloadSongSub(threadIndex, songList, config)
                         return
                     }
                     let folder = ''
-                    if (config.folder != 'none' && song.artist.length > 0) {
+                    if (config.folder !== 'none' && song.artist.length > 0) {
                         folder = song.artist.replace('/', '／') + '/'
                     }
-                    if (config.folder == 'artist-album' && song.album.length > 0) {
+                    if (config.folder === 'artist-album' && song.album.length > 0) {
                         folder += song.album.replace('/', '／') + '/'
                     }
                     song.fileNameWithOutExt = folder + nameFileWithoutExt(song.title, song.artist, config.out).replace('/', '／')
@@ -171,7 +171,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
                         lyricText: null,
                         coverData: null,
                         prText: prText,
-                        appendMeta: config.appendMeta == "allAppend" || (config.appendMeta == "skipCloud" && !song.privilege.cs)
+                        appendMeta: config.appendMeta === "allAppend" || (config.appendMeta === "skipCloud" && !song.privilege.cs)
                     }
                     song.download.prText.innerHTML = '正在下载'
                     downloadSongFile(song, threadIndex, songList, config)
@@ -296,7 +296,7 @@ const downloadSongLyric = (songItem, threadIndex, songList, config) => {
             songItem.download.finnnsh.lyric = true
             if (lyricContent.pureMusic) comcombineFile(songItem, threadIndex, songList, config)
             const LyricObj = handleLyric(lyricContent)
-            if (LyricObj.orilrc.parsedLyric.length == 0) comcombineFile(songItem, threadIndex, songList, config)
+            if (LyricObj.orilrc.parsedLyric.length === 0) comcombineFile(songItem, threadIndex, songList, config)
             const LyricItem = LyricObj.oritlrc || LyricObj.orilrc
             songItem.download.lyricText = LyricItem.lyric
             if (config.downloadLyric && LyricItem.lyric.length > 0) {

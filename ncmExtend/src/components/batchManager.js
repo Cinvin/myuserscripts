@@ -441,7 +441,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     pageBtn.setAttribute("type", "button")
                     pageBtn.className = "swal2-styled"
                     pageBtn.innerHTML = pageIndex
-                    if (pageIndex != state.page) {
+                    if (pageIndex !== state.page) {
                         pageBtn.addEventListener('click', () => { state.page = pageIndex; renderView() })
                     } else {
                         pageBtn.style.background = 'white'

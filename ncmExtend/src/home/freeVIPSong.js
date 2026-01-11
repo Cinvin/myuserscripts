@@ -137,7 +137,7 @@ width: 8%;
             },
             onload: (content) => {
                 //console.log(content)
-                if (content.data[0].url != null) {
+                if (content.data[0].url !== null) {
                     GM_download({
                         url: content.data[0].url,
                         name: filename + '.' + content.data[0].type.toLowerCase(),

@@ -138,7 +138,7 @@ width: 15%;
                     this.filter.filterInput = filterInput
                     this.filter.notMatchCb = notMatchCb
                     filterInput.addEventListener('change', () => {
-                        if (this.filter.text == filterInput.value.trim()) {
+                        if (this.filter.text === filterInput.value.trim()) {
                             return
                         }
                         this.filter.text = filterInput.value.trim()
@@ -149,7 +149,7 @@ width: 15%;
                         this.onCloudInfoFilterChange()
                     })
                     cloudListContainer.appendChild(songtb)
-                    if (this.filter.text == '' && !this.filter.notMatch) {
+                    if (this.filter.text === '' && !this.filter.notMatch) {
                         this.fetchCloudInfoForMatchTable((this.currentPage - 1) * this.cloudCountLimit)
                     } else {
                         this.sepreateFilterCloudListPage(this.currentPage)
@@ -185,7 +185,7 @@ width: 15%;
                         pageBtn.setAttribute("type", "button")
                         pageBtn.className = "swal2-styled"
                         pageBtn.innerHTML = pageIndex
-                        if (pageIndex != this.currentPage) {
+                        if (pageIndex !== this.currentPage) {
                             pageBtn.addEventListener('click', () => {
                                 this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (pageIndex - 1))
                             })
@@ -213,7 +213,7 @@ width: 15%;
         }
         fillCloudListTable(songs) {
             this.controls.tbody.innerHTML = ''
-            if (songs.length == 0) {
+            if (songs.length === 0) {
                 this.controls.tbody.innerHTML = '空空如也'
             }
             songs.forEach((song) => {
@@ -287,7 +287,7 @@ width: 15%;
         }
         onCloudInfoFilterChange() {
             this.filter.songs = []
-            if (this.filter.text == '' && !this.filter.notMatch) {
+            if (this.filter.text === '' && !this.filter.notMatch) {
                 this.fetchCloudInfoForMatchTable(0)
                 return
             }
@@ -296,7 +296,7 @@ width: 15%;
             this.cloudInfoFilterFetchData(0)
         }
         cloudInfoFilterFetchData(offset) {
-            if (offset == 0) {
+            if (offset === 0) {
                 this.filter.songs = []
             }
             weapiRequest('/api/v1/cloud/get', {
@@ -363,7 +363,7 @@ width: 15%;
                 pageBtn.setAttribute("type", "button")
                 pageBtn.className = "swal2-styled"
                 pageBtn.innerHTML = pageIndex
-                if (pageIndex != currentPage) {
+                if (pageIndex !== currentPage) {
                     pageBtn.addEventListener('click', () => {
                         this.sepreateFilterCloudListPage(pageIndex)
                     })
@@ -490,7 +490,7 @@ width: 8%;
                         },
                         onload: (content) => {
                             //console.log(content)
-                            if (content.code != 200) {
+                            if (content.code !== 200) {
                                 return
                             }
                             const playerContent = content["/api/song/enhance/player/url/v1"]
@@ -541,7 +541,7 @@ width: 8%;
                                 data: requestData,
                                 onload: (content) => {
                                     console.log(content)
-                                    if (content.code != 200) {
+                                    if (content.code !== 200) {
                                         return
                                     }
                                     const songDetailContent = content["/api/v3/song/detail"]
@@ -579,7 +579,7 @@ width: 8%;
                     adjustSongId: toId,
                 },
                 onload: (res) => {
-                    if (res.code != 200) {
+                    if (res.code !== 200) {
                         showTips(res.message || res.msg || '匹配失败', 2)
                     } else {
                         let msg = '解除匹配成功'

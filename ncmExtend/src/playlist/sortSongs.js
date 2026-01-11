@@ -23,22 +23,22 @@ const ShowPLSortPopUp = (playlistId) => {
         },
     }).then(res => {
         if (!res.isConfirmed) return
-        if (res.value == 0) {
+        if (res.value === 0) {
             PlaylistTimeSort(playlistId, true)
         }
-        else if (res.value == 1) {
+        else if (res.value === 1) {
             PlaylistTimeSort(playlistId, false)
         }
-        else if (res.value == 2) {
+        else if (res.value === 2) {
             PlaylistCountSort(playlistId, true, 'Red')
         }
-        else if (res.value == 3) {
+        else if (res.value === 3) {
             PlaylistCountSort(playlistId, false, 'Red')
         }
-        else if (res.value == 4) {
+        else if (res.value === 4) {
             PlaylistCountSort(playlistId, true, 'Comment')
         }
-        else if (res.value == 5) {
+        else if (res.value === 5) {
             PlaylistCountSort(playlistId, false, 'Comment')
         }
     })
@@ -97,8 +97,8 @@ const PlaylistTimeSortFetchAllPublishTime = (playlistId, descending, index, song
         PlaylistTimeSortSongs(playlistId, descending, songList)
         return
     }
-    if (index == 0) showTips('开始获取歌曲专辑发行时间')
-    if (index % 10 == 9) showTips(`正在获取歌曲专辑发行时间(${index + 1}/${songList.length})`)
+    if (index === 0) showTips('开始获取歌曲专辑发行时间')
+    if (index % 10 === 9) showTips(`正在获取歌曲专辑发行时间(${index + 1}/${songList.length})`)
     const albumId = songList[index].albumId
     if (albumId <= 0) {
         PlaylistTimeSortFetchAllPublishTime(playlistId, descending, index + 1, songList, aldict)
@@ -121,7 +121,7 @@ const PlaylistTimeSortFetchAllPublishTime = (playlistId, descending, index, song
 }
 const PlaylistTimeSortSongs = (playlistId, descending, songList) => {
     songList.sort((a, b) => {
-        if (a.publishTime != b.publishTime) {
+        if (a.publishTime !== b.publishTime) {
             if (descending) {
                 return b.publishTime - a.publishTime
             }
@@ -129,7 +129,7 @@ const PlaylistTimeSortSongs = (playlistId, descending, songList) => {
                 return a.publishTime - b.publishTime
             }
         }
-        else if (a.albumId != b.albumId) {
+        else if (a.albumId !== b.albumId) {
             if (descending) {
                 return b.albumId - a.albumId
             }
@@ -137,10 +137,10 @@ const PlaylistTimeSortSongs = (playlistId, descending, songList) => {
                 return a.albumId - b.albumId
             }
         }
-        else if (a.cd != b.cd) {
+        else if (a.cd !== b.cd) {
             return a.cd - b.cd
         }
-        else if (a.no != b.no) {
+        else if (a.no !== b.no) {
             return a.no - b.no
         }
         return a.id - b.id
@@ -154,7 +154,7 @@ const PlaylistTimeSortSongs = (playlistId, descending, songList) => {
         },
         onload: function (content) {
             //console.log(content)
-            if (content.code == 200) {
+            if (content.code === 200) {
                 showConfirmBox('排序完成')
             }
             else {
@@ -179,10 +179,10 @@ const PlaylistCountSort = (playlistId, descending, way) => {
                 }
             })
             const trackIds = content.playlist.trackIds.map(item => { return item.id })
-            if (way == 'Red') {
+            if (way === 'Red') {
                 PlaylistCountSortFetchRedCount(playlistId, songList, 0, descending)
             }
-            else if (way == 'Comment') {
+            else if (way === 'Comment') {
                 PlaylistCountSortFetchCommentCount(playlistId, songList, trackIds, 0, descending)
             }
         }
@@ -193,8 +193,8 @@ const PlaylistCountSortFetchRedCount = (playlistId, songList, index, descending)
         PlaylistCountSortSongs(playlistId, descending, songList)
         return
     }
-    if (index == 0) showTips('开始获取歌曲红心数量')
-    if (index % 10 == 9) showTips(`正在获取歌曲红心数量(${index + 1}/${songList.length})`)
+    if (index === 0) showTips('开始获取歌曲红心数量')
+    if (index % 10 === 9) showTips(`正在获取歌曲红心数量(${index + 1}/${songList.length})`)
     weapiRequest("/api/song/red/count", {
         data: {
             songId: songList[index].id,
@@ -210,7 +210,7 @@ const PlaylistCountSortFetchCommentCount = (playlistId, songList, trackIds, inde
         PlaylistCountSortSongs(playlistId, descending, songList)
         return
     }
-    if (index == 0) showTips('开始获取歌曲评论数量')
+    if (index === 0) showTips('开始获取歌曲评论数量')
     else showTips(`正在获取歌曲评论数量(${index + 1}/${songList.length})`)
     weapiRequest("/api/resource/commentInfo/list", {
         data: {
@@ -221,7 +221,7 @@ const PlaylistCountSortFetchCommentCount = (playlistId, songList, trackIds, inde
             content.data.forEach(item => {
                 const songId = item.resourceId
                 for (let i = 0; i < songList.length; i++) {
-                    if (songList[i].id == songId) {
+                    if (songList[i].id === songId) {
                         songList[i].count = item.commentCount
                         break
                     }
@@ -233,7 +233,7 @@ const PlaylistCountSortFetchCommentCount = (playlistId, songList, trackIds, inde
 }
 const PlaylistCountSortSongs = (playlistId, descending, songList) => {
     songList.sort((a, b) => {
-        if (a.count != b.count) {
+        if (a.count !== b.count) {
             if (descending) {
                 return b.count - a.count
             }
@@ -251,7 +251,7 @@ const PlaylistCountSortSongs = (playlistId, descending, songList) => {
             op: 'update',
         },
         onload: function (content) {
-            if (content.code == 200) {
+            if (content.code === 200) {
                 showConfirmBox('排序完成')
             }
             else {

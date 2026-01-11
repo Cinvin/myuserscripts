@@ -65,7 +65,7 @@ class AlbumDetail {
     }
     AppendInfos() {
         this.descriptionArea.innerHTML += `<p class="intr"><b>专辑类型：</b>${this.albumRes.album.type} ${this.albumRes.album.subType}</p>`
-        if ((this.albumRes.album.mark & songMark.explicit) == songMark.explicit) {
+        if ((this.albumRes.album.mark & songMark.explicit) === songMark.explicit) {
             this.descriptionArea.innerHTML += `<p class="intr"><b>🅴：</b>内容含有不健康因素</p>`
         }
         if (this.albumRes.album.blurPicUrl) {
@@ -94,7 +94,7 @@ class AlbumDetail {
                 tableRows.forEach(tableRow => {
                     if (Number(tableRow.id.slice(0, -13)) === songItem.id) {
                         tableRow.querySelector('.num').innerHTML = songItem.song.no
-                        tableRow.className = songIndex % 2 == 0 ? "even " : ""
+                        tableRow.className = songIndex % 2 === 0 ? "even " : ""
                         if (songItem.privilege.st < 0) tableRow.className += 'js-dis'
                         tbody.appendChild(tableRow)
                     }
@@ -116,7 +116,7 @@ class AlbumDetail {
     updateSongsCloudStatus(songIds) {
         songIds.forEach(songId => {
             for (let i = 0; i < this.albumSongList.length; i++) {
-                if (this.albumSongList[i].id == songId) {
+                if (this.albumSongList[i].id === songId) {
                     this.albumSongList[i].privilege.cs = true
                     break
                 }

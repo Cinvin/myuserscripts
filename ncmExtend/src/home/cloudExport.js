@@ -55,7 +55,7 @@ export const cloudExport = (uiArea) => {
                 offset: offset,
             },
             onload: (res) => {
-                if (res.code != 200 || !res.data) {
+                if (res.code !== 200 || !res.data) {
                     //重试
                     setTimeout(exportCloudSub(filter, config, offset), 1000)
                     return
@@ -66,8 +66,8 @@ export const cloudExport = (uiArea) => {
                         //已关联歌曲
                         if (filter[0].length > 0) {
                             let flag = false
-                            for (let i = 0; i < song.simpleSong.ar.length; i++) {
-                                if (song.simpleSong.ar[i].name == filter[0]) {
+                                for (let i = 0; i < song.simpleSong.ar.length; i++) {
+                                if (song.simpleSong.ar[i].name === filter[0]) {
                                     flag = true
                                     break
                                 }
@@ -76,10 +76,10 @@ export const cloudExport = (uiArea) => {
                                 return
                             }
                         }
-                        if (filter[1].length > 0 && filter[1] != getAlbumTextInSongDetail(song.simpleSong)) {
+                        if (filter[1].length > 0 && filter[1] !== getAlbumTextInSongDetail(song.simpleSong)) {
                             return
                         }
-                        if (filter[2].length > 0 && filter[2] != song.simpleSong.name) {
+                        if (filter[2].length > 0 && filter[2] !== song.simpleSong.name) {
                             return
                         }
                         let songItem = {
@@ -94,13 +94,13 @@ export const cloudExport = (uiArea) => {
                         matchSongs.push(songItem)
                     } else {
                         //未关联歌曲
-                        if (filter[0].length > 0 && song.artist != filter[0]) {
+                        if (filter[0].length > 0 && song.artist !== filter[0]) {
                             return
                         }
-                        if (filter[1].length > 0 && song.album != filter[1]) {
+                        if (filter[1].length > 0 && song.album !== filter[1]) {
                             return
                         }
-                        if (filter[2].length > 0 && song.songName != filter[2]) {
+                        if (filter[2].length > 0 && song.songName !== filter[2]) {
                             return
                         }
                         let songItem = {
@@ -129,7 +129,7 @@ export const cloudExport = (uiArea) => {
                         },
                         onload: (res2) => {
                             //console.log(res2)
-                            if (res2.code != 200 || !res2.data) {
+                            if (res2.code !== 200 || !res2.data) {
                                 //重试
                                 setTimeout(exportCloudSub(filter, config, offset), 1000)
                                 return
@@ -137,7 +137,7 @@ export const cloudExport = (uiArea) => {
                             matchSongs.forEach(song => {
                                 let songId = song.id
                                 for (let i = 0; i < res2.data.length; i++) {
-                                    if (res2.data[i].id == songId) {
+                                    if (res2.data[i].id === songId) {
                                         song.md5 = res2.data[i].md5
                                         config.data.push(song)
                                         break
@@ -198,10 +198,10 @@ export const cloudExport = (uiArea) => {
                 res.data.forEach(song => {
                     if (song.simpleSong.al && song.simpleSong.al.id > 0) {
                         //已关联歌曲
-                        if (filter[0].length > 0) {
+                            if (filter[0].length > 0) {
                             let flag = false
                             for (let i = 0; i < song.simpleSong.ar.length; i++) {
-                                if (song.simpleSong.ar[i].name == filter[0]) {
+                                if (song.simpleSong.ar[i].name === filter[0]) {
                                     flag = true
                                     break
                                 }
@@ -210,10 +210,10 @@ export const cloudExport = (uiArea) => {
                                 return
                             }
                         }
-                        if (filter[1].length > 0 && filter[1] != getAlbumTextInSongDetail(song.simpleSong)) {
+                        if (filter[1].length > 0 && filter[1] !== getAlbumTextInSongDetail(song.simpleSong)) {
                             return
                         }
-                        if (filter[2].length > 0 && filter[2] != song.simpleSong.name) {
+                        if (filter[2].length > 0 && filter[2] !== song.simpleSong.name) {
                             return
                         }
                         let songItem = {
@@ -228,13 +228,13 @@ export const cloudExport = (uiArea) => {
                         matchSongs.push(songItem)
                     } else {
                         //未关联歌曲
-                        if (filter[0].length > 0 && song.artist != filter[0]) {
+                        if (filter[0].length > 0 && song.artist !== filter[0]) {
                             return
                         }
-                        if (filter[1].length > 0 && song.album != filter[1]) {
+                        if (filter[1].length > 0 && song.album !== filter[1]) {
                             return
                         }
-                        if (filter[2].length > 0 && song.songName != filter[2]) {
+                        if (filter[2].length > 0 && song.songName !== filter[2]) {
                             return
                         }
                         let songItem = {
@@ -263,7 +263,7 @@ export const cloudExport = (uiArea) => {
                         },
                         onload: (res2) => {
                             //console.log(res2)
-                            if (res2.code != 200) {
+                            if (res2.code !== 200) {
                                 //重试
                                 exportCloudByPlaylistSub(filter, trackIds, config, offset)
                                 return
@@ -271,7 +271,7 @@ export const cloudExport = (uiArea) => {
                             matchSongs.forEach(song => {
                                 let songId = song.id
                                 for (let i = 0; i < res2.data.length; i++) {
-                                    if (res2.data[i].id == songId) {
+                                    if (res2.data[i].id === songId) {
                                         song.md5 = res2.data[i].md5
                                         config.data.push(song)
                                         break

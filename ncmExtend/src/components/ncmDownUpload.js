@@ -28,7 +28,7 @@ export class ncmDownUpload {
                     showTips(`(1/3)${song.title} 获取文件信息完成`, 1)
                     //console.log(content)
                     const resData = content.data[0] || content.data
-                    if (resData.url != null) {
+                    if (resData.url !== null) {
                         song.fileFullName = nameFileWithoutExt(song.title, song.artist, 'artist-title') + '.' + resData.type.toLowerCase()
                         song.dlUrl = resData.url
                         song.md5 = resData.md5
@@ -49,16 +49,16 @@ export class ncmDownUpload {
                             },
                             onload: (res1) => {
                                 console.log(song.title, '1.检查资源', res1)
-                                if (res1.code != 200 || res1.data.length < 1) {
+                                if (res1.code !== 200 || res1.data.length < 1) {
                                     this.uploadSongFail(song)
                                     return
                                 }
                                 showTips(`(2/3)${song.title} 检查资源`, 1)
                                 song.cloudId = res1.data[0].songId
-                                if (res1.data[0].upload == 1) {
+                                if (res1.data[0].upload === 1) {
                                     this.uploadSongWay1Part1(song)
                                 }
-                                else if (res1.data[0].upload == 2) {
+                                else if (res1.data[0].upload === 2) {
                                     this.uploadSongWay2Part1(song)
                                 }
                                 else {
@@ -104,7 +104,7 @@ export class ncmDownUpload {
                 },
                 onload: (res) => {
                     console.log(song.title, '2.导入文件', res)
-                    if (res.code != 200 || res.data.successSongs.length < 1) {
+                    if (res.code !== 200 || res.data.successSongs.length < 1) {
                         console.error(song.title, '2.导入文件', res)
                         this.uploadSongFail(song)
                         return
@@ -138,7 +138,7 @@ export class ncmDownUpload {
                     md5: song.md5
                 },
                 onload: (res2) => {
-                    if (res2.code != 200) {
+                    if (res2.code !== 200) {
                         console.error(song.title, '2.获取令牌', res2)
                         this.uploadSongFail(song)
                         return
@@ -251,7 +251,7 @@ export class ncmDownUpload {
                     md5: song.md5
                 },
                 onload: (res2) => {
-                    if (res2.code != 200) {
+                    if (res2.code !== 200) {
                         console.error(song.title, '2.获取令牌', res2)
                         this.uploadSongFail(song)
                         return
@@ -288,7 +288,7 @@ export class ncmDownUpload {
                     resourceId: song.resourceId,
                 },
                 onload: (res3) => {
-                    if (res3.code != 200) {
+                    if (res3.code !== 200) {
                         if (song.expireTime < Date.now() || (res3.msg && res3.msg.includes('rep create failed'))) {
                             console.error(song.title, '3.提交文件', res3)
                             this.uploadSongFail(song)
@@ -310,7 +310,7 @@ export class ncmDownUpload {
                             songid: res3.songId,
                         },
                         onload: (res4) => {
-                            if (res4.code != 200 && res4.code != 201) {
+                            if (res4.code !== 200 && res4.code !== 201) {
                                 console.error(song.title, '4.发布资源', res4)
                                 this.uploadSongFail(song)
                                 return
@@ -339,14 +339,14 @@ export class ncmDownUpload {
     }
     uploadSongMatch(song) {
         //step5 关联
-        if (song.cloudSongId != song.id) {
+        if (song.cloudSongId !== song.id) {
             weapiRequest("/api/cloud/user/song/match", {
                 data: {
                     songId: song.cloudSongId,
                     adjustSongId: song.id,
                 },
                 onload: (res5) => {
-                    if (res5.code != 200) {
+                    if (res5.code !== 200) {
                         console.error(song.title, '5.匹配歌曲', res5)
                         this.uploadSongFail(song)
                         return
@@ -385,8 +385,8 @@ export class ncmDownUpload {
             this.uploadSong(this.songs[this.currentIndex])
         }
         else {
-            let msg = this.failSongs == 0 ? `${this.songs[0].title}上传完成` : `${this.songs[0].title}上传失败`
-            msg = this.songs.length > 1 ? (this.failSongs == 0 ? '全部上传完成' : `上传完毕,存在${this.failSongs.length}首上传失败的歌曲.它们为:${this.failSongs.map(song => song.title).join()}`) : msg
+            let msg = this.failSongs.length === 0 ? `${this.songs[0].title}上传完成` : `${this.songs[0].title}上传失败`
+            msg = this.songs.length > 1 ? (this.failSongs.length === 0 ? '全部上传完成' : `上传完毕,存在${this.failSongs.length}首上传失败的歌曲.它们为:${this.failSongs.map(song => song.title).join()}`) : msg
             if (this.showfinishBox) {
                 showConfirmBox(msg)
             }

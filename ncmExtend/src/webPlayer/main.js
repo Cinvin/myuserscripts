@@ -94,7 +94,7 @@ const observerWebPlayer = () => {
     let observer = new MutationObserver((mutations, observer) => {
 
         mutations.forEach((mutation) => {
-            if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 for (let node of mutation.addedNodes) {
                     if (node.id === "page_pc_setting") {
                         AddQualitySetting(node);

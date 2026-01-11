@@ -49,7 +49,7 @@ class SongDetail {
         this.filename = nameFileWithoutExt(this.title, this.artist, 'artist-title')
         this.songDetailObj = this.songDetailObj
 
-        if (this.SongRes["/api/v3/song/detail"].privileges[0].plLevel != 'none') {
+        if (this.SongRes["/api/v3/song/detail"].privileges[0].plLevel !== 'none') {
             this.createTitle('下载歌曲')
             this.downLoadTableBody = this.createTable().querySelector('tbody')
             const plLevel = this.SongRes["/api/v3/song/detail"].privileges[0].plLevel
@@ -63,7 +63,7 @@ class SongDetail {
             else {
                 this.createTitle('转存云盘')
                 this.upLoadTableBody = this.createTable().querySelector('tbody')
-                if (songDlWeight > songPlWeight && this.SongRes["/api/v3/song/detail"].privileges[0].fee == 0) {
+                if (songDlWeight > songPlWeight && this.SongRes["/api/v3/song/detail"].privileges[0].fee === 0) {
                     const channel = 'dl'
                     if (songDetail.hr && songDlWeight >= 5 && songPlWeight < 5) { const desc = `${Math.round(songDetail.hr.br / 1000)}k\t${fileSizeDesc(songDetail.hr.size)}\t${songDetail.hr.sr / 1000}kHz`; const level = 'hires'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
                     if (songDetail.sq && songDlWeight >= 4 && songPlWeight < 4) { const desc = `${Math.round(songDetail.sq.br / 1000)}k\t${fileSizeDesc(songDetail.sq.size)}\t${songDetail.sq.sr / 1000}kHz`; const level = 'lossless'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
@@ -128,23 +128,23 @@ class SongDetail {
         }
         if (this.songDetailObj.originCoverType > 0) {
             let originCoverTypeBlock = this.createTableRow(this.infoTableBody, '原唱翻唱类型')
-            originCoverTypeBlock.innerHTML = `<span>${this.songDetailObj.originCoverType == 1 ? "原唱" : "翻唱"}</span>`
+            originCoverTypeBlock.innerHTML = `<span>${this.songDetailObj.originCoverType === 1 ? "原唱" : "翻唱"}</span>`
         }
         //脏标
-        if ((this.songDetailObj.mark & songMark.explicit) == songMark.explicit) {
+        if ((this.songDetailObj.mark & songMark.explicit) === songMark.explicit) {
             let explicitBlock = this.createTableRow(this.infoTableBody, '🅴')
             explicitBlock.innerHTML = `内容含有不健康因素`
         }
         //wiki
         for (let block of this.SongRes["/api/song/play/about/block/page"].data.blocks) {
-            if (block.code == 'SONG_PLAY_ABOUT_MUSIC_MEMORY' && block.creatives.length > 0) {
+            if (block.code === 'SONG_PLAY_ABOUT_MUSIC_MEMORY' && block.creatives.length > 0) {
                 for (let creative of block.creatives) {
                     for (let resource of creative.resources) {
-                        if (resource.resourceType == "FIRST_LISTEN") {
+                        if (resource.resourceType === "FIRST_LISTEN") {
                             let firstTimeBlock = this.createTableRow(this.infoTableBody, '第一次听')
                             firstTimeBlock.innerHTML = resource.resourceExt.musicFirstListenDto.date
                         }
-                        else if (resource.resourceType == "TOTAL_PLAY") {
+                        else if (resource.resourceType === "TOTAL_PLAY") {
                             let recordBlock = this.createTableRow(this.infoTableBody, '累计播放')
                             let recordText = ` ${resource.resourceExt.musicTotalPlayDto.playCount}次`
                             if (resource.resourceExt.musicTotalPlayDto.duration > 0) {
@@ -158,9 +158,9 @@ class SongDetail {
                     }
                 }
             }
-            if (block.code == 'SONG_PLAY_ABOUT_SONG_BASIC' && block.creatives.length > 0) {
+            if (block.code === 'SONG_PLAY_ABOUT_SONG_BASIC' && block.creatives.length > 0) {
                 for (let creative of block.creatives) {
-                    if (creative.creativeType == 'sheet' && creative.resources.length == 0) continue
+                    if (creative.creativeType === 'sheet' && creative.resources.length === 0) continue
                     if (!creative?.uiElement?.mainTitle) continue
                     let wikiItemBlock = this.createTableRow(this.infoTableBody, creative.uiElement.mainTitle.title)
                     if (creative.uiElement.descriptions) {
@@ -182,7 +182,7 @@ class SongDetail {
                             let resourceDiv = document.createElement('div');
                             resourceDiv.className = "des s-fc3"
                             if (resource.uiElement.mainTitle) {
-                                let IsLink = resource.action?.clickAction?.action == 1 && resource.action?.clickAction?.targetUrl.startsWith('https://')
+                                let IsLink = resource.action?.clickAction?.action === 1 && resource.action?.clickAction?.targetUrl.startsWith('https://')
                                 let domType = IsLink ? 'a' : 'span'
                                 let mainTitleItem = IsLink ? this.createButton(resource.uiElement.mainTitle.title) : this.createText(resource.uiElement.mainTitle.title)
                                 if (IsLink) {
@@ -239,7 +239,7 @@ class SongDetail {
     }
     createTableRow(tbody, title, needHide = false) {
         const row = document.createElement("tr");
-        if (tbody.children.length % 2 == 0) row.className = "even";
+        if (tbody.children.length % 2 === 0) row.className = "even";
         if (needHide && tbody.children.length > 0) row.style.display = 'none'
         row.innerHTML = `<td><div><span>${title || ""}</span></div></td><td><div></div></td>`;
         tbody.appendChild(row);
@@ -247,7 +247,7 @@ class SongDetail {
     }
     createButtonDescTableRow(tbody, btn, desc, needHide = false) {
         const row = document.createElement("tr");
-        if (tbody.children.length % 2 == 0) row.className = "even";
+        if (tbody.children.length % 2 === 0) row.className = "even";
         if (needHide && tbody.children.length > 0) row.style.display = 'none'
         row.innerHTML = `<td ${desc ? 'style="width: 23%;"' : ''}><div></div></td><td><div><span>${desc || ""}</span></div></td>`;
         const firstArea = row.querySelector("tr > td:nth-child(1) > div")
@@ -262,7 +262,7 @@ class SongDetail {
         const btn = row.querySelector('a')
         btn.addEventListener('click', () => {
             for (let i = 1; i < tbody.children.length - 1; i++) {
-                if (tbody.children[i].style.display == 'none') {
+                if (tbody.children[i].style.display === 'none') {
                     tbody.children[i].style.display = ''
                 }
                 else {
@@ -301,8 +301,8 @@ class SongDetail {
     }
     createULRow(desc, level, channel) {
         if (!unsafeWindow.GUser.userId) return
-        const apiUrl = channel == 'dl' ? '/api/song/enhance/download/url/v1' : '/api/song/enhance/player/url/v1'
-        const data = channel == 'dl' ? { id: this.songId, level: level, encodeType: 'mp3' } : { ids: JSON.stringify([this.songId]), level: level, encodeType: 'mp3' }
+        const apiUrl = channel === 'dl' ? '/api/song/enhance/download/url/v1' : '/api/song/enhance/player/url/v1'
+        const data = channel === 'dl' ? { id: this.songId, level: level, encodeType: 'mp3' } : { ids: JSON.stringify([this.songId]), level: level, encodeType: 'mp3' }
         const api = { url: apiUrl, data: data }
         const songItem = { api: api, id: this.songId, title: this.title, artist: this.artist, album: this.album }
 
@@ -314,8 +314,8 @@ class SongDetail {
         this.createButtonDescTableRow(this.upLoadTableBody, btn, desc, true)
     }
     dwonloadSong(channel, level, dlbtn) {
-        const url = channel == 'dl' ? '/api/song/enhance/download/url/v1' : '/api/song/enhance/player/url/v1'
-        const data = channel == 'dl' ? { id: this.songId, level: level, encodeType: 'mp3' } : { ids: JSON.stringify([this.songId]), level: level, encodeType: 'mp3' }
+        const url = channel === 'dl' ? '/api/song/enhance/download/url/v1' : '/api/song/enhance/player/url/v1'
+        const data = channel === 'dl' ? { id: this.songId, level: level, encodeType: 'mp3' } : { ids: JSON.stringify([this.songId]), level: level, encodeType: 'mp3' }
         const songItem = {
             id: this.songId,
             title: this.songDetailObj.name,

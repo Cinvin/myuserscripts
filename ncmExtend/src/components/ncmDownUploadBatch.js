@@ -23,7 +23,7 @@ export class ncmDownUploadBatch {
             this.songIdIndexsMap[songId] = i
 
             if (!songs[i].api) {
-                songs[i].api = (songs[i].privilege.fee == 0 && (levelWeight[songs[i].privilege.plLevel] || 99) < (levelWeight[songs[i].privilege.dlLevel] || -1)) ?
+                songs[i].api = (songs[i].privilege.fee === 0 && (levelWeight[songs[i].privilege.plLevel] || 99) < (levelWeight[songs[i].privilege.dlLevel] || -1)) ?
                     { url: '/api/song/enhance/download/url/v1', data: { id: songs[i].id, level: config.level, encodeType: 'mp3' } } :
                     { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([songs[i].id]), level: config.level, encodeType: 'mp3' } }
             }
@@ -90,7 +90,7 @@ export class ncmDownUploadBatch {
                 encodeType: 'mp3'
             },
             onload: (content) => {
-                if (content.code != 200) {
+                if (content.code !== 200) {
                     console.error('试听接口', content)
                     if (!retry) {
                         this.addLog('接口调用失败，1秒后重试')
@@ -110,7 +110,7 @@ export class ncmDownUploadBatch {
                 console.log('试听接口', content)
                 content.data.forEach(songFileData => {
                     const songIndex = this.songIdIndexsMap[songFileData.id]
-                    if (this.config.targetLevelOnly && this.config.level != songFileData.level) {
+                    if (this.config.targetLevelOnly && this.config.level !== songFileData.level) {
                         if (this.songs[songIndex].api.url === '/api/song/enhance/player/url/v1') {
                             this.skipSongs.push(this.songs[songIndex].title)
                         }
@@ -168,7 +168,7 @@ export class ncmDownUploadBatch {
         weapiRequest('/api/song/enhance/download/url/v1', {
             data: this.songs[songIndex].api.data,
             onload: (content) => {
-                if (content.code != 200) {
+                if (content.code !== 200) {
                     console.error('下载接口', content)
                     if (!retry) {
                         this.addLog('接口调用失败，1秒后重试')
@@ -187,7 +187,7 @@ export class ncmDownUploadBatch {
                     return
                 }
                 console.log('下载接口', content)
-                if (this.config.targetLevelOnly && this.config.level != content.data.level) {
+                if (this.config.targetLevelOnly && this.config.level !== content.data.level) {
                     this.skipSongs.push(this.songs[songIndex].title)
                 }
                 else if (content.data.md5) {
@@ -251,7 +251,7 @@ export class ncmDownUploadBatch {
             index += 1
         }
         this.addLog(`正在获取第 ${offset + 1} 到 第 ${index} 首歌曲`)
-        if (songCheckDatas.length == 0) {
+        if (songCheckDatas.length === 0) {
             this.fetchCloudIdSub(index)
             return
         }
@@ -261,7 +261,7 @@ export class ncmDownUploadBatch {
                 songs: JSON.stringify(songCheckDatas),
             },
             onload: (content) => {
-                if (content.code != 200 || content.data.length == 0) {
+                    if (content.code !== 200 || content.data.length === 0) {
                     console.error('获取文件云盘ID接口', content)
                     if (!retry) {
                         this.addLog('接口调用失败，1秒后重试')
@@ -283,7 +283,7 @@ export class ncmDownUploadBatch {
                 content.data.forEach(fileData => {
                     const songId = songMD5Map[fileData.md5]
                     const songIndex = this.songIdIndexsMap[songId]
-                    if (fileData.upload == 1) {
+                    if (fileData.upload === 1) {
                         this.songs[songIndex].cloudId = fileData.songId
                     }
                     else {
@@ -342,7 +342,7 @@ export class ncmDownUploadBatch {
             }
             index += 1
         }
-        if (importSongDatas.length == 0) {
+        if (importSongDatas.length === 0) {
             this.importSongsSub(index)
             return
         }
@@ -352,7 +352,7 @@ export class ncmDownUploadBatch {
                 songs: JSON.stringify(importSongDatas),
             },
             onload: (content) => {
-                if (content.code != 200) {
+                if (content.code !== 200) {
                     console.error('歌曲导入云盘接口', content)
                     if (!retry) {
                         this.addLog('接口调用失败，1秒后重试')
@@ -377,7 +377,7 @@ export class ncmDownUploadBatch {
                     })
                     this.addLog(`导入${content.data.successSongs.length} 首歌曲`)
                 }
-                if (content.data.failed.length > 0) {
+                    if (content.data.failed.length > 0) {
                     console.error('导入歌曲接口，存在上传失败歌曲。', content.data.failed)
                     content.data.failed.forEach(failSong => {
                         let songId = songCloudIdMap[failSong.songId]
@@ -427,7 +427,7 @@ export class ncmDownUploadBatch {
                         adjustSongId: song.id,
                     },
                     onload: (res) => {
-                        if (res.code != 200) {
+                        if (res.code !== 200) {
                             console.error(song.title, '匹配歌曲', res)
                             let songTItle = song.title
                             if (res.msg) {
@@ -478,13 +478,13 @@ export class ncmDownUploadBatch {
     //更新缓存歌曲的云盘状态
     updateSongCloudStatus() {
         if (this.successSongsId.length > 0) {
-            if (this.config.listType == 'playlist') {
+            if (this.config.listType === 'playlist') {
                 playlistDetailObj.updateSongsCloudStatus(this.successSongsId)
             }
-            else if (this.config.listType == 'album') {
+            else if (this.config.listType === 'album') {
                 albumDetailObj.updateSongsCloudStatus(this.successSongsId)
             }
-            else if (this.config.listType == 'artist') {
+            else if (this.config.listType === 'artist') {
                 artistDetailObj.updateSongsCloudStatus(this.successSongsId)
             }
         }

@@ -52,13 +52,13 @@ export const getAlbumTextInSongDetail = (song) => {
     return album
 }
 export const nameFileWithoutExt = (title, artist, out) => {
-    if (out == 'title' || !artist || artist.length == 0) {
+    if (out === 'title' || !artist || artist.length === 0) {
         return title
     }
-    if (out == 'artist-title') {
+    if (out === 'artist-title') {
         return `${artist} - ${title}`
     }
-    if (out == 'title-artist') {
+    if (out === 'title-artist') {
         return `${title} - ${artist}`
     }
 }

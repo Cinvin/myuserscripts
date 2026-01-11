@@ -141,7 +141,7 @@ width: 16%;
                     let filterInput = container.querySelector('#text-filter')
                     filterInput.addEventListener('change', () => {
                         let filtertext = filterInput.value.trim()
-                        if (this.filter.text != filtertext) {
+                        if (this.filter.text !== filtertext) {
                             this.filter.text = filtertext
                             this.applyFilter()
                         }
@@ -330,7 +330,7 @@ width: 16%;
                 pageBtn.setAttribute("type", "button")
                 pageBtn.className = "swal2-styled"
                 pageBtn.innerHTML = pageIndex
-                if (pageIndex != upgrader.page.current) {
+                if (pageIndex !== upgrader.page.current) {
                     pageBtn.addEventListener('click', () => {
                         upgrader.page.current = pageIndex
                         upgrader.renderData()

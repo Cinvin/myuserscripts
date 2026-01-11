@@ -15,9 +15,9 @@ export const storageCommentInfo = (CommentRes) => {
 export const observerCommentBox = (commentBox) => {
     let observer = new MutationObserver((mutations, observer) => {
         mutations.forEach((mutation) => {
-            if (mutation.type == 'childList' && mutation.addedNodes.length > 0) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 for (let node of mutation.addedNodes) {
-                    if (node.className == "itm") {
+                    if (node.className === "itm") {
                         commentItemAddInfo(node)
                     }
                 }
@@ -52,7 +52,7 @@ export const addCommentWithCumstomIP = (commentBox) => {
     ipBtn.innerHTML = '使用指定IP地址评论'
     ipBtn.addEventListener('click', () => {
         const content = commentTextarea.value.trim()
-        if (content.length == 0) {
+        if (content.length === 0) {
             showConfirmBox('评论内容不能为空')
             return
         }
@@ -85,12 +85,12 @@ export const addCommentWithCumstomIP = (commentBox) => {
                         clientType: 'web',
                         onload: (res) => {
                             console.log(res)
-                            if (res.code == 200) {
-                                showConfirmBox('评论成功，请刷新网页查看')
-                            }
-                            else {
-                                showConfirmBox('评论失败，' + JSON.stringify(res))
-                            }
+                                    if (res.code === 200) {
+                                        showConfirmBox('评论成功，请刷新网页查看')
+                                    }
+                                    else {
+                                        showConfirmBox('评论失败，' + JSON.stringify(res))
+                                    }
                         }
                     })
                 }

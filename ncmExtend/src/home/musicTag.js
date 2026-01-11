@@ -210,7 +210,7 @@ width: 8%;
                     const btnUnset = actions.querySelector('#btn-unset');
                     const btnCustom = actions.querySelector('#btn-custom');
 
-                    if (file.mode != 'unfill') {
+                    if (file.mode !== 'unfill') {
                         btnUnset.style.display = 'inline-block';
                         btnUnset.addEventListener('click', () => {
                             this.unsetSong(file);
@@ -235,7 +235,7 @@ width: 8%;
                                 total: true,
                             },
                             onload: (searchContent) => {
-                                if (searchContent.code != 200) {
+                                if (searchContent.code !== 200) {
                                     return
                                 }
                                 if (searchContent.result.songCount > 0) {
@@ -307,7 +307,7 @@ width: 8%;
                     const btnNetease = actions.querySelector('#btn-netease')
                     const btnConfirm = actions.querySelector('#btn-confirm')
 
-                    if (file.mode != 'unfill') {
+                    if (file.mode !== 'unfill') {
                         btnUnset.style.display = 'inline-block';
                         btnUnset.addEventListener('click', () => {
                             this.unsetSong(file);

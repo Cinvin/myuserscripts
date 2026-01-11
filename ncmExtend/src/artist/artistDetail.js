@@ -134,7 +134,7 @@ class ArtistDetail {
     updateSongsCloudStatus(songIds) {
         songIds.forEach(songId => {
             for (let i = 0; i < this.artistSongList.length; i++) {
-                if (this.artistSongList[i].id == songId) {
+                if (this.artistSongList[i].id === songId) {
                     this.artistSongList[i].privilege.cs = true
                     break
                 }

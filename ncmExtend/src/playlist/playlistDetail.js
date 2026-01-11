@@ -62,8 +62,8 @@ class PlaylistDetail {
         const songlen = songs.length
         const privilegelen = privileges.length
         for (let i = 0; i < songlen; i++) {
-            for (let j = 0; j < privilegelen; j++) {
-                if (songs[i].id == privileges[j].id) {
+                for (let j = 0; j < privilegelen; j++) {
+                if (songs[i].id === privileges[j].id) {
                     const songItem = {
                         id: songs[i].id,
                         title: songs[i].name,
@@ -87,7 +87,7 @@ class PlaylistDetail {
         this.checkStartInitBtn()
     }
     createFormatAddToData(songItem) {
-        if (songItem.privilege.plLevel != 'none') {
+        if (songItem.privilege.plLevel !== 'none') {
             const addToFormat = songItemAddToFormat(songItem.song)
             addToFormat.source = {
                 fdata: String(this.playlistId),
@@ -129,7 +129,7 @@ class PlaylistDetail {
                     id: this.playlistId,
                 },
                 onload: (content) => {
-                    if (content.code == 200) this.playCount.innerHTML = Number(this.playCount.innerHTML) + 1
+                        if (content.code === 200) this.playCount.innerHTML = Number(this.playCount.innerHTML) + 1
                 },
             })
         })
@@ -145,7 +145,7 @@ class PlaylistDetail {
         songsDownUpLoad(this.playlistId, this.operationArea)
         const creatorhomeURL = document.head.querySelector("[property~='music:creator'][content]")?.content
         const creatorId = new URLSearchParams(new URL(creatorhomeURL).search).get('id')
-        if (creatorId == unsafeWindow.GUser.userId) {
+        if (creatorId === unsafeWindow.GUser.userId) {
             sortSongs(this.playlistId, this.operationArea)
         }
     }
@@ -236,7 +236,7 @@ class PlaylistDetail {
         this.bodyId = document.body.className.replace(/\D/g, "")
         const status = songItem.privilege.st < 0
         const deletable = this.playlist.creator.userId === unsafeWindow.GUser.userId
-        const needVIP = songItem.privilege.plLevel == 'none' && !status
+        const needVIP = songItem.privilege.plLevel === 'none' && !status
         const durationText = duringTimeDesc(songItem.song.dt)
         const artistText = escapeHTML(songItem.artist)
         const annotation = escapeHTML(songItem.song.tns ? songItem.song.tns[0] : null || songItem.song.alias ? songItem.song.alias[0] : '')
@@ -313,7 +313,7 @@ class PlaylistDetail {
     updateSongsCloudStatus(songIds) {
         songIds.forEach(songId => {
             for (let i = 0; i < this.playlistSongList.length; i++) {
-                if (this.playlistSongList[i].id == songId) {
+                if (this.playlistSongList[i].id === songId) {
                     this.playlistSongList[i].privilege.cs = true
                     break
                 }
