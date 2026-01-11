@@ -144,8 +144,7 @@ class ArtistDetail {
 
     getSongUniqueCode(song) {
         const item = {
-            //标题含有 (电影“xx”主题曲)时用主标题。
-            name: song.song.mainTitle && song.song.additionalTitle && !song.song.additionalTitle.toLowerCase().includes('live') ? song.song.mainTitle.trim() : song.song.name,
+            name: song.song.name,
             artists: song.song.ar.map(a => a.name).sort(),
             instrumental: (song.song.mark & 131072) === 131072,
             explicit: (song.song.mark & 1048576) === 1048576,

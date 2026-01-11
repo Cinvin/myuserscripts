@@ -44,7 +44,7 @@ class CloudDeduplication {
             </div>
             `,
             confirmButtonText: "开始查找重复歌曲",
-            footer: "<div>将排除live版歌曲，因为即使时长一样，也大概率是不同的live。</div><div>没有用语言区分，因此如《K歌之王》国粤不同版本的歌曲可能会视为重复。</div>",
+            footer: "<div>手机客户端有回收站功能，误删请从那里恢复。</div><div>live歌曲不去重，因为无法区分是否重复。</div><div>没有用语言区分，因此如《K歌之王》国粤不同版本的歌曲可能会视为重复。</div>",
             preConfirm: () => {
                 const container = Swal.getHtmlContainer();
                 const durationEnabledEl = container.querySelector("#cd-duration-group-enabled");
@@ -186,6 +186,7 @@ class CloudDeduplication {
         Swal.fire({
             title: "重复歌曲列表",
             width: "980px",
+            showCloseButton: true,
             showConfirmButton: false,
             html: "",
             footer: "<div>去重：对于已勾选的重复组，删除重复歌曲，只保留歌曲收藏量最高的一首。</div>",
@@ -220,14 +221,17 @@ class CloudDeduplication {
                         return "";
                     }
                 }
+                function markBtnDeleted(delBtn) {
+                    if (!delBtn) return;
+                    delBtn.textContent = "已删除";
+                    delBtn.disabled = true;
+                    delBtn.style.opacity = "0.6";
+                    delBtn.style.cursor = "not-allowed";
+                }
+
                 function updateDeleteButtonState(songId) {
                     const delBtn = container.querySelector(`.cd-del-btn[data-song-id="${songId}"]`);
-                    if (delBtn) {
-                        delBtn.textContent = "已删除";
-                        delBtn.disabled = true;
-                        delBtn.style.opacity = "0.6";
-                        delBtn.style.cursor = "not-allowed";
-                    }
+                    markBtnDeleted(delBtn);
                 }
 
                 // 分页渲染：每页显示 pageLimit 组
@@ -307,10 +311,7 @@ class CloudDeduplication {
                         const delBtn = row.querySelector(".cd-del-btn");
                         // 初始化时检查歌曲是否已删除
                         if (song.deleted) {
-                            delBtn.textContent = "已删除";
-                            delBtn.disabled = true;
-                            delBtn.style.opacity = "0.6";
-                            delBtn.style.cursor = "not-allowed";
+                            markBtnDeleted(delBtn);
                         }
                         delBtn.addEventListener("click", () => {
                             Swal.fire({
