@@ -4,7 +4,7 @@ import { isOldSettedHeader } from "../utils/request"
 
 export const scriptSettings = (uiArea) => {
     //设置请求头
-    let btnExport = createBigButton('脚本设置', uiArea, 2)
+    const btnExport = createBigButton('脚本设置', uiArea, 2)
     btnExport.addEventListener('click', openSettingPopup)
 
     function openSettingPopup() {
@@ -179,7 +179,7 @@ export const parseCookie = (cookieString) => {
 }
 export const tryParseJSON = (jsonString) => {
     try {
-        var o = JSON.parse(jsonString)
+        const o = JSON.parse(jsonString)
         if (o && typeof o === "object") {
             return o
         }

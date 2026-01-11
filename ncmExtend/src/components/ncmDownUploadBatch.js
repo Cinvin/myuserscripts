@@ -109,7 +109,7 @@ export class ncmDownUploadBatch {
                 }
                 console.log('试听接口', content)
                 content.data.forEach(songFileData => {
-                    let songIndex = this.songIdIndexsMap[songFileData.id]
+                    const songIndex = this.songIdIndexsMap[songFileData.id]
                     if (this.config.targetLevelOnly && this.config.level != songFileData.level) {
                         if (this.songs[songIndex].api.url === '/api/song/enhance/player/url/v1') {
                             this.skipSongs.push(this.songs[songIndex].title)
@@ -163,8 +163,8 @@ export class ncmDownUploadBatch {
             this.fetchCloudId()
             return
         }
-        let songId = this.downloadApiSongIds[offset]
-        let songIndex = this.songIdIndexsMap[songId]
+        const songId = this.downloadApiSongIds[offset]
+        const songIndex = this.songIdIndexsMap[songId]
         weapiRequest('/api/song/enhance/download/url/v1', {
             data: this.songs[songIndex].api.data,
             onload: (content) => {

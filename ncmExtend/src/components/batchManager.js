@@ -152,7 +152,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     showTips('未选择歌曲或只选择了云盘歌曲', 2)
                     return
                 }
-                let ULobj = new ncmDownUploadBatch(toUp, state.uploadConfig)
+                const ULobj = new ncmDownUploadBatch(toUp, state.uploadConfig)
                 ULobj.startUpload()
             })
 
@@ -427,9 +427,9 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
             function renderPager() {
                 pager.innerHTML = ''
 
-                let pageIndexs = [1]
-                let floor = Math.max(2, state.page - 2);
-                let ceil = Math.min(state.pageMax - 1, state.page + 2);
+                const pageIndexs = [1]
+                const floor = Math.max(2, state.page - 2);
+                const ceil = Math.min(state.pageMax - 1, state.page + 2);
                 for (let i = floor; i <= ceil; i++) {
                     pageIndexs.push(i)
                 }
@@ -437,7 +437,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     pageIndexs.push(state.pageMax)
                 }
                 pageIndexs.forEach(pageIndex => {
-                    let pageBtn = document.createElement('button')
+                    const pageBtn = document.createElement('button')
                     pageBtn.setAttribute("type", "button")
                     pageBtn.className = "swal2-styled"
                     pageBtn.innerHTML = pageIndex

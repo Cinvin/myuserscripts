@@ -26,10 +26,10 @@ export const showTips = (tip, type = 1) => {
     }
 }
 export const saveContentAsFile = (content, fileName) => {
-    let data = new Blob([content], {
+    const data = new Blob([content], {
         type: 'type/plain'
     })
-    let fileurl = URL.createObjectURL(data)
+    const fileurl = URL.createObjectURL(data)
     GM_download({
         url: fileurl,
         name: fileName,
@@ -43,9 +43,9 @@ export const saveContentAsFile = (content, fileName) => {
     })
 }
 export const createBigButton = (desc, parent, appendWay) => {
-    let btn = document.createElement('a')
+    const btn = document.createElement('a')
     btn.className = 'u-btn2 u-btn2-1'
-    let btnDesc = document.createElement('i')
+    const btnDesc = document.createElement('i')
     btnDesc.innerHTML = desc
     btn.appendChild(btnDesc)
     btn.style.margin = '5px'

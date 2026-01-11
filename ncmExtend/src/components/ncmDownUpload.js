@@ -27,7 +27,7 @@ export class ncmDownUpload {
                 onload: (content) => {
                     showTips(`(1/3)${song.title} 获取文件信息完成`, 1)
                     //console.log(content)
-                    let resData = content.data[0] || content.data
+                    const resData = content.data[0] || content.data
                     if (resData.url != null) {
                         song.fileFullName = nameFileWithoutExt(song.title, song.artist, 'artist-title') + '.' + resData.type.toLowerCase()
                         song.dlUrl = resData.url
@@ -36,7 +36,7 @@ export class ncmDownUpload {
                         song.ext = resData.type.toLowerCase()
                         song.bitrate = Math.floor(resData.br / 1000)
                         //是否直接import
-                        let songCheckData = [{
+                        const songCheckData = [{
                             md5: song.md5,
                             songId: song.id,
                             bitrate: song.bitrate,
@@ -207,8 +207,8 @@ export class ncmDownUpload {
         }
     }
     uploadFile(data, song, offset, context = null) {
-        let complete = offset + uploadChunkSize > song.size
-        let url = `http://45.127.129.8/jd-musicrep-privatecloud-audio-public/${encodeURIComponent(song.objectKey)}?offset=${offset}&complete=${String(complete)}&version=1.0`
+        const complete = offset + uploadChunkSize > song.size
+        const url = `http://45.127.129.8/jd-musicrep-privatecloud-audio-public/${encodeURIComponent(song.objectKey)}?offset=${offset}&complete=${String(complete)}&version=1.0`
         if (context) url += `&context=${context}`
         GM_xmlhttpRequest({
             method: "POST",
@@ -220,7 +220,7 @@ export class ncmDownUpload {
             },
             data: data.slice(offset, offset + uploadChunkSize),
             onload: (response3) => {
-                let res = JSON.parse(response3.response)
+                const res = JSON.parse(response3.response)
                 if (complete) {
                     console.log(song.title, '2.5.上传文件完成', res)
                     showTips(`(4/6)${song.title} 上传文件完成`, 1)
@@ -386,7 +386,7 @@ export class ncmDownUpload {
         }
         else {
             let msg = this.failSongs == 0 ? `${this.songs[0].title}上传完成` : `${this.songs[0].title}上传失败`
-            if (this.songs.length > 1) msg = this.failSongs == 0 ? '全部上传完成' : `上传完毕,存在${this.failSongs.length}首上传失败的歌曲.它们为:${this.failSongs.map(song => song.title).join()}`
+            msg = this.songs.length > 1 ? (this.failSongs == 0 ? '全部上传完成' : `上传完毕,存在${this.failSongs.length}首上传失败的歌曲.它们为:${this.failSongs.map(song => song.title).join()}`) : msg
             if (this.showfinishBox) {
                 showConfirmBox(msg)
             }

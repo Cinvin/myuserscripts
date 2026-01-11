@@ -21,7 +21,7 @@ class AlbumDetail {
                 this.albumRes = content
                 for (let i = 0; i < content.songs.length; i++) {
                     content.songs[i].al.picUrl = content.album.blurPicUrl
-                    let songItem = {
+                    const songItem = {
                         id: content.songs[i].id,
                         title: content.songs[i].name,
                         artist: getArtistTextInSongDetail(content.songs[i]),
@@ -37,7 +37,7 @@ class AlbumDetail {
                             this.albumDiscList.push(null)
                         }
                         if (this.albumDiscList[discIndex - 1] === null) {
-                            let discTitle = `Disc ${discIndex}`
+                            const discTitle = `Disc ${discIndex}`
                             if (discInfos.length > 1) discTitle += ' ' + discInfos.slice(1).join(' ')
                             this.albumDiscList[discIndex - 1] = { title: discTitle, songs: [] }
                         }
@@ -89,7 +89,7 @@ class AlbumDetail {
                 <tbody id="ncmextend-disc-${index}"></tbody>
             </table>
             `
-            let tbody = tableParent.querySelector(`#ncmextend-disc-${index}`)
+            const tbody = tableParent.querySelector(`#ncmextend-disc-${index}`)
             disc.songs.forEach((songItem, songIndex) => {
                 tableRows.forEach(tableRow => {
                     if (Number(tableRow.id.slice(0, -13)) === songItem.id) {

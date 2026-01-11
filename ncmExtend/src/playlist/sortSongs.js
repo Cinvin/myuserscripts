@@ -2,7 +2,7 @@ import { createBigButton,showTips,showConfirmBox } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 export const sortSongs = (playlistId, uiArea) => {
     //歌单排序
-    let btnPlaylistSort = createBigButton('歌单排序', uiArea, 1)
+    const btnPlaylistSort = createBigButton('歌单排序', uiArea, 1)
     btnPlaylistSort.addEventListener('click', () => {
         ShowPLSortPopUp(playlistId)
     })
@@ -52,15 +52,15 @@ const PlaylistTimeSort = (playlistId, descending) => {
             s: 8,
         },
         onload: (content) => {
-            let songList = []
-            let tracklen = content.playlist.tracks.length
+            const songList = []
+            const tracklen = content.playlist.tracks.length
             for (let i = 0; i < tracklen; i++) {
-                let songItem = { id: content.playlist.tracks[i].id, publishTime: content.playlist.tracks[i].publishTime, albumId: content.playlist.tracks[i].al.id, cd: content.playlist.tracks[i].cd ? Number(content.playlist.tracks[i].cd.split(' ')[0]) : 0, no: content.playlist.tracks[i].no }
+                const songItem = { id: content.playlist.tracks[i].id, publishTime: content.playlist.tracks[i].publishTime, albumId: content.playlist.tracks[i].al.id, cd: content.playlist.tracks[i].cd ? Number(content.playlist.tracks[i].cd.split(' ')[0]) : 0, no: content.playlist.tracks[i].no }
                 songList.push(songItem)
             }
             if (content.playlist.trackCount > content.playlist.tracks.length) {
                 showTips(`大歌单,开始分批获取${content.playlist.trackCount}首歌信息`, 1)
-                let trackIds = content.playlist.trackIds.map(item => {
+                const trackIds = content.playlist.trackIds.map(item => {
                     return {
                         'id': item.id
                     }
@@ -83,9 +83,9 @@ const PlaylistTimeSortFetchAll = (playlistId, descending, trackIds, startIndex, 
             c: JSON.stringify(trackIds.slice(startIndex, startIndex + 1000))
         },
         onload: function (content) {
-            let songlen = content.songs.length
+            const songlen = content.songs.length
             for (let i = 0; i < songlen; i++) {
-                let songItem = { id: content.songs[i].id, publishTime: content.songs[i].publishTime, albumId: content.songs[i].al.id, cd: content.songs[i].cd ? Number(content.songs[i].cd.split(' ')[0]) : 0, no: content.songs[i].no }
+                const songItem = { id: content.songs[i].id, publishTime: content.songs[i].publishTime, albumId: content.songs[i].al.id, cd: content.songs[i].cd ? Number(content.songs[i].cd.split(' ')[0]) : 0, no: content.songs[i].no }
                 songList.push(songItem)
             }
             PlaylistTimeSortFetchAll(playlistId, descending, trackIds, startIndex + content.songs.length, songList)
@@ -99,7 +99,7 @@ const PlaylistTimeSortFetchAllPublishTime = (playlistId, descending, index, song
     }
     if (index == 0) showTips('开始获取歌曲专辑发行时间')
     if (index % 10 == 9) showTips(`正在获取歌曲专辑发行时间(${index + 1}/${songList.length})`)
-    let albumId = songList[index].albumId
+    const albumId = songList[index].albumId
     if (albumId <= 0) {
         PlaylistTimeSortFetchAllPublishTime(playlistId, descending, index + 1, songList, aldict)
         return
@@ -112,7 +112,7 @@ const PlaylistTimeSortFetchAllPublishTime = (playlistId, descending, index, song
     }
     weapiRequest(`/api/v1/album/${albumId}`, {
         onload: function (content) {
-            let publishTime = content.album.publishTime
+            const publishTime = content.album.publishTime
             aldict[albumId] = publishTime
             songList[index].publishTime = publishTime
             PlaylistTimeSortFetchAllPublishTime(playlistId, descending, index + 1, songList, aldict)
@@ -172,13 +172,13 @@ const PlaylistCountSort = (playlistId, descending, way) => {
             s: 8,
         },
         onload: (content) => {
-            let songList = content.playlist.trackIds.map(item => {
+            const songList = content.playlist.trackIds.map(item => {
                 return {
                     'id': item.id,
                     'count': 0,
                 }
             })
-            let trackIds = content.playlist.trackIds.map(item => { return item.id })
+            const trackIds = content.playlist.trackIds.map(item => { return item.id })
             if (way == 'Red') {
                 PlaylistCountSortFetchRedCount(playlistId, songList, 0, descending)
             }
@@ -219,7 +219,7 @@ const PlaylistCountSortFetchCommentCount = (playlistId, songList, trackIds, inde
         },
         onload: function (content) {
             content.data.forEach(item => {
-                let songId = item.resourceId
+                const songId = item.resourceId
                 for (let i = 0; i < songList.length; i++) {
                     if (songList[i].id == songId) {
                         songList[i].count = item.commentCount

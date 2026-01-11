@@ -27,7 +27,7 @@ class PlaylistDetail {
             onload: (content) => {
                 this.playlist = content.playlist
                 if (content.playlist.trackCount > content.playlist.tracks.length) {
-                    let trackIds = content.playlist.trackIds.map(item => {
+                    const trackIds = content.playlist.trackIds.map(item => {
                         return {
                             'id': item.id
                         }
@@ -64,7 +64,7 @@ class PlaylistDetail {
         for (let i = 0; i < songlen; i++) {
             for (let j = 0; j < privilegelen; j++) {
                 if (songs[i].id == privileges[j].id) {
-                    let songItem = {
+                    const songItem = {
                         id: songs[i].id,
                         title: songs[i].name,
                         artist: getArtistTextInSongDetail(songs[i]),
@@ -88,7 +88,7 @@ class PlaylistDetail {
     }
     createFormatAddToData(songItem) {
         if (songItem.privilege.plLevel != 'none') {
-            let addToFormat = songItemAddToFormat(songItem.song)
+            const addToFormat = songItemAddToFormat(songItem.song)
             addToFormat.source = {
                 fdata: String(this.playlistId),
                 fid: 13,
@@ -112,7 +112,7 @@ class PlaylistDetail {
             this.renderPlayAllBtn()
             this.appendBtns()
             this.fillTableSong()
-            let playlistTrackCount = document.querySelector('#playlist-track-count')
+            const playlistTrackCount = document.querySelector('#playlist-track-count')
             if (playlistTrackCount) playlistTrackCount.innerHTML = this.playlistSongList.length
             this.songListTextDom.innerHTML = '歌曲列表'
         }

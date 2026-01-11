@@ -52,11 +52,11 @@ class SongDetail {
         if (this.SongRes["/api/v3/song/detail"].privileges[0].plLevel != 'none') {
             this.createTitle('下载歌曲')
             this.downLoadTableBody = this.createTable().querySelector('tbody')
-            let plLevel = this.SongRes["/api/v3/song/detail"].privileges[0].plLevel
-            let dlLevel = this.SongRes["/api/v3/song/detail"].privileges[0].dlLevel
-            let songPlWeight = levelWeight[plLevel] || 0
-            let songDlWeight = levelWeight[dlLevel] || 0
-            let songDetail = this.SongRes["/api/song/music/detail/get"].data
+            const plLevel = this.SongRes["/api/v3/song/detail"].privileges[0].plLevel
+            const dlLevel = this.SongRes["/api/v3/song/detail"].privileges[0].dlLevel
+            const songPlWeight = levelWeight[plLevel] || 0
+            const songDlWeight = levelWeight[dlLevel] || 0
+            const songDetail = this.SongRes["/api/song/music/detail/get"].data
             if (this.SongRes["/api/v3/song/detail"].privileges[0].cs) {
                 this.createDLRow(`云盘文件 ${this.SongRes["/api/v3/song/detail"].songs[0].pc.br}k`, plLevel, 'pl')
             }
@@ -225,20 +225,20 @@ class SongDetail {
         }
     }
     createTitle(title) {
-        let h3 = document.createElement("h3")
+        const h3 = document.createElement("h3")
         h3.innerHTML = `<span class="f-fl" style="margin-top: 10px;margin-bottom: 10px;">${title}</span>`
         this.maindDiv.appendChild(h3)
     }
     createTable() {
-        let table = document.createElement("table")
+        const table = document.createElement("table")
         table.className = "m-table"
-        let tbody = document.createElement("tbody")
+        const tbody = document.createElement("tbody")
         table.appendChild(tbody)
         this.maindDiv.appendChild(table)
         return table
     }
     createTableRow(tbody, title, needHide = false) {
-        let row = document.createElement("tr");
+        const row = document.createElement("tr");
         if (tbody.children.length % 2 == 0) row.className = "even";
         if (needHide && tbody.children.length > 0) row.style.display = 'none'
         row.innerHTML = `<td><div><span>${title || ""}</span></div></td><td><div></div></td>`;
@@ -246,20 +246,20 @@ class SongDetail {
         return row.querySelector("tr > td:nth-child(2) > div");
     }
     createButtonDescTableRow(tbody, btn, desc, needHide = false) {
-        let row = document.createElement("tr");
+        const row = document.createElement("tr");
         if (tbody.children.length % 2 == 0) row.className = "even";
         if (needHide && tbody.children.length > 0) row.style.display = 'none'
         row.innerHTML = `<td ${desc ? 'style="width: 23%;"' : ''}><div></div></td><td><div><span>${desc || ""}</span></div></td>`;
-        let firstArea = row.querySelector("tr > td:nth-child(1) > div")
+        const firstArea = row.querySelector("tr > td:nth-child(1) > div")
         firstArea.appendChild(btn)
         tbody.appendChild(row);
         return row
     }
     createHideButtonRow(tbody) {
         if (tbody.children.length < 2) return
-        let row = document.createElement("tr");
+        const row = document.createElement("tr");
         row.innerHTML = `<td><div><a class="s-fc7">展开<i class="u-icn u-icn-69"></i></a></div></td>`;
-        let btn = row.querySelector('a')
+        const btn = row.querySelector('a')
         btn.addEventListener('click', () => {
             for (let i = 1; i < tbody.children.length - 1; i++) {
                 if (tbody.children[i].style.display == 'none') {
@@ -301,26 +301,22 @@ class SongDetail {
     }
     createULRow(desc, level, channel) {
         if (!unsafeWindow.GUser.userId) return
-        let apiUrl = '/api/song/enhance/player/url/v1'
-        if (channel == 'dl') apiUrl = '/api/song/enhance/download/url/v1'
-        let data = { ids: JSON.stringify([this.songId]), level: level, encodeType: 'mp3' }
-        if (channel == 'dl') data = { id: this.songId, level: level, encodeType: 'mp3' }
-        let api = { url: apiUrl, data: data }
-        let songItem = { api: api, id: this.songId, title: this.title, artist: this.artist, album: this.album }
+        const apiUrl = channel == 'dl' ? '/api/song/enhance/download/url/v1' : '/api/song/enhance/player/url/v1'
+        const data = channel == 'dl' ? { id: this.songId, level: level, encodeType: 'mp3' } : { ids: JSON.stringify([this.songId]), level: level, encodeType: 'mp3' }
+        const api = { url: apiUrl, data: data }
+        const songItem = { api: api, id: this.songId, title: this.title, artist: this.artist, album: this.album }
 
-        let btn = this.createButton(levelDesc(level))
+        const btn = this.createButton(levelDesc(level))
         btn.addEventListener('click', () => {
-            let ULobj = new ncmDownUpload([songItem])
+            const ULobj = new ncmDownUpload([songItem])
             ULobj.startUpload()
         })
         this.createButtonDescTableRow(this.upLoadTableBody, btn, desc, true)
     }
     dwonloadSong(channel, level, dlbtn) {
-        let url = '/api/song/enhance/player/url/v1'
-        if (channel == 'dl') url = '/api/song/enhance/download/url/v1'
-        let data = { ids: JSON.stringify([this.songId]), level: level, encodeType: 'mp3' }
-        if (channel == 'dl') data = { id: this.songId, level: level, encodeType: 'mp3' }
-        let songItem = {
+        const url = channel == 'dl' ? '/api/song/enhance/download/url/v1' : '/api/song/enhance/player/url/v1'
+        const data = channel == 'dl' ? { id: this.songId, level: level, encodeType: 'mp3' } : { ids: JSON.stringify([this.songId]), level: level, encodeType: 'mp3' }
+        const songItem = {
             id: this.songId,
             title: this.songDetailObj.name,
             artist: this.artist,

@@ -22,9 +22,9 @@ export const fileSizeDesc = (fileSize) => {
     }
 };
 export const duringTimeDesc = (dt) => {
-    let secondTotal = Math.floor(dt / 1000)
-    let min = Math.floor(secondTotal / 60)
-    let sec = secondTotal % 60
+    const secondTotal = Math.floor(dt / 1000)
+    const min = Math.floor(secondTotal / 60)
+    const sec = secondTotal % 60
     return min.toString().padStart(2, '0') + ':' + sec.toString().padStart(2, '0')
 };
 export const levelDesc = (level) => {

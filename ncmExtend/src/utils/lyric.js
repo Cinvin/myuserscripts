@@ -2,7 +2,7 @@
 export const extractLrcRegex = /^(?<lyricTimestamps>(?:\[.+?\])+)(?!\[)(?<content>.+)$/gm
 export const extractTimestampRegex = /\[(?<min>\d+):(?<sec>\d+)(?:\.|:)*(?<ms>\d+)*\]/g
 const combineLyric = (lyricOri, lyricAdd) => {
-    let resLyric = {
+    const resLyric = {
         lyric: '',
         parsedLyric: lyricOri.parsedLyric.slice(0),
     }
@@ -53,7 +53,7 @@ const parseNotLyricLines = (lrc) => {
 }
 
 const parsedLyricsBinarySearch = (lyric, lyrics) => {
-    let time = lyric.time;
+    const time = lyric.time;
 
     let low = 0;
     let high = lyrics.length - 1;
@@ -71,7 +71,7 @@ const parsedLyricsBinarySearch = (lyric, lyrics) => {
     return low;
 };
 const trimLyricContent = (content) => {
-    let t = content.trim();
+    const t = content.trim();
     return t.length < 1 ? content : t;
 }
 export const handleLyric = (lyricRes) => {
@@ -86,7 +86,7 @@ export const handleLyric = (lyricRes) => {
     const lrc = lyricRes?.lrc?.lyric || ''
     const rlrc = lyricRes?.romalrc?.lyric || ''
     const tlrc = lyricRes?.tlyric?.lyric || ''
-    let LyricObj = {
+    const LyricObj = {
         orilrc: {
             lyric: lrc,
             parsedLyric: parseLyric(lrc),

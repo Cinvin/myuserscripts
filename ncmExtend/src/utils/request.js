@@ -1,11 +1,11 @@
 import { weapi } from "./crypto";
 import { tryParseJSON, parseCookie } from '../home/scriptSettings'
-var CookieMap = {
+const CookieMap = {
     web: '',
     android: 'os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;',
     pc: 'os=pc;appver=3.1.22.204707;channel=netease;osver=Microsoft-Windows-10-Professional-build-19045-64bit;',
 }
-var UserAgentMap = {
+const UserAgentMap = {
     web: undefined,
     android: 'NeteaseMusic/9.1.78.241009150147(9001078);Dalvik/2.1.0 (Linux; U; Android 14; V2318A Build/TP1A.220624.014)',
     pc: 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Safari/537.36 Chrome/91.0.4472.164 NeteaseMusicDesktop/3.1.22.204707',
@@ -27,12 +27,12 @@ setInterval(() => {
 setDeviceId()
 
 export const weapiRequest = (url, config) => {
-    let data = config.data || {}
-    let clientType = config.clientType || 'pc'
-    let csrfToken = document.cookie.match(/_csrf=([^(;|$)]+)/)
+    const data = config.data || {}
+    const clientType = config.clientType || 'pc'
+    const csrfToken = document.cookie.match(/_csrf=([^(;|$)]+)/)
     data.csrf_token = csrfToken ? csrfToken[1] : ''
     const encRes = weapi(data)
-    let headers = {
+    const headers = {
         "content-type": "application/x-www-form-urlencoded",
         "user-agent": UserAgentMap[clientType],
         "cookie": CookieMap[clientType],
