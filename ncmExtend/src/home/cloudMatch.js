@@ -1,6 +1,7 @@
 import { createBigButton, showTips, songItemAddToFormat, createPageJumpInput } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc } from '../utils/descHelper'
+import { liveRegex } from "../utils/constant"
 
 export const cloudMatch = (uiArea) => {
     //匹配纠正
@@ -15,15 +16,25 @@ export const cloudMatch = (uiArea) => {
             this.currentPage = 1
             this.filter = {
                 text: '',
-                notMatch: false,
+                matchStatus: 'all', // all, matched, unmatched
+                pureMusic: 'all', // all, pure, noPure
+                liveVersion: 'all', // all, live, noLive
+                allSongs: [], // 所有云盘歌曲（用于二次过滤及更新）
                 songs: [],
                 filterInput: null,
-                notMatchCb: null
+                filterControls: {
+                    matchStatusRadios: null,
+                    pureMusicRadios: null,
+                    liveVersionRadios: null,
+                    filterBtn: null
+                }
             }
             this.controls = {
                 tbody: null,
                 pageArea: null,
-                cloudDesc: null
+                cloudDesc: null,
+                filterPanel: null,
+                filterToggleBtn: null
             }
             this.openCloudList()
         }
@@ -33,6 +44,81 @@ export const cloudMatch = (uiArea) => {
                 showConfirmButton: false,
                 width: '980px',
                 html: `<style>
+.controls-area {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.filter-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-icon {
+    display: inline-block;
+    margin-left: 5px;
+}
+
+.filter-panel {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+    display: none;
+}
+
+.filter-panel.show {
+    display: block;
+}
+
+.filter-row {
+    margin-bottom: 12px;
+}
+
+.filter-row label {
+    display: inline-block;
+    min-width: 120px;
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+.filter-row input[type="text"] {
+    width: 300px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 6px 8px;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+.radio-group {
+    display: inline-flex;
+    gap: 15px;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: auto;
+    margin-right: 0;
+    font-weight: normal;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
 table {
     width: 100%;
     border-spacing: 0px;
@@ -113,8 +199,48 @@ width: 15%;
     visibility: hidden;
   }
 </style>
-<input class="swal2-input" value="${this.filter.text}" id="text-filter" placeholder="过滤：标题/歌手/专辑">
-<input class="form-check-input" type="checkbox" value="" id="cb-notmatch" ${this.filter.notMatch ? 'checked' : ''}><label class="form-check-label" for="cb-notmatch">未匹配歌曲</label>
+<div class="controls-area">
+    <div class="control-buttons">
+        <button type="button" class="swal2-styled swal2-styled filter-toggle-btn" id="btn-filter-toggle">
+            筛选歌曲
+            <i class="fa-solid fa-arrow-down filter-icon"></i>
+        </button>
+        <button type="button" class="swal2-styled" id="btn-batch-ops">批量操作</button>
+    </div>
+    <div class="filter-panel" id="filter-panel">
+        <div class="filter-row">
+            <label>关键词：</label>
+            <input class="swal2-input" type="text" id="text-filter" placeholder="过滤：标题/歌手/专辑">
+        </div>
+        <div class="filter-row">
+            <label>匹配状态：</label>
+            <div class="radio-group">
+                <label><input type="radio" name="match-status" value="all" checked> 全部</label>
+                <label><input type="radio" name="match-status" value="matched"> 已匹配</label>
+                <label><input type="radio" name="match-status" value="unmatched"> 未匹配</label>
+            </div>
+        </div>
+        <div class="filter-row">
+            <label>纯音乐：</label>
+            <div class="radio-group">
+                <label><input type="radio" name="pure-music" value="all" checked> 全部</label>
+                <label><input type="radio" name="pure-music" value="pure"> 仅纯音乐</label>
+                <label><input type="radio" name="pure-music" value="noPure"> 排除纯音乐</label>
+            </div>
+        </div>
+        <div class="filter-row">
+            <label>Live版本：</label>
+            <div class="radio-group">
+                <label><input type="radio" name="live-version" value="all" checked> 全部</label>
+                <label><input type="radio" name="live-version" value="live"> 仅Live</label>
+                <label><input type="radio" name="live-version" value="noLive"> 排除Live</label>
+            </div>
+        </div>
+        <div class="filter-buttons">
+            <button type="button" class="swal2-confirm swal2-styled" id="btn-apply-filter">过滤</button>
+        </div>
+    </div>
+</div>
 `,
                 footer: `<div id="page-area"></div><br><div id="cloud-desc">${this.controls.cloudDesc ? this.controls.cloudDesc.innerHTML : ''}</div>`,
                 didOpen: () => {
@@ -123,33 +249,82 @@ width: 15%;
                     cloudListFooter.style.display = 'block'
                     cloudListFooter.style.textAlign = 'center'
 
+                    // 获取过滤面板和按钮
+                    this.controls.filterPanel = cloudListContainer.querySelector('#filter-panel')
+                    this.controls.filterToggleBtn = cloudListContainer.querySelector('#btn-filter-toggle')
+                    const batchOpsBtn = cloudListContainer.querySelector('#btn-batch-ops')
+                    const applyFilterBtn = cloudListContainer.querySelector('#btn-apply-filter')
+                    const filterIcon = this.controls.filterToggleBtn.querySelector('.filter-icon')
+
+                    // 获取输入控件
+                    this.filter.filterInput = cloudListContainer.querySelector('#text-filter')
+                    this.filter.filterControls.matchStatusRadios = cloudListContainer.querySelectorAll('input[name="match-status"]')
+                    this.filter.filterControls.pureMusicRadios = cloudListContainer.querySelectorAll('input[name="pure-music"]')
+                    this.filter.filterControls.liveVersionRadios = cloudListContainer.querySelectorAll('input[name="live-version"]')
+                    this.filter.filterControls.filterBtn = applyFilterBtn
+
+                    // 筛选面板显示/隐藏，同时调整歌曲列表高度以避免 Swal 弹窗尺寸跳动
+                    this.controls.filterToggleBtn.addEventListener('click', () => {
+                        this.controls.filterPanel.classList.toggle('show')
+                        const isShow = this.controls.filterPanel.classList.contains('show')
+                        if (isShow) {
+                            filterIcon.className = 'fa-solid fa-arrow-up filter-icon'
+                            // 显示面板时，将当前过滤条件同步到表单控件
+                            this.filter.filterInput.value = this.filter.text
+                            cloudListContainer.querySelector(`input[name="match-status"][value="${this.filter.matchStatus}"]`).checked = true
+                            cloudListContainer.querySelector(`input[name="pure-music"][value="${this.filter.pureMusic}"]`).checked = true
+                            cloudListContainer.querySelector(`input[name="live-version"][value="${this.filter.liveVersion}"]`).checked = true
+                        } else {
+                            filterIcon.className = 'fa-solid fa-arrow-down filter-icon'
+                        }
+                        // 根据面板高度动态调整表格 tbody 的 max-height，保持弹窗总体高度基本不变
+                        if (this.controls.tbody) {
+                            const base = this.controls.baseTableMaxHeight || 400
+                            const panelH = isShow ? this.controls.filterPanel.offsetHeight : 0
+                            const newMax = Math.max(80, base - panelH)
+                            this.controls.tbody.style.maxHeight = newMax + 'px'
+                        }
+                    })
+
+                    // 批量操作按钮（暂时无实现）
+                    batchOpsBtn.addEventListener('click', () => {
+                        showTips('批量操作功能开发中...', 2)
+                    })
+
+                    // 过滤按钮点击事件
+                    applyFilterBtn.addEventListener('click', () => {
+                        this.filter.text = this.filter.filterInput.value.trim()
+                        this.filter.matchStatus = this.controls.filterPanel.querySelector('input[name="match-status"]:checked').value
+                        this.filter.pureMusic = this.controls.filterPanel.querySelector('input[name="pure-music"]:checked').value
+                        this.filter.liveVersion = this.controls.filterPanel.querySelector('input[name="live-version"]:checked').value
+                        this.onCloudInfoFilterChange()
+                        // 隐藏筛选面板
+                        this.controls.filterPanel.classList.remove('show')
+                        filterIcon.className = 'fa-solid fa-arrow-down filter-icon'
+                        // 调整表格高度回到原始值
+                        if (this.controls.tbody) {
+                            this.controls.tbody.style.maxHeight = this.controls.baseTableMaxHeight + 'px'
+                        }
+                    })
+
+                    // 创建歌曲表格
                     let songtb = document.createElement('table')
                     songtb.border = 1
                     songtb.frame = 'hsides'
                     songtb.rules = 'rows'
-                    songtb.innerHTML = `<thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>文件信息</th><th>上传日期</th> </tr></thead><tbody></tbody>`
+                    songtb.innerHTML = `<thead><tr><th>匹配</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>文件信息</th><th>上传日期</th> </tr></thead><tbody></tbody>`
                     let tbody = songtb.querySelector('tbody')
                     this.controls.tbody = tbody
+                    // 记录基准表格高度（与 CSS 中一致），并设置初始 maxHeight
+                    this.controls.baseTableMaxHeight = 400
+                    this.controls.tbody.style.maxHeight = this.controls.baseTableMaxHeight + 'px'
                     this.controls.pageArea = cloudListFooter.querySelector('#page-area')
                     this.controls.cloudDesc = cloudListFooter.querySelector('#cloud-desc')
 
-                    let filterInput = cloudListContainer.querySelector('#text-filter')
-                    let notMatchCb = cloudListContainer.querySelector('#cb-notmatch')
-                    this.filter.filterInput = filterInput
-                    this.filter.notMatchCb = notMatchCb
-                    filterInput.addEventListener('change', () => {
-                        if (this.filter.text === filterInput.value.trim()) {
-                            return
-                        }
-                        this.filter.text = filterInput.value.trim()
-                        this.onCloudInfoFilterChange()
-                    })
-                    notMatchCb.addEventListener('change', () => {
-                        this.filter.notMatch = notMatchCb.checked
-                        this.onCloudInfoFilterChange()
-                    })
                     cloudListContainer.appendChild(songtb)
-                    if (this.filter.text === '' && !this.filter.notMatch) {
+                    this.updateFilterButtonText()
+                    if (this.filter.text === '' && this.filter.matchStatus === 'all' && this.filter.pureMusic === 'all' && 
+                        this.filter.liveVersion === 'all') {
                         this.fetchCloudInfoForMatchTable((this.currentPage - 1) * this.cloudCountLimit)
                     } else {
                         this.sepreateFilterCloudListPage(this.currentPage)
@@ -285,19 +460,90 @@ width: 15%;
                 this.controls.tbody.appendChild(tablerow)
             })
         }
+        updateFilterButtonText() {
+            if (this.controls.filterToggleBtn) {
+                const isDefault = this.filter.text === '' && this.filter.matchStatus === 'all' && 
+                                 this.filter.pureMusic === 'all' && this.filter.liveVersion === 'all'
+                if (isDefault) {
+                    this.controls.filterToggleBtn.innerHTML = '筛选歌曲<i class="fa-solid fa-arrow-down filter-icon"></i>'
+                } else {
+                    const count = this.filter.songs.length
+                    this.controls.filterToggleBtn.innerHTML = `已筛选（${count}）<i class="fa-solid fa-arrow-down filter-icon"></i>`
+                }
+            }
+        }
         onCloudInfoFilterChange() {
             this.filter.songs = []
-            if (this.filter.text === '' && !this.filter.notMatch) {
-                this.fetchCloudInfoForMatchTable(0)
+            // 如果已经有缓存的 allSongs，直接在内存中过滤，否则去服务器拉取全部云盘数据
+            if (this.filter.allSongs && this.filter.allSongs.length > 0) {
+                this.applyFiltersToAllSongs()
                 return
             }
             this.filter.filterInput.setAttribute("disabled", 1)
-            this.filter.notMatchCb.setAttribute("disabled", 1)
+            this.filter.filterControls.filterBtn.setAttribute("disabled", 1)
             this.cloudInfoFilterFetchData(0)
+        }
+        checkSongMatchesFilters(song) {
+            // 检查关键词
+            if (this.filter.text.length > 0) {
+                let matchFlag = false
+                if (song.album.includes(this.filter.text) ||
+                    song.artist.includes(this.filter.text) ||
+                    song.simpleSong.name.includes(this.filter.text) ||
+                    (song.simpleSong.al && song.simpleSong.al.id > 0 && song.simpleSong.al.name && song.simpleSong.al.name.includes(this.filter.text))) {
+                    matchFlag = true
+                }
+                if (!matchFlag && song.simpleSong.ar) {
+                    song.simpleSong.ar.forEach(ar => {
+                        if (ar.name && ar.name.includes(this.filter.text)) {
+                            matchFlag = true
+                        }
+                    })
+                }
+                if (!matchFlag) {
+                    return false
+                }
+            }
+
+            // 检查匹配状态
+            if (this.filter.matchStatus !== 'all') {
+                if (this.filter.matchStatus === 'matched' && song.matchType === "unmatched") {
+                    return false
+                }
+                if (this.filter.matchStatus === 'unmatched' && song.matchType === "matched") {
+                    return false
+                }
+            }
+
+
+            // 检查纯音
+            if (this.filter.pureMusic !== 'all') {
+                const titleLower = (song.simpleSong.name || '').toLowerCase()
+                const isPureMusic = (song.simpleSong.mark & 131072) === 131072 ||
+                    titleLower.includes('伴奏') || titleLower.includes('纯音乐') || titleLower.includes('instrumental')
+                if (this.filter.pureMusic === 'pure' && !isPureMusic) return false
+                if (this.filter.pureMusic === 'noPure' && isPureMusic) return false
+            }
+
+            // 检查Live版本
+            if (this.filter.liveVersion !== 'all') {
+                const nameLower = (song.simpleSong.name || '').toLowerCase()
+                const isLive = liveRegex.test(nameLower)
+                if (this.filter.liveVersion === 'live' && !isLive) return false
+                if (this.filter.liveVersion === 'noLive' && isLive) return false
+            }
+
+            return true
+        }
+        applyFiltersToAllSongs() {
+            if (!this.filter.allSongs) this.filter.allSongs = []
+            this.filter.songs = this.filter.allSongs.filter(song => this.checkSongMatchesFilters(song))
+            this.updateFilterButtonText()
+            this.sepreateFilterCloudListPage(1)
         }
         cloudInfoFilterFetchData(offset) {
             if (offset === 0) {
-                this.filter.songs = []
+                this.filter.allSongs = []
             }
             weapiRequest('/api/v1/cloud/get', {
                 data: {
@@ -307,38 +553,16 @@ width: 15%;
                 onload: (res) => {
                     this.controls.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲`
                     res.data.forEach(song => {
-                        if (this.filter.text.length > 0) {
-                            let matchFlag = false
-                            if (song.album.includes(this.filter.text) ||
-                                song.artist.includes(this.filter.text) ||
-                                song.simpleSong.name.includes(this.filter.text) ||
-                                (song.simpleSong.al && song.simpleSong.al.id > 0 && song.simpleSong.al.name && song.simpleSong.al.name.includes(this.filter.text))) {
-                                matchFlag = true
-                            }
-                            if (!matchFlag && song.simpleSong.ar) {
-                                song.simpleSong.ar.forEach(ar => {
-                                    if (ar.name && ar.name.includes(this.filter.text)) {
-                                        matchFlag = true
-                                    }
-                                })
-                                if (!matchFlag) {
-                                    return
-                                }
-                            }
-                        }
-                        if (this.filter.notMatch && song.matchType === "matched") {
-                            return
-                        }
-                        this.filter.songs.push(song)
+                        this.filter.allSongs.push(song)
                     })
                     if (res.hasMore) {
-                        //if(offset<2001){//testing
                         res = {}
                         this.cloudInfoFilterFetchData(offset + 1000)
                     } else {
-                        this.sepreateFilterCloudListPage(1)
+                        // 所有云盘歌曲已获取完成，应用筛选并恢复控件
+                        this.applyFiltersToAllSongs()
                         this.filter.filterInput.removeAttribute("disabled")
-                        this.filter.notMatchCb.removeAttribute("disabled")
+                        this.filter.filterControls.filterBtn.removeAttribute("disabled")
                     }
                 }
             })
@@ -429,7 +653,7 @@ width: 8%;
 </style>
 <div><label>关键词/歌曲链接/歌曲ID:<input class="swal2-input" id="search-text" style="width: 400px;" placeholder="关键词/链接/ID"></label><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
-<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>匹配</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
 </div>
 `,
                 footer: '',
@@ -596,6 +820,16 @@ width: 8%;
                                     //matchData里无privilege
                                     res.matchData.simpleSong.privilege = this.filter.songs[i].simpleSong.privilege
                                     this.filter.songs[i] = res.matchData
+                                    break
+                                }
+                            }
+                        }
+                        // 同步更新缓存的 allSongs（如果存在）
+                        if (this.filter.allSongs && this.filter.allSongs.length > 0 && res.matchData) {
+                            for (let i = 0; i < this.filter.allSongs.length; i++) {
+                                if (this.filter.allSongs[i].simpleSong && this.filter.allSongs[i].simpleSong.id == fromId) {
+                                    res.matchData.simpleSong.privilege = this.filter.allSongs[i].simpleSong.privilege || res.matchData.simpleSong.privilege
+                                    this.filter.allSongs[i] = res.matchData
                                     break
                                 }
                             }
@@ -770,6 +1004,16 @@ width: 70%;
                             for (let i = 0; i < this.filter.songs.length; i++) {
                                 if (this.filter.songs[i].simpleSong.id == song.simpleSong.id) {
                                     this.filter.songs.splice(i, 1)
+                                    break
+                                }
+                            }
+                        }
+                        
+                        // 同步从缓存 allSongs 中移除
+                        if (this.filter.allSongs && this.filter.allSongs.length > 0) {
+                            for (let j = 0; j < this.filter.allSongs.length; j++) {
+                                if (this.filter.allSongs[j].simpleSong && this.filter.allSongs[j].simpleSong.id == song.simpleSong.id) {
+                                    this.filter.allSongs.splice(j, 1)
                                     break
                                 }
                             }
