@@ -267,15 +267,16 @@ width: 15%;
                     this.controls.filterToggleBtn.addEventListener('click', () => {
                         this.controls.filterPanel.classList.toggle('show')
                         const isShow = this.controls.filterPanel.classList.contains('show')
+                        const filterIconEl = this.controls.filterToggleBtn.querySelector('.filter-icon')
                         if (isShow) {
-                            filterIcon.className = 'fa-solid fa-arrow-up filter-icon'
+                            filterIconEl.className = 'fa-solid fa-arrow-up filter-icon'
                             // 显示面板时，将当前过滤条件同步到表单控件
                             this.filter.filterInput.value = this.filter.text
                             cloudListContainer.querySelector(`input[name="match-status"][value="${this.filter.matchStatus}"]`).checked = true
                             cloudListContainer.querySelector(`input[name="pure-music"][value="${this.filter.pureMusic}"]`).checked = true
                             cloudListContainer.querySelector(`input[name="live-version"][value="${this.filter.liveVersion}"]`).checked = true
                         } else {
-                            filterIcon.className = 'fa-solid fa-arrow-down filter-icon'
+                            filterIconEl.className = 'fa-solid fa-arrow-down filter-icon'
                         }
                         // 根据面板高度动态调整表格 tbody 的 max-height，保持弹窗总体高度基本不变
                         if (this.controls.tbody) {
@@ -300,7 +301,8 @@ width: 15%;
                         this.onCloudInfoFilterChange()
                         // 隐藏筛选面板
                         this.controls.filterPanel.classList.remove('show')
-                        filterIcon.className = 'fa-solid fa-arrow-down filter-icon'
+                        const filterIconEl = this.controls.filterToggleBtn.querySelector('.filter-icon')
+                        filterIconEl.className = 'fa-solid fa-arrow-down filter-icon'
                         // 调整表格高度回到原始值
                         if (this.controls.tbody) {
                             this.controls.tbody.style.maxHeight = this.controls.baseTableMaxHeight + 'px'
@@ -544,6 +546,10 @@ width: 15%;
         cloudInfoFilterFetchData(offset) {
             if (offset === 0) {
                 this.filter.allSongs = []
+                // 隐藏页码区域，以免点击页码按钮干扰列表加载
+                if (this.controls.pageArea) {
+                    this.controls.pageArea.style.display = 'none'
+                }
             }
             weapiRequest('/api/v1/cloud/get', {
                 data: {
@@ -559,10 +565,14 @@ width: 15%;
                         res = {}
                         this.cloudInfoFilterFetchData(offset + 1000)
                     } else {
-                        // 所有云盘歌曲已获取完成，应用筛选并恢复控件
+                        // 所有云盘歌曲已获取完成，应用筛选并恢复控件和页码区域
                         this.applyFiltersToAllSongs()
                         this.filter.filterInput.removeAttribute("disabled")
                         this.filter.filterControls.filterBtn.removeAttribute("disabled")
+                        // 恢复页码区域显示
+                        if (this.controls.pageArea) {
+                            this.controls.pageArea.style.display = 'block'
+                        }
                     }
                 }
             })
