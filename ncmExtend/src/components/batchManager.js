@@ -346,6 +346,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     </label>
                     <label><input id="bm-dl-dllrc" type="checkbox"> 下载.lrc歌词文件</label>
                     <label><input id="bm-dl-levelonly" type="checkbox"> 仅获取到目标音质时下载</label>
+                    <div style="margin-top:16px;color:#666;font-size:13px;">建立文件夹功能篡改猴下载模式设置为浏览器API可以生效，其他脚本管理器可能导致文件名乱码的问题。</div>
                   </div>
                 `
 

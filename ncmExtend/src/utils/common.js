@@ -114,3 +114,32 @@ export const songItemAddToFormat = (song) => {
         source: null,
     }
 }
+
+/**
+ * 清理文件名：将 '/' 转换为全角 '／'，其余非法字符转为下划线
+ * @param {string} filename - 原始文件名
+ * @returns {string} 处理后的安全文件名
+ */
+export const sanitizeFilename = (filename) => {
+    if (!filename) return 'downloaded_file';
+
+    // 1. 特殊处理：将正斜杠 / 替换为全角字符 ／
+    // 这样在文件名里看起来依然像斜杠，但不会被识别为路径分隔符
+    let sanitized = filename.replace(/\//g, '／');
+
+    // 2. 定义其他非法字符 (排除已经处理过的 /)
+    // 包含: < > : " \ | ? * 以及控制字符 (0-31)
+    const illegalRe = /[<>:"\\|?*\x00-\x1F]/g;
+    sanitized = sanitized.replace(illegalRe, '_');
+
+    // 3. 移除文件名末尾的空格或点 (Windows 系统限制)
+    sanitized = sanitized.trim().replace(/[\s.]+$/, '');
+
+    // 4. 处理 Windows 保留文件名 (如 CON, PRN 等)
+    const reservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+    if (reservedRe.test(sanitized)) {
+        sanitized = '_' + sanitized;
+    }
+
+    return sanitized || 'downloaded_file';
+}

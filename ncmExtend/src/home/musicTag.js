@@ -1,4 +1,4 @@
-import { showTips, createBigButton, downloadFileSync } from "../utils/common"
+import { showTips, createBigButton, downloadFileSync,sanitizeFilename } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { duringTimeDesc, nameFileWithoutExt } from '../utils/descHelper'
 import { handleLyric } from "../utils/lyric"
@@ -654,7 +654,7 @@ width: 50%;
                             }
                             const blob = new Blob([mp3tag.buffer], { type: "audio/mp3" });
                             const url = URL.createObjectURL(blob);
-                            const downloadRes = await downloadFileSync(url, song.fileName);
+                            const downloadRes = await downloadFileSync(url, sanitizeFilename(song.fileName));
                             song.progressDOM.innerHTML = downloadRes;
                             URL.revokeObjectURL(url);
                             if (downloadRes.endsWith("完成")) {
@@ -693,7 +693,7 @@ width: 50%;
                             const newBuffer = flac.save();
                             const blob = new Blob([newBuffer], { type: "audio/flac" });
                             const url = URL.createObjectURL(blob);
-                            const downloadRes = await downloadFileSync(url, song.fileName);
+                            const downloadRes = await downloadFileSync(url, sanitizeFilename(song.fileName));
                             song.progressDOM.innerHTML = downloadRes;
                             URL.revokeObjectURL(url);
                             if (downloadRes.endsWith("完成")) {

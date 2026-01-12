@@ -1,4 +1,4 @@
-import { showTips, saveContentAsFile, showConfirmBox } from "../utils/common"
+import { showTips, saveContentAsFile, showConfirmBox,sanitizeFilename } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { fileSizeDesc, levelDesc, nameFileWithoutExt } from "../utils/descHelper"
 import { handleLyric } from "../utils/lyric"
@@ -149,12 +149,12 @@ const downloadSongSub = (threadIndex, songList, config) => {
                     }
                     let folder = ''
                     if (config.folder !== 'none' && song.artist.length > 0) {
-                        folder = song.artist.replace('/', '／') + '/'
+                        folder = sanitizeFilename(song.artist) + '/'
                     }
                     if (config.folder === 'artist-album' && song.album.length > 0) {
-                        folder += song.album.replace('/', '／') + '/'
+                        folder += sanitizeFilename(song.album) + '/'
                     }
-                    song.fileNameWithOutExt = folder + nameFileWithoutExt(song.title, song.artist, config.out).replace('/', '／')
+                    song.fileNameWithOutExt = folder + sanitizeFilename(nameFileWithoutExt(song.title, song.artist, config.out))
                     song.fileFullName = song.fileNameWithOutExt + '.' + resData.type.toLowerCase()
                     song.dlUrl = resData.url
                     song.ext = resData.type.toLowerCase()

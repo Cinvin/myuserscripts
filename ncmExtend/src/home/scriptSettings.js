@@ -54,6 +54,7 @@ export const scriptSettings = (uiArea) => {
                     </label>
 </div>`,
             confirmButtonText: '确定',
+            footer: '<div>建立文件夹功能篡改猴下载模式设置为浏览器API可以生效，其他脚本管理器可能导致文件名乱码的问题。</div>',
             preConfirm: () => {
                 const container = Swal.getHtmlContainer()
 
