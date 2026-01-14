@@ -45,6 +45,7 @@ export const myCloudDisk = (uiArea) => {
                 batchOpsBtn: null,
                 batchDeleteBtn: null,
                 batchCollectBtn: null,
+                batchDeselectAllBtn: null,
                 baseTableMaxHeight: 400
             }
 
@@ -637,6 +638,7 @@ export const myCloudDisk = (uiArea) => {
 
             if (this.controls.batchDeleteBtn) this.controls.batchDeleteBtn.disabled = count === 0
             if (this.controls.batchCollectBtn) this.controls.batchCollectBtn.disabled = count === 0
+            if (this.controls.batchDeselectAllBtn) this.controls.batchDeselectAllBtn.disabled = count === 0
         }
 
         updateBatchButtonVisibility() {
@@ -644,14 +646,11 @@ export const myCloudDisk = (uiArea) => {
                 !(this.filter.text === '' && this.filter.matchStatus === 'all' && this.filter.pureMusic === 'all' && this.filter.liveVersion === 'all')
 
             const batchSelectAllFilteredBtn = this.controls.batchPanel.querySelector('#btn-batch-select-all-filtered')
-            const batchDeselectAllBtn = this.controls.batchPanel.querySelector('#btn-batch-deselect-all')
 
             if (isFiltered) {
                 batchSelectAllFilteredBtn.style.display = 'inline-block'
-                batchDeselectAllBtn.style.display = 'inline-block'
             } else {
                 batchSelectAllFilteredBtn.style.display = 'none'
-                batchDeselectAllBtn.style.display = 'none'
             }
         }
 
@@ -885,6 +884,10 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
 .cloud-list-container.batch-mode table tbody tr:hover td:nth-last-child(-n + 3) {
      visibility: visible !important;
 }
+.cloud-list-container.batch-mode tr th:nth-child(2),
+.cloud-list-container.batch-mode tr td:nth-child(2) {
+    display: none;
+}
 </style>
 <div class="controls-area">
     <div class="control-buttons">
@@ -902,7 +905,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
            <button type="button" class="swal2-styled" id="btn-batch-delete">删除</button>
            <button type="button" class="swal2-styled" id="btn-batch-collect">收藏</button>
            <button type="button" class="swal2-styled" style="display:none;" id="btn-batch-select-all-filtered">选择全部已筛选</button>
-           <button type="button" class="swal2-styled" style="display:none;" id="btn-batch-deselect-all">取消所有选择</button>
+           <button type="button" class="swal2-styled" id="btn-batch-deselect-all" disabled>取消所有选择</button>
         </div>
     </div>
     <div class="filter-panel" id="filter-panel">
@@ -961,7 +964,8 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
             const batchDeleteBtn = this.controls.batchDeleteBtn
             const batchCollectBtn = this.controls.batchCollectBtn
             const batchSelectAllFilteredBtn = cloudListContainer.querySelector('#btn-batch-select-all-filtered')
-            const batchDeselectAllBtn = cloudListContainer.querySelector('#btn-batch-deselect-all')
+            this.controls.batchDeselectAllBtn = cloudListContainer.querySelector('#btn-batch-deselect-all')
+            const batchDeselectAllBtn = this.controls.batchDeselectAllBtn
             const applyFilterBtn = cloudListContainer.querySelector('#btn-apply-filter')
 
             // 获取输入控件
