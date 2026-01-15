@@ -587,29 +587,34 @@ class CloudDeduplication {
                         });
                         const toDelete = sorted.slice(1);
 
-                        for (const song of toDelete) {
-                            // 检查是否需要停止
-                            if (this.deduplication.stopFlag) {
-                                break;
+                        // 检查是否需要停止
+                        if (this.deduplication.stopFlag) {
+                            break;
+                        }
+
+                        try {
+                            const result = await weapiRequestSync("/api/cloud/del", {
+                                data: { songIds: toDelete.map(song => song.id) },
+                            });
+                            if (result.code !== 200) {
+                                showTips(`删除 ${toDelete[0].name} 的重复歌曲失败`, 2);
+                                return;
+                            }
+                            else {
+                                showTips(`成功删除 ${toDelete.length} 首 ${toDelete[0].name} 的重复歌曲`, 1);
                             }
 
-                            try {
-                                const result = await weapiRequestSync("/api/cloud/del", {
-                                    data: { songIds: song.id },
-                                });
-                                if (result.code !== 200) {
-                                    showTips(`删除歌曲 ${song.name} 失败`, 2);
-                                    return;
-                                }
+                            toDelete.forEach(song => {
                                 // 标记为已删除
                                 song.deleted = true;
                                 // 更新对应删除按钮的状态
                                 updateDeleteButtonState(song.id);
-                            } catch (e) {
-                                showTips(`删除歌曲 ${song.name} 出错: ${e.message}`, 2);
-                                return;
-                            }
+                            });
+                        } catch (e) {
+                            showTips(`删除歌曲 ${toDelete[0].name} 出错: ${e.message}`, 2);
+                            return;
                         }
+
                     }
 
                     // 恢复按钮状态
