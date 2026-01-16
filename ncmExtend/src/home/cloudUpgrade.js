@@ -1,52 +1,83 @@
 import { createBigButton, showTips, showConfirmBox } from "../utils/common"
 import { weapiRequest } from "../utils/request"
-import { duringTimeDesc, levelDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail } from '../utils/descHelper'
+import { duringTimeDesc, levelDesc, fileSizeDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail } from '../utils/descHelper'
 import { levelWeight } from '../utils/constant'
 import { unsafeWindow } from "$"
 import { ncmDownUpload } from '../components/ncmDownUpload'
 
 export const cloudUpgrade = (uiArea) => {
     //音质升级
-    let btnUpgrade = createBigButton('云盘音质提升', uiArea, 2)
+    let btnUpgrade = createBigButton('云盘音质升降', uiArea, 2)
     btnUpgrade.addEventListener('click', ShowCloudUpgradePopUp)
     function ShowCloudUpgradePopUp() {
         Swal.fire({
-            title: '云盘音质提升',
-            input: 'select',
-            inputOptions: { lossless: '无损', hires: '高解析度无损' },
-            inputPlaceholder: '选择目标音质',
+            title: '云盘音质升降',
+            html: `
+                <select id="target-level" class="swal2-select">
+                    <option value="" disabled selected>目标音质</option>
+                    <option value="hires">高解析度无损</option>
+                    <option value="lossless">无损</option>
+                    <option value="exhigh">极高(320k)</option>
+                </select>
+                <select id="filter-mode" class="swal2-select">
+                    <option value="" disabled selected>歌曲筛选</option>
+                    <option value="lower">比目标音质低</option>
+                    <option value="higher">比目标音质高</option>
+                </select>
+                <select id="judgment-method" class="swal2-select">
+                    <option value="" disabled selected>判断方式</option>
+                    <option value="filesize">文件大小</option>
+                    <option value="bitrate">比特率</option>
+                </select>
+            `,
             confirmButtonText: '下一步',
             showCloseButton: true,
-            footer: '<div>寻找网易云音源比云盘音质好的歌曲,然后进行删除并重新上传</div><div>⚠️可能会出现删除了歌曲但上传失败的情况</div><div>因此请自行做好备份</div><div>建议先设置好请求头，以避免上传失败但是文件被删除的情况。</div>',
-            inputValidator: (value) => {
-                if (!value) {
-                    return '请选择目标音质'
+            footer: '<div>寻找网易云音源与云盘音质不同的歌曲,然后进行删除并重新上传</div><div>比特率的判断方式可能不准确，因为正常用文件上传的歌曲均为128k</div><div>建议先设置好请求头或自行做好备份，以避免上传失败但是文件已经被删除的情况</div>',
+            preConfirm: () => {
+                const container = Swal.getHtmlContainer()
+                const targetLevel = container.querySelector('#target-level').value
+                const filterMode = container.querySelector('#filter-mode').value
+                const judgmentMethod = container.querySelector('#judgment-method').value
+                if (!targetLevel) {
+                    Swal.showValidationMessage('请选择目标音质')
+                    return false
                 }
+                if (!filterMode) {
+                    Swal.showValidationMessage('请选择歌曲筛选方式')
+                    return false
+                }
+                if (!judgmentMethod) {
+                    Swal.showValidationMessage('请选择判断方式')
+                    return false
+                }
+                return { targetLevel, filterMode, judgmentMethod }
             },
         })
             .then(result => {
                 if (result.isConfirmed) {
-                    checkVIPBeforeUpgrade(result.value)
+                    checkVIPBeforeUpgrade(result.value.targetLevel, result.value.filterMode, result.value.judgmentMethod)
                 }
             })
     }
-    function checkVIPBeforeUpgrade(level) {
+    function checkVIPBeforeUpgrade(level, filterMode, judgmentMethod) {
         weapiRequest(`/api/v1/user/detail/${unsafeWindow.GUser.userId}`, {
             onload: (res) => {
                 if (res.profile.vipType <= 10) {
                     showConfirmBox('当前不是会员,无法获取无损以上音源,领取个会员礼品卡再来吧。')
                 }
                 else {
-                    let upgrade = new Upgrader(level)
+                    let upgrade = new Upgrader(level, filterMode, judgmentMethod)
                     upgrade.start()
                 }
             }
         })
     }
     class Upgrader {
-        constructor(level) {
+        constructor(level, filterMode, judgmentMethod) {
             this.targetLevel = level
             this.targetWeight = levelWeight[level]
+            this.filterMode = filterMode // 'lower' or 'higher'
+            this.judgmentMethod = judgmentMethod // 'filesize' or 'bitrate'
             this.songs = []
             this.page = {
                 current: 1,
@@ -125,7 +156,7 @@ width: 16%;
 }
 </style>
 <input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
-<button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upgrade-batch">全部提升音质</button>
+<button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upgrade-batch">全部处理</button>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>云盘音源</th><th>目标音源</th> </tr></thead><tbody></tbody></table>
 `,
                 footer: '<div></div>',
@@ -163,7 +194,7 @@ width: 16%;
                         })
 
                         if (this.batchUpgrade.songIndexs.length == 0) {
-                            showTips('没有需要提升的歌曲', 1)
+                            showTips('没有需要处理的歌曲', 1)
                             return
                         }
                         this.btnUpgradeBatch.innerHTML = "停止"
@@ -203,9 +234,19 @@ width: 16%;
                         if (song.simpleSong.privilege.fee == 4) return
                         if (song.simpleSong.privilege.playMaxBrLevel == "none") return
                         let cloudWeight = levelWeight[song.simpleSong.privilege.plLevel] || 0
-                        if (cloudWeight >= this.targetWeight) return
+
+                        // Filter based on filterMode
+                        if (this.filterMode === 'lower') {
+                            // find songs with quality lower than target
+                            if (cloudWeight >= this.targetWeight) return
+                        } else if (this.filterMode === 'higher') {
+                            // find songs with quality higher than target
+                            if (cloudWeight <= this.targetWeight) return
+                        }
+
                         songIds.push({ 'id': song.simpleSong.id })
-                        upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲 找到${songIds.length}首可能有提升的歌曲`
+                        const actionText = this.filterMode === 'lower' ? '提升' : '降低'
+                        upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲 找到${songIds.length}首可能可以${actionText}的歌曲`
                     })
                     if (res.hasMore) {
                         //if (offset < 2000) {//testing
@@ -219,7 +260,7 @@ width: 16%;
         }
         filterTargetLevelSongSub(offset, songIds) {
             let upgrader = this
-            upgrader.popupObj.tbody.innerHTML = `正在确认${songIds.length}首潜在歌曲是否有目标音质`
+            upgrader.popupObj.tbody.innerHTML = `正在确认 ${offset + 1} / ${songIds.length} 首潜在歌曲是否有目标音质`
             if (offset >= songIds.length) {
                 upgrader.createTableRow()
                 upgrader.applyFilter()
@@ -246,16 +287,100 @@ width: 16%;
                                     picUrl: (content.songs[i].al && content.songs[i].al.picUrl) ? content.songs[i].al.picUrl : 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg',
                                     upgraded: false,
                                 }
-                                let cloudBr = content.songs[i].pc.br
-                                if (upgrader.targetLevel == 'lossless' && content.songs[i].sq) {
-                                    songItem.fileinfo = { originalLevel: content.privileges[j].plLevel, originalBr: content.songs[i].pc.br, tagetBr: Math.round(content.songs[i].sq.br / 1000) }
-                                    if (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr) {
+
+                                // Get cloud file size
+                                const cloudFileSize = content.songs[i].pc?.privateCloud?.fileSize || 0
+
+                                if (upgrader.targetLevel === 'lossless' && content.songs[i].sq) {
+                                    const targetSize = content.songs[i].sq.size || 0
+                                    songItem.fileinfo = {
+                                        originalLevel: content.privileges[j].plLevel,
+                                        originalBr: content.songs[i].pc.br,
+                                        tagetBr: Math.round(content.songs[i].sq.br / 1000),
+                                        originalSize: cloudFileSize,
+                                        targetSize: targetSize
+                                    }
+
+                                    let shouldAdd = false
+                                    if (upgrader.judgmentMethod === 'filesize') {
+                                        // File size comparison, ignore differences less than 1024 bytes
+                                        if (upgrader.filterMode === 'lower') {
+                                            shouldAdd = (cloudFileSize + 1024 <= targetSize)
+                                        } else if (upgrader.filterMode === 'higher') {
+                                            shouldAdd = (cloudFileSize - 1024 >= targetSize)
+                                        }
+                                    } else {
+                                        // Bitrate comparison
+                                        if (upgrader.filterMode === 'lower') {
+                                            shouldAdd = (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr)
+                                        } else if (upgrader.filterMode === 'higher') {
+                                            shouldAdd = (songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr)
+                                        }
+                                    }
+
+                                    if (shouldAdd) {
                                         upgrader.songs.push(songItem)
                                     }
                                 }
-                                else if (upgrader.targetLevel == 'hires' && content.songs[i].hr) {
-                                    songItem.fileinfo = { originalLevel: content.privileges[j].plLevel, originalBr: content.songs[i].pc.br, tagetBr: Math.round(content.songs[i].hr.br / 1000) }
-                                    if (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr) {
+                                else if (upgrader.targetLevel === 'hires' && content.songs[i].hr) {
+                                    const targetSize = content.songs[i].hr.size || 0
+                                    songItem.fileinfo = {
+                                        originalLevel: content.privileges[j].plLevel,
+                                        originalBr: content.songs[i].pc.br,
+                                        tagetBr: Math.round(content.songs[i].hr.br / 1000),
+                                        originalSize: cloudFileSize,
+                                        targetSize: targetSize
+                                    }
+
+                                    let shouldAdd = false
+                                    if (upgrader.judgmentMethod === 'filesize') {
+                                        // File size comparison, ignore differences less than 1024 bytes
+                                        if (upgrader.filterMode === 'lower') {
+                                            shouldAdd = (cloudFileSize + 1024 <= targetSize)
+                                        } else if (upgrader.filterMode === 'higher') {
+                                            shouldAdd = (cloudFileSize - 1024 >= targetSize)
+                                        }
+                                    } else {
+                                        // Bitrate comparison
+                                        if (upgrader.filterMode === 'lower') {
+                                            shouldAdd = (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr)
+                                        } else if (upgrader.filterMode === 'higher') {
+                                            shouldAdd = (songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr)
+                                        }
+                                    }
+
+                                    if (shouldAdd) {
+                                        upgrader.songs.push(songItem)
+                                    }
+                                }
+                                else if (upgrader.targetLevel === 'exhigh' && content.songs[i].h) {
+                                    const targetSize = content.songs[i].h.size || 0
+                                    songItem.fileinfo = {
+                                        originalLevel: content.privileges[j].plLevel,
+                                        originalBr: content.songs[i].pc.br,
+                                        tagetBr: Math.round(content.songs[i].h.br / 1000),
+                                        originalSize: cloudFileSize,
+                                        targetSize: targetSize
+                                    }
+
+                                    let shouldAdd = false
+                                    if (upgrader.judgmentMethod === 'filesize') {
+                                        // File size comparison, ignore differences less than 1024 bytes
+                                        if (upgrader.filterMode === 'lower') {
+                                            shouldAdd = (cloudFileSize + 1024 <= targetSize)
+                                        } else if (upgrader.filterMode === 'higher') {
+                                            shouldAdd = (cloudFileSize - 1024 >= targetSize)
+                                        }
+                                    } else {
+                                        // Bitrate comparison
+                                        if (upgrader.filterMode === 'lower') {
+                                            shouldAdd = (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr)
+                                        } else if (upgrader.filterMode === 'higher') {
+                                            shouldAdd = (songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr)
+                                        }
+                                    }
+
+                                    if (shouldAdd) {
                                         upgrader.songs.push(songItem)
                                     }
                                 }
@@ -274,7 +399,18 @@ width: 16%;
             for (let i = 0; i < this.songs.length; i++) {
                 let song = this.songs[i]
                 let tablerow = document.createElement('tr')
-                tablerow.innerHTML = `<td><button type="button" class="swal2-styled" title="提升"><i class="fa-solid fa-arrow-up"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${levelDesc(song.fileinfo.originalLevel)} ${song.fileinfo.originalBr}k</td><td>${tagetLevelDesc} ${song.fileinfo.tagetBr}k</td>`
+
+                // Display file size or bitrate based on judgment method
+                let cloudInfo, targetInfo
+                if (this.judgmentMethod === 'filesize') {
+                    cloudInfo = `${levelDesc(song.fileinfo.originalLevel)} ${fileSizeDesc(song.fileinfo.originalSize)}`
+                    targetInfo = `${tagetLevelDesc} ${fileSizeDesc(song.fileinfo.targetSize)}`
+                } else {
+                    cloudInfo = `${levelDesc(song.fileinfo.originalLevel)} ${song.fileinfo.originalBr}k`
+                    targetInfo = `${tagetLevelDesc} ${song.fileinfo.tagetBr}k`
+                }
+
+                tablerow.innerHTML = `<td><button type="button" class="swal2-styled" title="${this.filterMode === 'lower' ? '提升' : '降低'}"><i class="fa-solid fa-arrow-${this.filterMode === 'lower' ? 'up' : 'down'}"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${cloudInfo}</td><td>${targetInfo}</td>`
                 let btn = tablerow.querySelector('button')
                 btn.addEventListener('click', () => {
                     if (this.batchUpgrade.working) {
@@ -351,7 +487,7 @@ width: 16%;
                     sizeTotal += song.size
                 }
             })
-            this.btnUpgradeBatch.innerHTML = '全部提升'
+            this.btnUpgradeBatch.innerHTML = '全部处理'
             if (countCanUpgrade > 0) {
                 this.btnUpgradeBatch.innerHTML += ` (${countCanUpgrade}首)`
             }
@@ -381,12 +517,14 @@ width: 16%;
         }
         onUpgradeFail(ULsong) {
             let song = ULsong.Upgrader.songs[ULsong.songIndex]
-            showTips(`${song.name} 音质提升失败`, 2)
+            const actionText = ULsong.Upgrader.filterMode === 'lower' ? '提升' : '降低'
+            showTips(`${song.name} 音质${actionText}失败`, 2)
             ULsong.Upgrader.onUpgradeFinnsh(ULsong.songIndex)
         }
         onUpgradeSucess(ULsong) {
             let song = ULsong.Upgrader.songs[ULsong.songIndex]
-            showTips(`${song.name} 音质提升成功`, 1)
+            const actionText = ULsong.Upgrader.filterMode === 'lower' ? '提升' : '降低'
+            showTips(`${song.name} 音质${actionText}成功`, 1)
             song.upgraded = true
             let btnUpgrade = song.tablerow.querySelector('button')
             btnUpgrade.innerHTML = '<i class="fa-solid fa-check"></i>'
@@ -404,7 +542,7 @@ width: 16%;
                         this.batchUpgrade.working = false
                         this.batchUpgrade.stopFlag = false
                         this.renderFilterInfo()
-                        showTips('歌曲提升完成', 1)
+                        showTips('歌曲处理完成', 1)
                     }
                 }
             } else {
