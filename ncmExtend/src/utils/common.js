@@ -116,7 +116,7 @@ export const songItemAddToFormat = (song) => {
 }
 
 /**
- * 清理文件名：将 '/' 转换为全角 '／'，其余非法字符转为下划线
+ * 清理文件名：将 '/' 转换为全角 '／'，其余非法字符转为空格
  * @param {string} filename - 原始文件名
  * @returns {string} 处理后的安全文件名
  */
@@ -130,7 +130,7 @@ export const sanitizeFilename = (filename) => {
     // 2. 定义其他非法字符 (排除已经处理过的 /)
     // 包含: < > : " \ | ? * 以及控制字符 (0-31)
     const illegalRe = /[<>:"\\|?*\x00-\x1F]/g;
-    sanitized = sanitized.replace(illegalRe, '_');
+    sanitized = sanitized.replace(illegalRe, ' ');
 
     // 3. 移除文件名末尾的空格或点 (Windows 系统限制)
     sanitized = sanitized.trim().replace(/[\s.]+$/, '');
