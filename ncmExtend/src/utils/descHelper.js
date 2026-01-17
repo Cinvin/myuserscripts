@@ -27,6 +27,18 @@ export const duringTimeDesc = (dt) => {
     const sec = secondTotal % 60
     return min.toString().padStart(2, '0') + ':' + sec.toString().padStart(2, '0')
 };
+export const dateDesc = (timestamp) => {
+    if (!timestamp) return ''
+    try {
+        const d = new Date(timestamp)
+        const year = d.getFullYear()
+        const month = String(d.getMonth() + 1).padStart(2, '0')
+        const day = String(d.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+    } catch (e) {
+        return ''
+    }
+};
 export const levelDesc = (level) => {
     return levelOptions[level] || level
 };
@@ -66,12 +78,12 @@ export const escapeHTML = string => (
     string.replace(
         /[&<>'"]/g,
         word =>
-        ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            "'": '&#39;',
-            '"': '&quot;',
-        })[word] || word
+            ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;',
+            })[word] || word
     )
 )

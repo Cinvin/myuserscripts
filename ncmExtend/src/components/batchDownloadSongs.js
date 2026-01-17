@@ -1,6 +1,6 @@
-import { showTips, saveContentAsFile, showConfirmBox,sanitizeFilename } from "../utils/common"
+import { showTips, saveContentAsFile, showConfirmBox, sanitizeFilename } from "../utils/common"
 import { weapiRequest } from "../utils/request"
-import { fileSizeDesc, levelDesc, nameFileWithoutExt } from "../utils/descHelper"
+import { fileSizeDesc, levelDesc, nameFileWithoutExt, dateDesc } from "../utils/descHelper"
 import { handleLyric } from "../utils/lyric"
 import { MetaFlac } from "../utils/metaflac"
 import { levelWeight } from '../utils/constant'
@@ -106,7 +106,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
             downloadCleanupManager.cleanupAll()
             // 清理专辑详情缓存
             if (config.albumDetailCache) {
-              config.albumDetailCache.clear()
+                config.albumDetailCache.clear()
             }
             let finnshText = '下载完成'
             if (config.skipSongs.length > 0) {
@@ -305,11 +305,10 @@ const downloadSongLyric = (songItem, threadIndex, songList, config) => {
 
             const albumContent = content[`/api/v1/album/${songItem.song.al.id}`]
             if (albumContent) {
-                const publishTime = new Date(albumContent.album.publishTime);
                 songItem.albumDetail = {
                     publisher: albumContent.album.company.length > 0 ? albumContent.album.company : null,
                     artists: albumContent.album.artists ? albumContent.album.artists.map(artist => artist.name).join('; ') : null,
-                    publishTime: albumContent.album.publishTime > 0 ? `${publishTime.getFullYear()}-${String(publishTime.getMonth() + 1).padStart(2, '0')}-${String(publishTime.getDate()).padStart(2, '0')}` : null
+                    publishTime: albumContent.album.publishTime > 0 ? dateDesc(albumContent.album.publishTime) : null
                 }
                 config.albumDetailCache[songItem.song.al.id] = songItem.albumDetail
             }
@@ -337,17 +336,17 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                     // 音轨编号
                     if (songItem.song.no && songItem.song.no > 0) mp3tag.tags.v2.TRCK = String(songItem.song.no).padStart(2, '0');
                     //光盘编号
-                    if(songItem.song.cd && songItem.song.cd.length > 0) mp3tag.tags.v2.TPOS = songItem.song.cd;
-                    if(songItem.albumDetail){
-                        if(songItem.albumDetail.publisher){
+                    if (songItem.song.cd && songItem.song.cd.length > 0) mp3tag.tags.v2.TPOS = songItem.song.cd;
+                    if (songItem.albumDetail) {
+                        if (songItem.albumDetail.publisher) {
                             // 发行公司
                             mp3tag.tags.v2.TPUB = songItem.albumDetail.publisher;
                         }
-                        if(songItem.albumDetail.artists){
+                        if (songItem.albumDetail.artists) {
                             //专辑艺术家
                             mp3tag.tags.v2.TPE2 = songItem.albumDetail.artists;
                         }
-                        if(songItem.albumDetail.publishTime){
+                        if (songItem.albumDetail.publishTime) {
                             //专辑发行时间
                             mp3tag.tags.v2.TDRC = songItem.albumDetail.publishTime;
                         }
@@ -384,7 +383,7 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                             downloadCleanupManager.addPendingCleanup(songItem, url)
                             downloadSongSub(threadIndex, songList, config)
                         },
-                        onerror: function() {
+                        onerror: function () {
                             songItem.download.prText.innerHTML = `下载失败`
                             // 错误时也延迟清理
                             downloadCleanupManager.addPendingCleanup(songItem, url)
@@ -402,17 +401,17 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                     // 音轨编号
                     if (songItem.song.no && songItem.song.no > 0) flac.setTag(`TRACKNUMBER=${String(songItem.song.no).padStart(2, '0')}`);
                     //光盘编号
-                    if(songItem.song.cd && songItem.song.cd.length > 0) flac.setTag(`DISCNUMBER=${songItem.song.cd}`);
-                    if(songItem.albumDetail){
-                        if(songItem.albumDetail.publisher){
+                    if (songItem.song.cd && songItem.song.cd.length > 0) flac.setTag(`DISCNUMBER=${songItem.song.cd}`);
+                    if (songItem.albumDetail) {
+                        if (songItem.albumDetail.publisher) {
                             // 发行公司
                             flac.setTag(`PUBLISHER=${songItem.albumDetail.publisher}`);
                         }
-                        if(songItem.albumDetail.artists){
+                        if (songItem.albumDetail.artists) {
                             //专辑艺术家
                             flac.setTag(`ALBUMARTIST=${songItem.albumDetail.artists}`);
                         }
-                        if(songItem.albumDetail.publishTime){
+                        if (songItem.albumDetail.publishTime) {
                             //专辑发行时间
                             flac.setTag(`DATE=${songItem.albumDetail.publishTime}`);
                         }
@@ -433,7 +432,7 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                             downloadCleanupManager.addPendingCleanup(songItem, url)
                             downloadSongSub(threadIndex, songList, config)
                         },
-                        onerror: function() {
+                        onerror: function () {
                             songItem.download.prText.innerHTML = `下载失败`
                             // 错误时也延迟清理
                             downloadCleanupManager.addPendingCleanup(songItem, url)
@@ -456,7 +455,7 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                         downloadCleanupManager.addPendingCleanup(songItem, url)
                         downloadSongSub(threadIndex, songList, config)
                     },
-                    onerror: function() {
+                    onerror: function () {
                         songItem.download.prText.innerHTML = `下载失败`
                         // 错误时也延迟清理
                         downloadCleanupManager.addPendingCleanup(songItem, url)

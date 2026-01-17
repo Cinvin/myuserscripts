@@ -136,28 +136,25 @@ table tbody tr td{
 tr th:nth-child(1),tr td:nth-child(1){
 width: 6%;
 }
-tr th:nth-child(2){
-width: 34%;
-}
-tr td:nth-child(2){
+tr th:nth-child(2),tr td:nth-child(2){
 width: 6%;
 }
-tr td:nth-child(3){
+tr th:nth-child(3),tr td:nth-child(3){
 width: 28%;
 }
-tr th:nth-child(3),tr td:nth-child(4){
+tr th:nth-child(4),tr td:nth-child(4){
 width: 28%;
 }
-tr th:nth-child(4),tr td:nth-child(5){
+tr th:nth-child(5),tr td:nth-child(5){
 width: 16%;
 }
-tr th:nth-child(5),tr td:nth-child(6){
+tr th:nth-child(6),tr td:nth-child(6){
 width: 16%;
 }
 </style>
 <input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
 <button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upgrade-batch">全部处理</button>
-<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>云盘音源</th><th>目标音源</th> </tr></thead><tbody></tbody></table>
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌曲标题</th><th>歌手</th><th>云盘音源</th><th>目标音源</th> </tr></thead><tbody></tbody></table>
 `,
                 footer: '<div></div>',
                 didOpen: () => {

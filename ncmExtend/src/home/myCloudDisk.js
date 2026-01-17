@@ -1,6 +1,6 @@
 import { createBigButton, showTips, songItemAddToFormat, createPageJumpInput } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
-import { fileSizeDesc, duringTimeDesc, levelDesc } from '../utils/descHelper'
+import { fileSizeDesc, duringTimeDesc, levelDesc, dateDesc } from '../utils/descHelper'
 import { liveRegex } from "../utils/constant"
 
 export const myCloudDisk = (uiArea) => {
@@ -168,8 +168,7 @@ export const myCloudDisk = (uiArea) => {
                         artist = artist2.substring(0, artist2.length - 1)
                     }
                 }
-                const dateObj = new Date(song.addTime)
-                const addTime = `${dateObj.getFullYear()}-${dateObj.getMonth() + 1}-${dateObj.getDate()}`
+                const addTime = dateDesc(song.addTime)
                 const tablerow = document.createElement('tr')
                 const isChecked = this.selectedSongIds.has(song.simpleSong.id) ? 'checked' : ''
 
@@ -178,13 +177,13 @@ export const myCloudDisk = (uiArea) => {
                 <td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td>
                 <td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${song.simpleSong.name}</a></td>
                 <td>${artist}</td><td>${duringTimeDesc(song.simpleSong.dt)}</td><td>${fileSizeDesc(song.fileSize)} ${levelDesc(song.simpleSong.privilege.plLevel)}</td>
-                <td>${addTime}</td>
+                <td>${addTime}
                 <div class="row-actions">
                     <button type="button" class="swal2-styled btn-play"  title="播放"><i class="fa-solid fa-play"></i></button>
                     <button type="button" class="swal2-styled btn-addplay"  title="添加至播放列表"><i class="fa-solid fa-plus"></i></button>
                     <button type="button" class="swal2-styled btn-collect"  title="收藏"><i class="fa-solid fa-folder-plus"></i></button>
                     <button type="button" class="swal2-styled btn-delete"  title="删除"><i class="fa-solid fa-trash"></i></button>
-                </div>`
+                </div></td>`
 
                 if (song.simpleSong.al && song.simpleSong.al.id > 0) {
                     const albumLink = tablerow.querySelector('.album-link')
@@ -836,26 +835,23 @@ text-align: center;
 tr th:nth-child(2),tr td:nth-child(2){
 width: 6%;
 }
-tr th:nth-child(3){
-width: 32%;
-}
-tr td:nth-child(3){
+tr th:nth-child(3),tr td:nth-child(3){
 width: 6%;
 }
-tr td:nth-child(4){
+tr th:nth-child(4),tr td:nth-child(4){
 width: 26%;
 }
-tr th:nth-child(4),tr td:nth-child(5){
-width: 16%;
+tr th:nth-child(5),tr td:nth-child(5){
+width: 22%;
 }
-tr th:nth-child(5),tr td:nth-child(6){
+tr th:nth-child(6),tr td:nth-child(6){
 width: 8%;
 }
-tr th:nth-child(6),tr td:nth-child(7){
+tr th:nth-child(7),tr td:nth-child(7){
 width: 18%;
 }
-tr th:nth-child(7),tr td:nth-child(8){
-width: 15%;
+tr th:nth-child(8),tr td:nth-child(8){
+width: 10%;
 }
 .row-actions {
     position: absolute;
@@ -870,6 +866,7 @@ width: 15%;
 }
 table tbody tr:hover .row-actions {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
 }
 table tbody tr {
@@ -1040,7 +1037,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
             songtb.border = 1
             songtb.frame = 'hsides'
             songtb.rules = 'rows'
-            songtb.innerHTML = `<thead><tr><th class="song-checkbox-header"><input type="checkbox" id="select-all-header"></th><th>匹配</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>文件信息</th><th>上传日期</th> </tr></thead><tbody></tbody>`
+            songtb.innerHTML = `<thead><tr><th class="song-checkbox-header"><input type="checkbox" id="select-all-header"></th><th>匹配</th><th style="width: 6%">&nbsp;</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>文件信息</th><th>上传日期</th> </tr></thead><tbody></tbody>`
 
             this.controls.tbody = songtb.querySelector('tbody')
             this.controls.selectAllCheckbox = songtb.querySelector('#select-all-header')
@@ -1101,25 +1098,22 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
 tr th:nth-child(1),tr td:nth-child(1){
 width: 6%;
 }
-tr th:nth-child(2){
-width: 46%;
-}
-tr td:nth-child(2){
+tr th:nth-child(2),tr td:nth-child(2){
 width: 6%;
 }
-tr td:nth-child(3){
+tr th:nth-child(3),tr td:nth-child(3){
 width: 40%;
 }
-tr th:nth-child(3),tr td:nth-child(4){
+tr th:nth-child(4),tr td:nth-child(4){
 width: 40%;
 }
-tr th:nth-child(4),tr td:nth-child(5){
+tr th:nth-child(5),tr td:nth-child(5){
 width: 8%;
 }
 </style>
 <div><label>关键词/歌曲链接/歌曲ID:<input class="swal2-input" id="search-text" style="width: 400px;" placeholder="关键词/链接/ID"></label><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
-<table border="1" frame="hsides" rules="rows"><thead><tr><th>匹配</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>匹配</th><th></th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
 </div>`
         }
 
@@ -1288,18 +1282,15 @@ width: 8%;
 tr th:nth-child(1),tr td:nth-child(1){
 width: 14%;
 }
-tr th:nth-child(2){
-width: 86%;
-}
-tr td:nth-child(2){
+tr th:nth-child(2),tr td:nth-child(2){
 width: 16%;
 }
-tr td:nth-child(3){
+tr th:nth-child(3),tr td:nth-child(3){
 width: 70%;
 }
 </style>
 <div class="table-wrapper">
-<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌单</th></tr></thead><tbody></tbody></table>
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌单</th></tr></thead><tbody></tbody></table>
 </div>`
         }
 

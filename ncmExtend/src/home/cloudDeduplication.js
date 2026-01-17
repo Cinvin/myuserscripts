@@ -1,7 +1,7 @@
 import { createBigButton, showTips, showConfirmBox } from "../utils/common";
 import { weapiRequestSync } from "../utils/request";
 import { getMD5 } from "../utils/crypto";
-import { fileSizeDesc } from "../utils/descHelper";
+import { fileSizeDesc, duringTimeDesc, dateDesc } from "../utils/descHelper";
 import { liveRegex } from "../utils/constant";
 
 export const cloudDeduplication = (uiArea) => {
@@ -205,22 +205,7 @@ class CloudDeduplication {
                 outerTable.style.borderCollapse = "collapse";
                 outerTable.style.fontSize = "13px";
 
-                // 辅助格式化函数
-                function formatDuration(ms) {
-                    if (!ms && ms !== 0) return "";
-                    const s = Math.floor(ms / 1000);
-                    const m = Math.floor(s / 60);
-                    const sec = s % 60;
-                    return `${m}:${sec.toString().padStart(2, "0")}`;
-                }
-                function formatDate(ts) {
-                    if (!ts) return "";
-                    try {
-                        return new Date(ts).toISOString().slice(0, 10);
-                    } catch (e) {
-                        return "";
-                    }
-                }
+
                 function markBtnDeleted(delBtn) {
                     if (!delBtn) return;
                     delBtn.textContent = "已删除";
@@ -301,9 +286,9 @@ class CloudDeduplication {
                                 </div>
                               </div>`;
 
-                        const publishHtml = `<div style="flex:0 0 90px;color:#666;font-size:13px;">${formatDate(song.publishTime)}</div>`;
+                        const publishHtml = `<div style="flex:0 0 90px;color:#666;font-size:13px;">${dateDesc(song.publishTime)}</div>`;
                         const sizeHtml = `<div style="flex:0 0 110px;color:#666;font-size:13px;">${fileSizeDesc(song.fileSize)}</div>`;
-                        const durationHtml = `<div style="flex:0 0 70px;color:#666;font-size:13px;">${formatDuration(song.duration)}</div>`;
+                        const durationHtml = `<div style="flex:0 0 70px;color:#666;font-size:13px;">${duringTimeDesc(song.duration)}</div>`;
                         const actionsHtml = `<div style="flex:0 0 140px;display:flex;gap:8px;justify-content:flex-end;"> <button class="cd-del-btn swal2-styled" type="button" data-song-id="${song.id}">删除</button></div>`;
 
                         row.innerHTML = coverHtml + albumHtml + publishHtml + sizeHtml + durationHtml + actionsHtml;

@@ -129,7 +129,7 @@ export class Uploader {
 <input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
 <div id="my-cbs">${filterCheckboxes}</div>
 <button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upload-batch">全部上传</button>
-<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>文件信息</th><th>备注</th></tr></thead><tbody></tbody></table>`
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>文件信息</th><th>备注</th></tr></thead><tbody></tbody></table>`
     }
 
     getTableStyles() {
@@ -159,13 +159,12 @@ export class Uploader {
     }
     table tbody tr td { border-bottom: none; }
     tr th:nth-child(1), tr td:nth-child(1) { width: 6%; }
-    tr th:nth-child(2) { width: 31%; }
-    tr td:nth-child(2) { width: 6%; }
-    tr td:nth-child(3) { width: 25%; }
-    tr th:nth-child(3), tr td:nth-child(4) { width: 25%; }
-    tr th:nth-child(4), tr td:nth-child(5) { width: 8%; }
-    tr th:nth-child(5), tr td:nth-child(6) { width: 15%; }
-    tr th:nth-child(6), tr td:nth-child(7) { width: 15%; }
+    tr th:nth-child(2), tr td:nth-child(2) { width: 6%; }
+    tr th:nth-child(3), tr td:nth-child(3) { width: 25%; }
+    tr th:nth-child(4), tr td:nth-child(4) { width: 25%; }
+    tr th:nth-child(5), tr td:nth-child(5) { width: 8%; }
+    tr th:nth-child(6), tr td:nth-child(6) { width: 15%; }
+    tr th:nth-child(7), tr td:nth-child(7) { width: 15%; }
         `
     }
 
@@ -180,7 +179,7 @@ export class Uploader {
             { id: 'cb-live', label: 'live版' },
             { id: 'cb-lossless', label: '仅显示flac文件', checked: false }
         ]
-        return filters.map(f => 
+        return filters.map(f =>
             `<input class="form-check-input" type="checkbox" value="" id="${f.id}" ${f.checked !== false ? 'checked' : ''}><label class="form-check-label" for="${f.id}">${f.label}</label>`
         ).join('')
     }
@@ -189,7 +188,7 @@ export class Uploader {
         const container = Swal.getHtmlContainer()
         const footer = Swal.getFooter()
         const tbody = container.querySelector('tbody')
-        
+
         this.popupObj = { container, tbody, footer }
         this.setupFilterListeners(container)
         this.btnUploadBatch = container.querySelector(UI_CLASSES.uploadBatchBtn)
@@ -279,7 +278,7 @@ export class Uploader {
         }
 
         this.updateFetchProgress(startIndex, ids.length)
-        
+
         const batchIds = ids.slice(startIndex, startIndex + BATCH_FETCH_SIZE)
         weapiRequest(API_ENDPOINTS.songDetail, {
             data: { c: JSON.stringify(batchIds) },
@@ -372,7 +371,7 @@ export class Uploader {
         item.isVIP = songDetail.fee === 1
         item.isPay = songDetail.fee === 4
         item.isLive = item.name ? liveRegex.test(item.name.toLowerCase()) : false
-        item.isInstrumental = (songDetail.mark & MATCH_OFFSET_BASE) === MATCH_OFFSET_BASE 
+        item.isInstrumental = (songDetail.mark & MATCH_OFFSET_BASE) === MATCH_OFFSET_BASE
             || (item.name && item.name.includes('伴奏'))
             || (item.name && item.name.toLowerCase().includes('Instrumental'))
     }
@@ -403,7 +402,7 @@ export class Uploader {
     createSingleTableRow(song, index) {
         const tr = document.createElement('tr')
         tr.innerHTML = this.getSongTableRowHtml(song)
-        
+
         const uploadBtn = tr.querySelector(UI_CLASSES.uploadBtn)
         uploadBtn.addEventListener('click', () => {
             if (!this.batchUpload.working) {
@@ -471,9 +470,9 @@ export class Uploader {
     }
 
     matchesSearchText(song, searchText) {
-        return song.name.includes(searchText) 
-            || song.album.includes(searchText) 
-            || song.artists.includes(searchText) 
+        return song.name.includes(searchText)
+            || song.album.includes(searchText)
+            || song.artists.includes(searchText)
             || song.tns.includes(searchText)
     }
 

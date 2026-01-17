@@ -1,6 +1,6 @@
-import { showTips, createBigButton, downloadFileSync,sanitizeFilename } from "../utils/common"
+import { showTips, createBigButton, downloadFileSync, sanitizeFilename } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
-import { duringTimeDesc, nameFileWithoutExt } from '../utils/descHelper'
+import { duringTimeDesc, nameFileWithoutExt, dateDesc } from '../utils/descHelper'
 import { handleLyric } from "../utils/lyric"
 import { MetaFlac } from "../utils/metaflac"
 import { detectAudioFormat } from "../utils/file"
@@ -86,20 +86,17 @@ width: 6%;
 tr th:nth-child(2),tr td:nth-child(2){
 width: 30%;
 }
-tr th:nth-child(3),{
-width: 64%;
-}
-tr td:nth-child(3){
+tr th:nth-child(3),tr td:nth-child(3){
 width: 6%;
 }
-tr td:nth-child(4){
+tr th:nth-child(4),tr td:nth-child(4){
 width: 29%;
 }
-tr td:nth-child(5){
+tr th:nth-child(5),tr td:nth-child(5){
 width: 29%;
 }
 </style>
-<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>文件名</th><th>目标歌曲</th></tr></thead><tbody></tbody></table>
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>文件名</th><th></th><th>目标歌曲</th><th>歌手</th></tr></thead><tbody></tbody></table>
 `,
                 didOpen: async () => {
                     const actions = Swal.getActions()
@@ -176,25 +173,22 @@ width: 29%;
 tr th:nth-child(1),tr td:nth-child(1){
 width: 6%;
 }
-tr th:nth-child(2){
-width: 46%;
-}
-tr td:nth-child(2){
+tr th:nth-child(2),tr td:nth-child(2){
 width: 6%;
 }
-tr td:nth-child(3){
+tr th:nth-child(3),tr td:nth-child(3){
 width: 40%;
 }
-tr th:nth-child(3),tr td:nth-child(4){
+tr th:nth-child(4),tr td:nth-child(4){
 width: 40%;
 }
-tr th:nth-child(4),tr td:nth-child(5){
+tr th:nth-child(5),tr td:nth-child(5){
 width: 8%;
 }
 </style>
 <div><input class="swal2-input" id="search-text" placeholder="搜索"><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
-<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
+<table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
 </div>
 `,
                 footer: `<div>文件时长 ${duringTimeDesc(file.duration)}</div>`,
@@ -593,11 +587,10 @@ width: 50%;
 
                             const albumRes = res[`/api/v1/album/${song.targetSong.al.id}`];
                             if (albumRes) {
-                                const publishTime = new Date(albumRes.album.publishTime);
                                 song.albumDetail = {
                                     publisher: albumRes.album.company.length > 0 ? albumRes.album.company : null,
                                     artists: albumRes.album.artists ? albumRes.album.artists.map(artist => artist.name).join('; ') : null,
-                                    publishTime: albumRes.album.publishTime > 0 ? `${publishTime.getFullYear()}-${String(publishTime.getMonth() + 1).padStart(2, '0')}-${String(publishTime.getDate()).padStart(2, '0')}` : null
+                                    publishTime: albumRes.album.publishTime > 0 ? dateDesc(albumRes.album.publishTime) : null
                                 }
                                 this.albumDetailCache[song.targetSong.al.id] = song.albumDetail
                             }
