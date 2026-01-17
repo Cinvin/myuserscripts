@@ -62,7 +62,7 @@ class PlaylistDetail {
         const songlen = songs.length
         const privilegelen = privileges.length
         for (let i = 0; i < songlen; i++) {
-                for (let j = 0; j < privilegelen; j++) {
+            for (let j = 0; j < privilegelen; j++) {
                 if (songs[i].id === privileges[j].id) {
                     const songItem = {
                         id: songs[i].id,
@@ -129,7 +129,7 @@ class PlaylistDetail {
                     id: this.playlistId,
                 },
                 onload: (content) => {
-                        if (content.code === 200) this.playCount.innerHTML = Number(this.playCount.innerHTML) + 1
+                    if (content.code === 200) this.playCount.innerHTML = Number(this.playCount.innerHTML) + 1
                 },
             })
         })
@@ -151,8 +151,9 @@ class PlaylistDetail {
     }
     fillTableSong() {
         const timestamp = document.querySelector('.m-table > tbody > tr').id.slice(-13)
+        const isLargePlaylist = this.playlistSongList.length > 1000
         this.playlistSongList.forEach((songItem, index) => {
-            this.createRowHTML(songItem, index, timestamp)
+            this.createRowHTML(songItem, index, timestamp, isLargePlaylist)
         })
         const table = document.querySelector('.m-table')
         if (table) {
@@ -207,13 +208,22 @@ class PlaylistDetail {
             `
             GM_addStyle(tableStyles)
             table.className = 'm-table m-table-rank'
+            const headerHTML = isLargePlaylist
+                ? `<thead><tr>
+                    <th style="width:40px;"><div class="wp">&nbsp;</div></th>
+                    <th><div class="wp">歌曲</div></th>
+                    <th style="width:150px;"><div class="wp">歌手</div></th>
+                    <th class="w4"><div class="wp af3"></div></th>
+                    <th style="width:90px;"><div class="wp af1"></div></th>
+                </tr></thead>`
+                : `<thead><tr>
+                    <th style="width:40px;"><div class="wp">&nbsp;</div></th>
+                    <th><div class="wp">歌名/歌手</div></th>
+                    <th class="w4"><div class="wp af3"></div></th>
+                    <th style="width:90px;"><div class="wp af1"></div></th>
+                </tr></thead>`
             table.innerHTML = `
-            <thead><tr>
-                <th style="width:40px;"><div class="wp">&nbsp;</div></th>
-                <th><div class="wp">歌名/歌手</div></th>
-                <th class="w4"><div class="wp af3"></div></th>
-                <th style="width:90px;"><div class="wp af1"></div></th>
-            </tr></thead>
+            ${headerHTML}
             <tbody>${this.rowHTMLList.join('')}</tbody>
             `
             //设置当前播放的歌曲
@@ -232,7 +242,7 @@ class PlaylistDetail {
             this.deleteMoreInfoUI()
         }
     }
-    createRowHTML(songItem, index, timestamp) {
+    createRowHTML(songItem, index, timestamp, isLargePlaylist) {
         this.bodyId = document.body.className.replace(/\D/g, "")
         const status = songItem.privilege.st < 0
         const deletable = this.playlist.creator.userId === unsafeWindow.GUser.userId
@@ -255,6 +265,27 @@ class PlaylistDetail {
         else artistContent = artistText
         let albumContent = albumName
         if (songItem.song.al.id > 0) albumContent = `<a href="#/album?id=${songItem.song.al.id}" title="${albumName}">${albumName}</a>`
+
+        // 大歌单模式：不显示专辑图片，歌名和歌手分两列
+        const albumImgHTML = isLargePlaylist ? '' : `
+                                <a href="#/song?id=${songItem.id}" title="${songName}">
+                                    <img class="rpic" src="${songItem.song.al.picUrl}?param=50y50&amp;quality=100" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5">
+                                </a>`
+
+        const artistTdHTML = isLargePlaylist ? `
+                    <td>
+                        <div title="${artistText}" class="ncmextend-playlist-songalbum">
+                            ${artistContent}
+                        </div>
+                    </td>` : ''
+
+        const artistInSongTdHTML = isLargePlaylist ? '' : `
+                                <div title="${artistText}" class="ncmextend-playlist-songartist">
+							        <span title="${artistText}" class="txt" style="max-width: 78%;">
+								        ${artistContent}
+							        </span>
+						        </div>`
+
         const rowHTML = `
 				<tr id="${songItem.id}${timestamp}" class="${index % 2 ? '' : 'even'} ${status ? 'js-dis' : ''}">
 					<td>
@@ -269,25 +300,17 @@ class PlaylistDetail {
 					</td>
 					<td class="rank">
 						<div class="f-cb">
-							<div class="tt">
-                                <a href="#/song?id=${songItem.id}" title="${songName}">
-                                    <img class="rpic" src="${songItem.song.al.picUrl}?param=50y50&amp;quality=100" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5">
-                                </a>
+							<div class="tt">${albumImgHTML}
 								<div class="ncmextend-playlist-songtitle">
-									<span class="txt" style="max-width: 78%;">
+									<span class="txt" style="max-width: ${isLargePlaylist ? '100%' : '78%'};">
 										<a href="#/song?id=${songItem.id}"><b title="${songName}${annotation ? ` - (${annotation})` : ''}"><div class="soil"></div>${songName}</b></a>
 										${annotation ? `<span title="${annotation}" class="s-fc8">${annotation ? ` - (${annotation})` : ''}</span>` : ''}
 										${songItem.song.mv ? `<a href="#/mv?id=${songItem.song.mv}" title="播放mv" class="mv">MV</a>` : ''}
 									</span>
-								</div>
-                                <div title="${artistText}" class="ncmextend-playlist-songartist">
-							        <span title="${artistText}" class="txt" style="max-width: 78%;">
-								        ${artistContent}
-							        </span>
-						        </div>
+								</div>${artistInSongTdHTML}
 							</div>
 						</div>
-					</td>
+					</td>${artistTdHTML}
                     <td>
 						<div class="ncmextend-playlist-songalbum">
                             ${albumContent}

@@ -37,8 +37,8 @@ class CloudDeduplication {
             html: `
             <div>
                 <div>是否使用以下属性区分歌曲？</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
-                    <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cd-duration-group-enabled" checked> 时长，差值小于<input type="number" id="cd-duration-threshold" step="0.1" min="0" max="60" value="1" style="width:80px;height:25px;margin-left:6px;">秒（保留1位小数）时，视为时长相同</label>
+                <div style="margin-top:6px;">
+                    <label><input type="checkbox" id="cd-duration-group-enabled" checked> 时长，差值小于<input type="number" id="cd-duration-threshold" step="0.1" min="0" max="60" value="1" style="width:40px;height:25px;margin-left:6px;">秒时，视为时长相同</label>
                 </div>
                 <div style="margin-top:6px;"><label><input type="checkbox" id="cd-deduplication-explicit" checked> 脏标（如<a href="https://music.163.com/#/song?id=1859245776" target="_blank">STAY(🅴)</a>和<a href="https://music.163.com/#/song?id=1859306637" target="_blank">STAY</a>）</label></div>
             </div>
