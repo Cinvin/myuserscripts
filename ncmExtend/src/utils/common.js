@@ -72,13 +72,15 @@ export const createPageJumpInput = (currentPage, maxPage) => {
 }
 
 export const downloadFileSync = (url, fileName) => {
-    return new Promise((resolve, reject) => {
-        GM_download({
-            url,
-            name: fileName,
-            onload: () => resolve(`下载 ${fileName} 完成`),
-            onerror: (error) => reject(`下载 ${fileName} 失败`)
-        });
+    return new Promise((resolve) => {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = fileName
+        document.body.appendChild(a)
+        const evt = new MouseEvent('click', { view: unsafeWindow || window, bubbles: false, cancelable: false })
+        a.dispatchEvent(evt)
+        document.body.removeChild(a)
+        resolve(`下载 ${fileName} 完成`)
     });
 }
 

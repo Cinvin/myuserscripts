@@ -7,6 +7,26 @@ import { levelWeight } from '../utils/constant'
 import { detectAudioFormat } from '../utils/file'
 import { downloadCleanupManager } from '../utils/downloadCleanupManager'
 
+const saveBlobUrlAsFile = (blobUrl, fileName, config, callbacks) => {
+    if (config.folder === 'none') {
+        const a = document.createElement('a')
+        a.href = blobUrl
+        a.download = fileName
+        document.body.appendChild(a)
+        const evt = new MouseEvent('click', { view: unsafeWindow || window, bubbles: false, cancelable: false })
+        a.dispatchEvent(evt)
+        document.body.removeChild(a)
+        callbacks.onload()
+    } else {
+        GM_download({
+            url: blobUrl,
+            name: fileName,
+            onload: callbacks.onload,
+            onerror: callbacks.onerror,
+        })
+    }
+}
+
 export const batchDownloadSongs = (songList, config) => {
     if (songList.length === 0) {
         showConfirmBox('没有可下载的歌曲')
@@ -300,7 +320,21 @@ const downloadSongLyric = (songItem, threadIndex, songList, config) => {
             const LyricItem = LyricObj.oritlrc || LyricObj.orilrc
             songItem.download.lyricText = LyricItem.lyric
             if (config.downloadLyric && LyricItem.lyric.length > 0) {
-                saveContentAsFile(LyricItem.lyric, songItem.fileNameWithOutExt + '.lrc')
+                const lrcFileName = songItem.fileNameWithOutExt + '.lrc'
+                if (config.folder === 'none') {
+                    const blob = new Blob([LyricItem.lyric], { type: 'text/plain' })
+                    const lrcUrl = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = lrcUrl
+                    a.download = lrcFileName
+                    document.body.appendChild(a)
+                    const evt = new MouseEvent('click', { view: unsafeWindow || window, bubbles: false, cancelable: false })
+                    a.dispatchEvent(evt)
+                    document.body.removeChild(a)
+                    setTimeout(() => URL.revokeObjectURL(lrcUrl), 1000)
+                } else {
+                    saveContentAsFile(LyricItem.lyric, lrcFileName)
+                }
             }
 
             const albumContent = content[`/api/v1/album/${songItem.song.al.id}`]
@@ -372,24 +406,20 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                     const blob = new Blob([mp3tag.buffer], { type: "audio/mp3" });
                     const url = URL.createObjectURL(blob);
 
-                    GM_download({
-                        url: url,
-                        name: songItem.fileFullName,
-                        onload: function () {
+                    saveBlobUrlAsFile(url, songItem.fileFullName, config, {
+                        onload: () => {
                             config.finnshCount += 1
                             Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
                             songItem.download.prText.innerHTML = `完成`
-                            // 使用延迟清理，避免文件写入期间释放资源
                             downloadCleanupManager.addPendingCleanup(songItem, url)
                             downloadSongSub(threadIndex, songList, config)
                         },
-                        onerror: function () {
+                        onerror: () => {
                             songItem.download.prText.innerHTML = `下载失败`
-                            // 错误时也延迟清理
                             downloadCleanupManager.addPendingCleanup(songItem, url)
                             downloadSongSub(threadIndex, songList, config)
                         }
-                    });
+                    })
                 }
                 else if (songItem.fileFormat === 'flac') {
                     const flac = new MetaFlac(songItem.download.musicFile);
@@ -421,47 +451,39 @@ const comcombineFile = async (songItem, threadIndex, songList, config) => {
                     const newBuffer = flac.save();
                     const blob = new Blob([newBuffer], { type: "audio/flac" });
                     const url = URL.createObjectURL(blob);
-                    GM_download({
-                        url: url,
-                        name: songItem.fileFullName,
-                        onload: function () {
+                    saveBlobUrlAsFile(url, songItem.fileFullName, config, {
+                        onload: () => {
                             config.finnshCount += 1
                             Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
                             songItem.download.prText.innerHTML = `完成`
-                            // 使用延迟清理，避免文件写入期间释放资源
                             downloadCleanupManager.addPendingCleanup(songItem, url)
                             downloadSongSub(threadIndex, songList, config)
                         },
-                        onerror: function () {
+                        onerror: () => {
                             songItem.download.prText.innerHTML = `下载失败`
-                            // 错误时也延迟清理
                             downloadCleanupManager.addPendingCleanup(songItem, url)
                             downloadSongSub(threadIndex, songList, config)
                         }
-                    });
+                    })
                 }
             }
             else {
                 const blob = new Blob([songItem.download.musicFile], { type: `audio/${songItem.ext}` });
                 const url = URL.createObjectURL(blob);
-                GM_download({
-                    url: url,
-                    name: songItem.fileFullName,
-                    onload: function () {
+                saveBlobUrlAsFile(url, songItem.fileFullName, config, {
+                    onload: () => {
                         config.finnshCount += 1
                         Swal.getFooter().innerHTML = `已完成: ${config.finnshCount} 总共: ${config.taskCount}`
                         songItem.download.prText.innerHTML = `完成`
-                        // 使用延迟清理，避免文件写入期间释放资源
                         downloadCleanupManager.addPendingCleanup(songItem, url)
                         downloadSongSub(threadIndex, songList, config)
                     },
-                    onerror: function () {
+                    onerror: () => {
                         songItem.download.prText.innerHTML = `下载失败`
-                        // 错误时也延迟清理
                         downloadCleanupManager.addPendingCleanup(songItem, url)
                         downloadSongSub(threadIndex, songList, config)
                     }
-                });
+                })
             }
         }
         else {

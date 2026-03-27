@@ -138,11 +138,21 @@ width: 8%;
             onload: (content) => {
                 //console.log(content)
                 if (content.data[0].url !== null) {
-                    GM_download({
+                    const dlFileName = filename + '.' + content.data[0].type.toLowerCase()
+                    GM_xmlhttpRequest({
+                        method: 'GET',
                         url: content.data[0].url,
-                        name: filename + '.' + content.data[0].type.toLowerCase(),
-                        onload: function () {
-                            //
+                        responseType: 'blob',
+                        onload: function (response) {
+                            const blobUrl = URL.createObjectURL(response.response)
+                            const a = document.createElement('a')
+                            a.href = blobUrl
+                            a.download = dlFileName
+                            document.body.appendChild(a)
+                            const evt = new MouseEvent('click', { view: unsafeWindow || window, bubbles: false, cancelable: false })
+                            a.dispatchEvent(evt)
+                            document.body.removeChild(a)
+                            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
                         },
                         onerror: function (e) {
                             console.error(e)
