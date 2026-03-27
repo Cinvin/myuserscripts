@@ -50,7 +50,7 @@ class SongDetail {
         this.songDetailObj = this.songDetailObj
 
         if (this.SongRes["/api/v3/song/detail"].privileges[0].plLevel !== 'none') {
-            this.createTitle('下载歌曲')
+            this.downLoadTitle = this.createTitle('下载歌曲')
             this.downLoadTableBody = this.createTable().querySelector('tbody')
             const plLevel = this.SongRes["/api/v3/song/detail"].privileges[0].plLevel
             const dlLevel = this.SongRes["/api/v3/song/detail"].privileges[0].dlLevel
@@ -61,7 +61,7 @@ class SongDetail {
                 this.createDLRow(`云盘文件 ${this.SongRes["/api/v3/song/detail"].songs[0].pc.br}k`, plLevel, 'pl')
             }
             else {
-                this.createTitle('转存云盘')
+                this.upLoadTitle = this.createTitle('转存云盘')
                 this.upLoadTableBody = this.createTable().querySelector('tbody')
                 if (songDlWeight > songPlWeight && this.SongRes["/api/v3/song/detail"].privileges[0].fee === 0) {
                     const channel = 'dl'
@@ -81,8 +81,8 @@ class SongDetail {
                 if (songDetail.m && songPlWeight >= 2) { const desc = `${Math.round(songDetail.m.br / 1000)}k ${fileSizeDesc(songDetail.m.size)}`; const level = 'higher'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
                 if (songDetail.l && songPlWeight >= 1) { const desc = `${Math.round(songDetail.l.br / 1000)}k ${fileSizeDesc(songDetail.l.size)}`; const level = 'standard'; this.createDLRow(desc, level, channel); this.createULRow(desc, level, channel) }
 
-                this.createHideButtonRow(this.downLoadTableBody)
-                this.createHideButtonRow(this.upLoadTableBody)
+                this.createHideButton(this.downLoadTableBody, this.downLoadTitle)
+                this.createHideButton(this.upLoadTableBody, this.upLoadTitle)
             }
 
         }
@@ -226,8 +226,13 @@ class SongDetail {
     }
     createTitle(title) {
         const h3 = document.createElement("h3")
-        h3.innerHTML = `<span class="f-fl" style="margin-top: 10px;margin-bottom: 10px;">${title}</span>`
+        h3.style.display = 'flex'
+        h3.style.alignItems = 'center'
+        h3.style.justifyContent = 'space-between'
+        h3.style.width = '100%'
+        h3.innerHTML = `<span style="margin-top: 10px;margin-bottom: 10px;">${title}</span>`
         this.maindDiv.appendChild(h3)
+        return h3
     }
     createTable() {
         const table = document.createElement("table")
@@ -255,13 +260,15 @@ class SongDetail {
         tbody.appendChild(row);
         return row
     }
-    createHideButtonRow(tbody) {
+    createHideButton(tbody, titleEl) {
         if (tbody.children.length < 2) return
-        const row = document.createElement("tr");
-        row.innerHTML = `<td><div><a class="s-fc7">展开<i class="u-icn u-icn-69"></i></a></div></td>`;
-        const btn = row.querySelector('a')
+        const btn = document.createElement('a')
+        btn.className = 's-fc7'
+        btn.style.cursor = 'pointer'
+        btn.style.marginRight = '10px'
+        btn.innerHTML = '展开<i class="u-icn u-icn-69"></i>'
         btn.addEventListener('click', () => {
-            for (let i = 1; i < tbody.children.length - 1; i++) {
+            for (let i = 1; i < tbody.children.length; i++) {
                 if (tbody.children[i].style.display === 'none') {
                     tbody.children[i].style.display = ''
                 }
@@ -276,7 +283,7 @@ class SongDetail {
                 btn.innerHTML = '展开<i class="u-icn u-icn-69"></i>'
             }
         })
-        tbody.appendChild(row);
+        titleEl.appendChild(btn)
     }
 
     createButton(desc) {
