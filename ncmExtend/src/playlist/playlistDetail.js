@@ -145,7 +145,7 @@ class PlaylistDetail {
         songsDownUpLoad(this.playlistId, this.operationArea)
         const creatorhomeURL = document.head.querySelector("[property~='music:creator'][content]")?.content
         const creatorId = new URLSearchParams(new URL(creatorhomeURL).search).get('id')
-        if (creatorId === unsafeWindow.GUser.userId) {
+        if (Number(creatorId) === unsafeWindow.GUser.userId) {
             sortSongs(this.playlistId, this.operationArea)
         }
     }
