@@ -374,6 +374,21 @@ export const myCloudDisk = (uiArea) => {
                 }
                 this.controls.pageArea.appendChild(pageBtn)
             })
+
+            // 页码跳转输入框
+            if (pageIndexs.length < maxPage) {
+                const jumpToPageInput = createPageJumpInput(this.currentPage, maxPage)
+                jumpToPageInput.addEventListener('change', () => {
+                    const newPage = parseInt(jumpToPageInput.value)
+                    if (newPage >= 1 && newPage <= maxPage) {
+                        this.sepreateFilterCloudListPage(newPage)
+                    } else {
+                        jumpToPageInput.value = this.currentPage
+                    }
+                })
+                this.controls.pageArea.appendChild(jumpToPageInput)
+            }
+
             const songindex = (currentPage - 1) * this.cloudCountLimit
             this.fillCloudListTable(this.filter.songs.slice(songindex, songindex + this.cloudCountLimit))
         }
