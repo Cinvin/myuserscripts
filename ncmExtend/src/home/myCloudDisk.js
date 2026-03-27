@@ -1,7 +1,6 @@
-import { createBigButton, showTips, songItemAddToFormat, createPageJumpInput } from "../utils/common"
+import { createBigButton, showTips, songItemAddToFormat, createPageJumpInput, isLiveSong } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc, dateDesc } from '../utils/descHelper'
-import { liveRegex } from "../utils/constant"
 
 export const myCloudDisk = (uiArea) => {
     const btnMyCloudDisk = createBigButton('我的云盘', uiArea, 2)
@@ -288,8 +287,7 @@ export const myCloudDisk = (uiArea) => {
 
             // 检查Live版本
             if (this.filter.liveVersion !== 'all') {
-                const nameLower = (song.simpleSong.name || '').toLowerCase()
-                const isLive = liveRegex.test(nameLower)
+                const isLive = isLiveSong(song)
                 if (this.filter.liveVersion === 'live' && !isLive) return false
                 if (this.filter.liveVersion === 'noLive' && isLive) return false
             }

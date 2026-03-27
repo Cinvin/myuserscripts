@@ -1,8 +1,7 @@
 import { weapiRequest } from "../utils/request"
 import { getArtistTextInSongDetail, getAlbumTextInSongDetail, duringTimeDesc, nameFileWithoutExt, fileSizeDesc } from "../utils/descHelper"
-import { sleep, showTips } from "../utils/common"
+import { sleep, showTips, isLiveSong } from "../utils/common"
 import { CheckAPIDataLimit, importAPIDataLimit } from "../components/ncmDownUploadBatch"
-import { liveRegex } from "../utils/constant"
 
 // ========== 常量定义 ==========
 const API_ENDPOINTS = {
@@ -339,7 +338,7 @@ export class Uploader {
             isNoCopyright: privilege.st < 0,
             isVIP: false,
             isPay: false,
-            isLive: config.name ? liveRegex.test(config.name.toLowerCase()) : false,
+            isLive: isLiveSong(config),
             isInstrumental: false,
             uploaded: false,
             needMatch: config.name === undefined && songDetail
@@ -370,7 +369,7 @@ export class Uploader {
         item.picUrl = songDetail.al?.picUrl || DEFAULT_PIC_URL
         item.isVIP = songDetail.fee === 1
         item.isPay = songDetail.fee === 4
-        item.isLive = item.name ? liveRegex.test(item.name.toLowerCase()) : false
+        item.isLive = isLiveSong(songDetail) || isLiveSong(item)
         item.isInstrumental = (songDetail.mark & MATCH_OFFSET_BASE) === MATCH_OFFSET_BASE
             || (item.name && item.name.includes('伴奏'))
             || (item.name && item.name.toLowerCase().includes('Instrumental'))

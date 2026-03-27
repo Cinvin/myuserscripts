@@ -1,8 +1,7 @@
-import { createBigButton, showTips, showConfirmBox } from "../utils/common";
+import { createBigButton, showTips, showConfirmBox, isLiveSong } from "../utils/common";
 import { weapiRequestSync } from "../utils/request";
 import { getMD5 } from "../utils/crypto";
 import { fileSizeDesc, duringTimeDesc, dateDesc } from "../utils/descHelper";
-import { liveRegex } from "../utils/constant";
 
 export const cloudDeduplication = (uiArea) => {
     const btnDeduplication = createBigButton("云盘去重", uiArea, 2);
@@ -44,7 +43,7 @@ class CloudDeduplication {
             </div>
             `,
             confirmButtonText: "开始查找重复歌曲",
-            footer: "<div>手机客户端有回收站功能，误删请从那里恢复。</div><div>live歌曲不去重，因为无法区分是否重复。</div><div>没有用语言区分，因此如《K歌之王》国粤不同版本的歌曲可能会视为重复。</div>",
+            footer: `<div>手机客户端有回收站功能，误删请从那里恢复。</div><div>live歌曲不去重，因为无法区分是否重复。</div><div></div>一些歌曲无法判断为live版，如<a href="https://music.163.com/#/album?id=280573395" target="_blank">FEAR and DREAMS</a>。</div><div>没有用语言区分，因此如《K歌之王》国粤不同版本的歌曲可能会视为重复。</div>`,
             preConfirm: () => {
                 const container = Swal.getHtmlContainer();
                 const durationEnabledEl = container.querySelector("#cd-duration-group-enabled");
@@ -112,7 +111,7 @@ class CloudDeduplication {
                         if (song.matchType === "unmatched") {
                             continue;
                         }
-                        if (liveRegex.test(song.simpleSong.name.toLowerCase())) {
+                        if (isLiveSong(song)) {
                             continue;
                         }
                         const songItem = {

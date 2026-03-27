@@ -1,8 +1,8 @@
-import { showTips, createPageJumpInput } from "../utils/common"
+import { showTips, createPageJumpInput, isLiveSong } from "../utils/common"
 import { getBatchFilter, setBatchFilter, getBatchDownloadSettings, getBatchTransUploadSettings, getDownloadSettings, setBatchDownloadSettings, setBatchTransUploadSettings, setDownloadSettings } from "../utils/constant"
 import { ncmDownUploadBatch } from "../components/ncmDownUploadBatch"
 import { batchDownloadSongs } from "../components/batchDownloadSongs"
-import { liveRegex } from "../utils/constant"
+
 
 // 每页显示数量
 const PAGE_SIZE = 50
@@ -192,12 +192,8 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                         }
                     }
                     // 现场版
-                    if (!state.filterOptions.live){
-                        if(s.song.album && s.song.album.subType === '现场版') return false
-                        if(s.song.additionalTitle){
-                            if(s.song.additionalTitle.toLowerCase().includes('live')) return false
-                        }
-                        else if(liveRegex.test(s.title.toLowerCase())) return false
+                    if (!state.filterOptions.live) {
+                        if (isLiveSong(s)) return false;
                     }
                     if (s.privilege.cs && !state.filterOptions.cloud) return false
                     if (!state.filterText) return true

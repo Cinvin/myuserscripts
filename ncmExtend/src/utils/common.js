@@ -1,3 +1,4 @@
+import { liveRegex } from "./constant"
 
 export const sleep = (millisec) => {
     return new Promise(resolve => setTimeout(resolve, millisec));
@@ -144,4 +145,56 @@ export const sanitizeFilename = (filename) => {
     }
 
     return sanitized || 'downloaded_file';
+}
+
+export const isLiveSong = (item) => {
+    if (!item) return false;
+    
+    // 如果传入的是包装对象，尝试提取内部真正的 song 对象
+    const song = item.simpleSong || item.song || item;
+
+    // 提取可能的属性
+    const title = song.name || item.name || item.title || song.title || '';
+    const additionalTitle = song.additionalTitle || item.additionalTitle || '';
+    let albumName = '';
+    let albumSubType = '';
+
+    if (song.al) {
+        if (typeof song.al === 'string') {
+            albumName = song.al;
+        } else {
+            albumName = song.al.name || '';
+            albumSubType = song.al.subType || '';
+        }
+    } else if (song.album) {
+        if (typeof song.album === 'string') {
+            albumName = song.album;
+        } else {
+            albumName = song.album.name || '';
+            albumSubType = song.album.subType || '';
+        }
+    }
+
+    // 1. 检查 additionalTitle
+    if (additionalTitle && additionalTitle.toLowerCase().includes('live')) {
+        return true;
+    }
+
+    // 2. 检查标题是否匹配 liveRegex
+    if (title && liveRegex.test(title.toLowerCase())) {
+        return true;
+    }
+
+    // 3. 检查专辑 subType
+    if (albumSubType === '现场版') {
+        return true;
+    }
+
+    // 4. 检查专辑名称是否包含“演唱会”、“concert”等字眼
+    const albumNameLower = albumName.toLowerCase();
+    if (albumNameLower.includes('演唱会') || albumNameLower.includes('concert')) {
+        return true;
+    }
+
+    return false;
 }
