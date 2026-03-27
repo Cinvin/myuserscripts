@@ -496,13 +496,11 @@ export const myCloudDisk = (uiArea) => {
                 showCancelButton: true,
                 confirmButtonText: '删除',
                 cancelButtonText: '取消',
-                didClose: () => {
-                    this.openCloudList()
-                }
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     await this.executeDelete([song.simpleSong.id])
                 }
+                this.openCloudList()
             })
         }
 
@@ -682,14 +680,12 @@ export const myCloudDisk = (uiArea) => {
                 showCancelButton: true,
                 confirmButtonText: '删除',
                 cancelButtonText: '取消',
-                didClose: () => {
-                    this.openCloudList()
-                }
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     await this.executeDelete(Array.from(this.selectedSongIds))
                     this.updateBatchOpsButtonText() // Update count after delete
                 }
+                this.openCloudList()
             })
         }
 
