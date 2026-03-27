@@ -287,7 +287,7 @@ export class ncmDownUploadBatch {
                         this.songs[songIndex].cloudId = fileData.songId
                     }
                     else {
-                        this.failSongs.push(this.songs[songIndex].title)
+                        this.failSongs.push(`文件 ${this.songs[songIndex].fileFullName}  已在用户文件夹中存在`)
                         hasFail = true
                     }
                 })

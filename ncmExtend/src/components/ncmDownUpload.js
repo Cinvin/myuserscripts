@@ -62,7 +62,8 @@ export class ncmDownUpload {
                                     this.uploadSongWay2Part1(song)
                                 }
                                 else {
-                                    this.uploadSongWay3Part1(song)
+                                    showConfirmBox(`文件 ${song.fileFullName} 已在用户文件夹中存在`)
+                                    return
                                 }
                             },
                             onerror: (res) => {
