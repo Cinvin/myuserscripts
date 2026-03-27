@@ -62,8 +62,8 @@ export class ncmDownUpload {
                                     this.uploadSongWay2Part1(song)
                                 }
                                 else {
-                                    showConfirmBox(`文件 ${song.fileFullName} 已在用户文件夹中存在`)
-                                    return
+                                    song.FailMsg = `文件 ${song.fileFullName} 已在用户文件夹中存在`
+                                    this.uploadSongFail(song)
                                 }
                             },
                             onerror: (res) => {
@@ -371,7 +371,7 @@ export class ncmDownUpload {
         }
     }
     uploadSongFail(song) {
-        showTips(`${song.title} 上传失败`, 2)
+        showTips(song.FailMsg || `${song.title} 上传失败`, 2)
         this.failSongs.push(song)
         if (this.onSongDUFail) this.onSongDUFail(song)
         this.uploadNextSong()

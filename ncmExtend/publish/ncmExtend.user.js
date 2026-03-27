@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.4.2
+// @version      4.4.3
 // @author       cinvin
 // @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
@@ -5945,8 +5945,8 @@ async _handlePlaylistPopupOpen(song, container) {
                   } else if (res1.data[0].upload === 2) {
                     this.uploadSongWay2Part1(song);
                   } else {
-                    showConfirmBox(`文件 ${song.fileFullName} 已在用户文件夹中存在`);
-                    return;
+                    song.FailMsg = `文件 ${song.fileFullName} 已在用户文件夹中存在`;
+                    this.uploadSongFail(song);
                   }
                 },
                 onerror: (res) => {
@@ -6237,7 +6237,7 @@ async _handlePlaylistPopupOpen(song, container) {
       }
     }
     uploadSongFail(song) {
-      showTips(`${song.title} 上传失败`, 2);
+      showTips(song.FailMsg || `${song.title} 上传失败`, 2);
       this.failSongs.push(song);
       if (this.onSongDUFail) this.onSongDUFail(song);
       this.uploadNextSong();
