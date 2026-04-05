@@ -186,7 +186,7 @@ tr th:nth-child(5),tr td:nth-child(5){
 width: 8%;
 }
 </style>
-<div><input class="swal2-input" id="search-text" placeholder="搜索"><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
+<div><label>关键词/歌曲链接/歌曲ID:<input class="swal2-input" id="search-text" style="width: 400px;" placeholder="关键词/链接/ID"></label><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
 </div>
@@ -219,52 +219,86 @@ width: 8%;
                     searchText.value = file.fileName.substring(0, file.fileName.lastIndexOf('.'));
                     btnSearch.addEventListener('click', () => {
                         const searchWord = searchText.value.trim();
-                        tbody.innerHTML = '正在搜索...'
-                        weapiRequest("/api/cloudsearch/get/web", {
-                            data: {
+                        const isSongId = /^[1-9]\d*$/.test(searchWord)
+                        let songId = isSongId ? searchWord : ''
+
+                        let URLObj = null
+                        if (searchWord.includes('song?')) {
+                            try { URLObj = new URL(searchWord) } catch (e) { }
+                        }
+                        if (URLObj && URLObj.hostname === 'music.163.com') {
+                            const urlParamsStr = URLObj.search.length > 0 ? URLObj.search : URLObj.href.slice(URLObj.href.lastIndexOf('?'))
+                            songId = new URLSearchParams(urlParamsStr).get('id') || ''
+                        }
+
+                        const requestData = {}
+                        if (URLObj === null) {
+                            requestData["/api/cloudsearch/get/web"] = JSON.stringify({
                                 s: searchWord,
                                 type: 1,
                                 limit: 30,
                                 offset: 0,
                                 total: true,
-                            },
-                            onload: (searchContent) => {
-                                if (searchContent.code !== 200) {
-                                    return
-                                }
-                                if (searchContent.result.songCount > 0) {
-                                    tbody.innerHTML = ''
-                                    const timeMatchSongs = []
-                                    const timeNoMatchSongs = []
-                                    searchContent.result.songs.forEach(resultSong => {
-                                        if (Math.abs(resultSong.dt - file.duration) < 1000)
-                                            timeMatchSongs.push(resultSong)
-                                        else
-                                            timeNoMatchSongs.push(resultSong)
-                                    })
-                                    const resultSongs = timeMatchSongs.concat(timeNoMatchSongs)
-                                    resultSongs.forEach(resultSong => {
-                                        let tablerow = document.createElement('tr')
-                                        let songName = resultSong.name
-                                        const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
-                                        const needHighLight = Math.abs(resultSong.dt - file.duration) < 1000
-                                        const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
+                            })
+                        }
+                        if (songId.length > 0) {
+                            requestData["/api/v3/song/detail"] = JSON.stringify({ c: JSON.stringify([{ 'id': songId }]) })
+                        }
 
-                                        tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
-                                        let selectbtn = tablerow.querySelector('.selectbtn')
-                                        selectbtn.addEventListener('click', () => {
-                                            file.targetSong = resultSong
-                                            file.mode = 'netease'
-                                            file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
-                                            this.openFilesDialog()
+                        if (requestData["/api/cloudsearch/get/web"] || requestData["/api/v3/song/detail"]) {
+                            tbody.innerHTML = '正在搜索...'
+                            weapiRequest("/api/batch", {
+                                data: requestData,
+                                onload: (content) => {
+                                    if (content.code !== 200) return
+                                    const songDetailContent = content["/api/v3/song/detail"]
+                                    const searchContent = content["/api/cloudsearch/get/web"] || { result: { songCount: 0, songs: [] } }
+                                    if (songDetailContent && songDetailContent.songs && songDetailContent.songs.length > 0) {
+                                        songDetailContent.songs[0].privilege = songDetailContent.privileges[0]
+                                        if (searchContent.result.songCount > 0) {
+                                            searchContent.result.songs.unshift(songDetailContent.songs[0])
+                                        } else {
+                                            searchContent.result.songCount = 1
+                                            searchContent.result.songs = songDetailContent.songs
+                                        }
+                                    }
+
+                                    if (searchContent.result.songCount > 0) {
+                                        tbody.innerHTML = ''
+                                        const timeMatchSongs = []
+                                        const timeNoMatchSongs = []
+                                        searchContent.result.songs.forEach(resultSong => {
+                                            if (Math.abs(resultSong.dt - file.duration) < 1000)
+                                                timeMatchSongs.push(resultSong)
+                                            else
+                                                timeNoMatchSongs.push(resultSong)
                                         })
-                                        tbody.appendChild(tablerow)
-                                    })
-                                } else {
-                                    tbody.innerHTML = '搜索结果为空'
+                                        const resultSongs = timeMatchSongs.concat(timeNoMatchSongs)
+                                        resultSongs.forEach(resultSong => {
+                                            let tablerow = document.createElement('tr')
+                                            let songName = resultSong.name
+                                            const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
+                                            const needHighLight = Math.abs(resultSong.dt - file.duration) < 1000
+                                            const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
+
+                                            tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
+                                            let selectbtn = tablerow.querySelector('.selectbtn')
+                                            selectbtn.addEventListener('click', () => {
+                                                file.targetSong = resultSong
+                                                file.mode = 'netease'
+                                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
+                                                this.openFilesDialog()
+                                            })
+                                            tbody.appendChild(tablerow)
+                                        })
+                                    } else {
+                                        tbody.innerHTML = '搜索结果为空'
+                                    }
                                 }
-                            }
-                        })
+                            })
+                        } else {
+                            tbody.innerHTML = '无法解析链接'
+                        }
                     });
                     btnSearch.click();
                 },
