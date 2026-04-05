@@ -453,19 +453,25 @@ export const myCloudDisk = (uiArea) => {
             })
         }
 
-        fiilSearchTable(searchContent, cloudSongId) {
+        fiilSearchTable(searchContent, cloudSongId, matchId = null) {
             if (searchContent.result.songCount > 0) {
                 this.tbody.innerHTML = ''
 
                 const timeMatchSongs = []
                 const timeNoMatchSongs = []
+                let exactMatchSong = null
                 searchContent.result.songs.forEach(resultSong => {
-                    if (Math.abs(resultSong.dt - this.fileDuringTime) < 1000)
+                    if (matchId && resultSong.id == matchId) {
+                        if (!exactMatchSong) exactMatchSong = resultSong
+                    } else if (Math.abs(resultSong.dt - this.fileDuringTime) < 1000)
                         timeMatchSongs.push(resultSong)
                     else
                         timeNoMatchSongs.push(resultSong)
                 })
                 const resultSongs = timeMatchSongs.concat(timeNoMatchSongs)
+                if (exactMatchSong) {
+                    resultSongs.unshift(exactMatchSong)
+                }
                 resultSongs.forEach(resultSong => {
                     const tablerow = document.createElement('tr')
                     const songName = resultSong.name
@@ -1259,7 +1265,8 @@ width: 8%;
                                     searchContent.result.songs = songDetailContent.songs
                                 }
                             }
-                            this.fiilSearchTable(searchContent, song.simpleSong.id)
+                            const matchId = (songDetailContent && songDetailContent.songs && songDetailContent.songs.length > 0) ? songDetailContent.songs[0].id : null;
+                            this.fiilSearchTable(searchContent, song.simpleSong.id, matchId)
                         }
                     })
                 } else {

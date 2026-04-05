@@ -267,13 +267,20 @@ width: 8%;
                                         tbody.innerHTML = ''
                                         const timeMatchSongs = []
                                         const timeNoMatchSongs = []
+                                        let exactMatchSong = null;
+                                        const matchId = (songDetailContent && songDetailContent.songs && songDetailContent.songs.length > 0) ? songDetailContent.songs[0].id : null;
                                         searchContent.result.songs.forEach(resultSong => {
-                                            if (Math.abs(resultSong.dt - file.duration) < 1000)
+                                            if (matchId && resultSong.id == matchId) {
+                                                if (!exactMatchSong) exactMatchSong = resultSong;
+                                            } else if (Math.abs(resultSong.dt - file.duration) < 1000)
                                                 timeMatchSongs.push(resultSong)
                                             else
                                                 timeNoMatchSongs.push(resultSong)
                                         })
                                         const resultSongs = timeMatchSongs.concat(timeNoMatchSongs)
+                                        if (exactMatchSong) {
+                                            resultSongs.unshift(exactMatchSong);
+                                        }
                                         resultSongs.forEach(resultSong => {
                                             let tablerow = document.createElement('tr')
                                             let songName = resultSong.name
