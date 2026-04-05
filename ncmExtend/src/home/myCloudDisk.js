@@ -1236,11 +1236,24 @@ width: 8%;
                             if (content.code !== 200) return
                             const songDetailContent = content["/api/v3/song/detail"]
                             const searchContent = content["/api/cloudsearch/get/web"] || { result: { songCount: 0, songs: [] } }
-
-                            if (songDetailContent && songDetailContent.songs && songDetailContent.songs.length > 0) {
+                            if (songDetailContent && songDetailContent.songs) {
+                                if (songDetailContent.songs.length === 0) {
+                                    songDetailContent.songs.push({
+                                        id: songId,
+                                        name: `匹配到歌曲ID:${songId}`,
+                                        dt: 0,
+                                        al: {
+                                            id: 0,
+                                            name: '',
+                                            picUrl: 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
+                                        },
+                                        ar: []
+                                    })
+                                    songDetailContent.privileges = [{ cs: false }]
+                                }
                                 songDetailContent.songs[0].privilege = songDetailContent.privileges[0]
                                 if (searchContent.result.songCount > 0) {
-                                    searchContent.result.songs.push(songDetailContent.songs[0])
+                                    searchContent.result.songs.unshift(songDetailContent.songs[0])
                                 } else {
                                     searchContent.result.songCount = 1
                                     searchContent.result.songs = songDetailContent.songs
