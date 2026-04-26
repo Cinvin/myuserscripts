@@ -22,5 +22,11 @@ export const myHomeMain = (userId) => {
         cloudImport(editArea)
         musicTag(editArea)
         scriptSettings(editArea)
+
+        const editSelfProfile = editArea.querySelector('#edit-self-profile')
+        if (editSelfProfile) {
+            editSelfProfile.style.setProperty('margin-right', '6px')
+            editSelfProfile.style.setProperty('margin-top', '6px')
+        }
     }
 }

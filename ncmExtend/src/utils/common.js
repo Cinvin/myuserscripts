@@ -83,7 +83,8 @@ export const createBigButton = (desc, parent, appendWay) => {
     const btnDesc = document.createElement('i')
     btnDesc.innerHTML = desc
     btn.appendChild(btnDesc)
-    btn.style.margin = '5px'
+    btn.style.setProperty('margin-right', '6px')
+    btn.style.setProperty('margin-top', '6px')
     if (appendWay === 1) {
         parent.appendChild(btn)
     }

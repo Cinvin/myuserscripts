@@ -119,7 +119,7 @@ class PlaylistDetail {
     }
     renderPlayAllBtn() {
         this.operationArea.innerHTML = `
-        <a style="display:none" class="u-btn2 u-btn2-2 u-btni-addply f-fl" hidefocus="true" title="播放"><i><em class="ply"></em>播放全部(${this.playableSongList.length})</i></a>
+        <a style="display:none" class="u-btn2 u-btn2-2 u-btni-addply f-fl" hidefocus="true" title="播放"><i><em class="ply"></em>播放(${this.playableSongList.length})</i></a>
         <a style="display:none" class="u-btni u-btni-add" hidefocus="true" title="添加到播放列表"></a>
         `+ this.operationArea.innerHTML
         this.operationArea.children[0].addEventListener('click', () => {

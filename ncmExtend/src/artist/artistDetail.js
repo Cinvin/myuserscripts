@@ -21,6 +21,8 @@ class ArtistDetail {
         this.operationArea = document.querySelector('#content-operation')
         //批量下载 & 转存
         const btnSongsDownUpLoad = createBigButton('批量下载 & 转存', this.operationArea, 1)
+        btnSongsDownUpLoad.style.removeProperty('margin-top')
+        btnSongsDownUpLoad.style.removeProperty('margin-right')
         btnSongsDownUpLoad.addEventListener('click', () => {
             if (!this.dataFetched) {
                 this.fetchArtistSongs()
