@@ -37,7 +37,7 @@ class AlbumDetail {
                             this.albumDiscList.push(null)
                         }
                         if (this.albumDiscList[discIndex - 1] === null) {
-                            const discTitle = `Disc ${discIndex}`
+                            let discTitle = `Disc ${discIndex}`
                             if (discInfos.length > 1) discTitle += ' ' + discInfos.slice(1).join(' ')
                             this.albumDiscList[discIndex - 1] = { title: discTitle, songs: [] }
                         }

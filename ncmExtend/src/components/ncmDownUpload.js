@@ -209,7 +209,7 @@ export class ncmDownUpload {
     }
     uploadFile(data, song, offset, context = null) {
         const complete = offset + uploadChunkSize > song.size
-        const url = `http://45.127.129.8/jd-musicrep-privatecloud-audio-public/${encodeURIComponent(song.objectKey)}?offset=${offset}&complete=${String(complete)}&version=1.0`
+        let url = `http://45.127.129.8/jd-musicrep-privatecloud-audio-public/${encodeURIComponent(song.objectKey)}?offset=${offset}&complete=${String(complete)}&version=1.0`
         if (context) url += `&context=${context}`
         GM_xmlhttpRequest({
             method: "POST",
