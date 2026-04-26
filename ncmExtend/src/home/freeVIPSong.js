@@ -1,4 +1,4 @@
-import { createBigButton, showTips } from "../utils/common"
+import { createBigButton, showTips, getTableStyles } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail, nameFileWithoutExt } from '../utils/descHelper'
 import { ncmDownUpload } from '../components/ncmDownUpload'
@@ -31,54 +31,14 @@ export const freeVIPSong = (uiArea) => {
             showCloseButton: true,
             showConfirmButton: false,
             width: '980px',
-            html: `<style>
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 16%;
-}
-tr th:nth-child(2){
-width: 48%;
-}
-tr td:nth-child(2){
-width: 10%;
-}
-tr td:nth-child(3){
-width: 38%;
-}
-tr th:nth-child(3),tr td:nth-child(4){
-width: 28%;
-}
-tr th:nth-child(4),tr td:nth-child(5){
-width: 8%;
-}
-tr th:nth-child(5),tr td:nth-child(6){
-width: 8%;
-}
-</style>
+            html: `${getTableStyles([], `
+tr th:nth-child(1),tr td:nth-child(1){ width: 16%; }
+tr th:nth-child(2){ width: 48%; }
+tr td:nth-child(2){ width: 10%; }
+tr td:nth-child(3){ width: 38%; }
+tr th:nth-child(3),tr td:nth-child(4){ width: 28%; }
+tr th:nth-child(4),tr td:nth-child(5){ width: 8%; }
+tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>大小</th> </tr></thead><tbody></tbody></table>
 `,
             footer: footer + '，只有标准(128k)音质<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',

@@ -1,4 +1,4 @@
-import { createBigButton, showTips, songItemAddToFormat, createPageJumpInput, isLiveSong, escapeHtml } from "../utils/common"
+import { createBigButton, showTips, songItemAddToFormat, isLiveSong, escapeHtml, getTableStyles, createPagination } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc, dateDesc } from '../utils/descHelper'
 
@@ -87,45 +87,9 @@ export const myCloudDisk = (uiArea) => {
                     this.controls.cloudDesc.innerHTML = `云盘容量 ${fileSizeDesc(res.size)}/${fileSizeDesc(res.maxSize)} 共${res.count}首歌曲`
 
                     // 生成页码
-                    const pageIndexs = [1]
-                    const floor = Math.max(2, this.currentPage - 2)
-                    const ceil = Math.min(maxPage - 1, this.currentPage + 2)
-                    for (let i = floor; i <= ceil; i++) {
-                        pageIndexs.push(i)
-                    }
-                    if (maxPage > 1) {
-                        pageIndexs.push(maxPage)
-                    }
-
-                    this.controls.pageArea.innerHTML = ''
-                    pageIndexs.forEach(pageIndex => {
-                        const pageBtn = document.createElement('button')
-                        pageBtn.setAttribute("type", "button")
-                        pageBtn.className = "swal2-styled"
-                        pageBtn.innerHTML = pageIndex
-                        if (pageIndex !== this.currentPage) {
-                            pageBtn.addEventListener('click', () => {
-                                this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (pageIndex - 1))
-                            })
-                        } else {
-                            pageBtn.style.background = 'white'
-                        }
-                        this.controls.pageArea.appendChild(pageBtn)
-                    })
-
-                    // 页码跳转输入框
-                    if (pageIndexs.length < maxPage) {
-                        const jumpToPageInput = createPageJumpInput(this.currentPage, maxPage)
-                        jumpToPageInput.addEventListener('change', () => {
-                            const newPage = parseInt(jumpToPageInput.value)
-                            if (newPage >= 1 && newPage <= maxPage) {
-                                this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (newPage - 1))
-                            } else {
-                                jumpToPageInput.value = this.currentPage
-                            }
-                        })
-                        this.controls.pageArea.appendChild(jumpToPageInput)
-                    }
+                    createPagination(this.controls.pageArea, this.currentPage, maxPage, (page) => {
+                        this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (page - 1));
+                    });
                     this.fillCloudListTable(res.data)
                 }
             })
@@ -348,46 +312,9 @@ export const myCloudDisk = (uiArea) => {
             this.currentPage = currentPage
             const count = this.filter.songs.length
             const maxPage = Math.ceil(count / this.cloudCountLimit)
-            this.controls.pageArea.innerHTML = ''
-
-            const pageIndexs = [1]
-            const floor = Math.max(2, currentPage - 2)
-            const ceil = Math.min(maxPage - 1, currentPage + 2)
-            for (let i = floor; i <= ceil; i++) {
-                pageIndexs.push(i)
-            }
-            if (maxPage > 1) {
-                pageIndexs.push(maxPage)
-            }
-
-            pageIndexs.forEach(pageIndex => {
-                const pageBtn = document.createElement('button')
-                pageBtn.setAttribute("type", "button")
-                pageBtn.className = "swal2-styled"
-                pageBtn.innerHTML = pageIndex
-                if (pageIndex !== currentPage) {
-                    pageBtn.addEventListener('click', () => {
-                        this.sepreateFilterCloudListPage(pageIndex)
-                    })
-                } else {
-                    pageBtn.style.background = 'white'
-                }
-                this.controls.pageArea.appendChild(pageBtn)
-            })
-
-            // 页码跳转输入框
-            if (pageIndexs.length < maxPage) {
-                const jumpToPageInput = createPageJumpInput(this.currentPage, maxPage)
-                jumpToPageInput.addEventListener('change', () => {
-                    const newPage = parseInt(jumpToPageInput.value)
-                    if (newPage >= 1 && newPage <= maxPage) {
-                        this.sepreateFilterCloudListPage(newPage)
-                    } else {
-                        jumpToPageInput.value = this.currentPage
-                    }
-                })
-                this.controls.pageArea.appendChild(jumpToPageInput)
-            }
+            createPagination(this.controls.pageArea, currentPage, maxPage, (page) => {
+                this.sepreateFilterCloudListPage(page);
+            });
 
             const songindex = (currentPage - 1) * this.cloudCountLimit
             this.fillCloudListTable(this.filter.songs.slice(songindex, songindex + this.cloudCountLimit))
@@ -817,57 +744,9 @@ export const myCloudDisk = (uiArea) => {
     gap: 10px;
     margin-top: 12px;
 }
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-    border: 2px solid #f0f0f0;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 4%;
-text-align: center;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 6%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 6%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 26%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 22%;
-}
-tr th:nth-child(6),tr td:nth-child(6){
-width: 8%;
-}
-tr th:nth-child(7),tr td:nth-child(7){
-width: 18%;
-}
-tr th:nth-child(8),tr td:nth-child(8){
-width: 10%;
-}
+</style>
+${getTableStyles(['4%', '6%', '6%', '26%', '22%', '8%', '18%', '10%'], 'tr th:nth-child(1),tr td:nth-child(1){ text-align: center; }')}
+<style>
 .row-actions {
     position: absolute;
     right: 10px;
@@ -1082,50 +961,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
          * @private
          */
         _getMatchPopupHTML() {
-            return `<style>
-    table {
-        width: 100%;
-        height: 400px; 
-        border-spacing: 0px;
-        border-collapse: collapse;
-        border: 2px solid #f0f0f0;
-    }
-    table th, table td {
-        text-align: left;
-        text-overflow: ellipsis;
-    }
-    table tbody {
-        display: block;
-        width: 100%;
-        max-height: 400px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    table thead tr, table tbody tr, table tfoot tr {
-        box-sizing: border-box;
-        table-layout: fixed;
-        display: table;
-        width: 100%;
-    }
-    table tbody tr td{
-        border-bottom: none;
-    }
-tr th:nth-child(1),tr td:nth-child(1){
-width: 6%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 6%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 40%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 40%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 8%;
-}
-</style>
+            return `${getTableStyles(['6%', '6%', '40%', '40%', '8%'], 'table { height: 400px; }')}
 <div><label>关键词/歌曲链接/歌曲ID:<input class="swal2-input" id="search-text" style="width: 400px;" placeholder="关键词/链接/ID"></label><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>匹配</th><th></th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
@@ -1280,44 +1116,7 @@ width: 8%;
          * @private
          */
         _getPlaylistPopupHTML() {
-            return `<style>
-    table {
-        width: 100%;
-        height: 400px; 
-        border-spacing: 0px;
-        border-collapse: collapse;
-        border: 2px solid #f0f0f0;
-    }
-    table th, table td {
-        text-align: left;
-        text-overflow: ellipsis;
-    }
-    table tbody {
-        display: block;
-        width: 100%;
-        max-height: 400px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    table thead tr, table tbody tr, table tfoot tr {
-        box-sizing: border-box;
-        table-layout: fixed;
-        display: table;
-        width: 100%;
-    }
-    table tbody tr td{
-        border-bottom: none;
-    }
-tr th:nth-child(1),tr td:nth-child(1){
-width: 14%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 16%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 70%;
-}
-</style>
+            return `${getTableStyles(['14%', '16%', '70%'], 'table { height: 400px; }')}
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌单</th></tr></thead><tbody></tbody></table>
 </div>`

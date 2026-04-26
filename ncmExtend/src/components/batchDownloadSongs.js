@@ -1,4 +1,4 @@
-import { showTips, saveContentAsFile, showConfirmBox, sanitizeFilename, escapeHtml } from "../utils/common"
+import { showTips, saveContentAsFile, showConfirmBox, sanitizeFilename, escapeHtml, getTableStyles } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { fileSizeDesc, levelDesc, nameFileWithoutExt, dateDesc } from "../utils/descHelper"
 import { handleLyric } from "../utils/lyric"
@@ -39,52 +39,7 @@ export const batchDownloadSongs = (songList, config) => {
         showCloseButton: false,
         showConfirmButton: false,
         width: '980px',
-        html: `<style>
-table {
-width: 100%;
-border-spacing: 0px;
-border-collapse: collapse;
-border: 2px solid #f0f0f0;
-}
-table th, table td {
-text-align: left;
-text-overflow: ellipsis;
-}
-table tbody {
-display: block;
-width: 100%;
-max-height: 400px;
-overflow-y: auto;
--webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-box-sizing: border-box;
-table-layout: fixed;
-display: table;
-width: 100%;
-}
-table tbody tr td{
-border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 26%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 22%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 22%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 10%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 10%;
-}
-tr th:nth-child(6),tr td:nth-child(6){
-width: 10%;
-}
-</style>
+        html: `${getTableStyles(['26%', '22%', '22%', '10%', '10%', '10%'])}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>歌曲标题</th><th>歌手</th><th>专辑</th><th>音质</th><th>大小</th><th>进度</th> </tr></thead><tbody></tbody></table>
 `,
         footer: '<div></div>',

@@ -1,4 +1,4 @@
-import { createBigButton, showTips, showConfirmBox, escapeHtml } from "../utils/common"
+import { createBigButton, showTips, showConfirmBox, escapeHtml, getTableStyles, createPagination } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { duringTimeDesc, levelDesc, fileSizeDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail } from '../utils/descHelper'
 import { levelWeight } from '../utils/constant'
@@ -106,52 +106,7 @@ export const cloudUpgrade = (uiArea) => {
                 showCloseButton: true,
                 showConfirmButton: false,
                 width: '980px',
-                html: `<style>
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-    border: 2px solid #f0f0f0;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 6%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 6%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 28%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 28%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 16%;
-}
-tr th:nth-child(6),tr td:nth-child(6){
-width: 16%;
-}
-</style>
+                html: `${getTableStyles(['6%', '6%', '28%', '28%', '16%', '16%'])}
 <input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
 <button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upgrade-batch">全部处理</button>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌曲标题</th><th>歌手</th><th>云盘音源</th><th>目标音源</th> </tr></thead><tbody></tbody></table>
@@ -447,32 +402,10 @@ width: 16%;
                 this.popupObj.tbody.appendChild(this.songs[this.filter.songIndexs[i]].tablerow)
             }
             //page
-            let pageIndexs = [1]
-            let floor = Math.max(2, this.page.current - 2);
-            let ceil = Math.min(this.page.max - 1, this.page.current + 2);
-            for (let i = floor; i <= ceil; i++) {
-                pageIndexs.push(i)
-            }
-            if (this.page.max > 1) {
-                pageIndexs.push(this.page.max)
-            }
-            let upgrader = this
-            this.popupObj.footer.innerHTML = ''
-            pageIndexs.forEach(pageIndex => {
-                let pageBtn = document.createElement('button')
-                pageBtn.setAttribute("type", "button")
-                pageBtn.className = "swal2-styled"
-                pageBtn.innerHTML = pageIndex
-                if (pageIndex !== upgrader.page.current) {
-                    pageBtn.addEventListener('click', () => {
-                        upgrader.page.current = pageIndex
-                        upgrader.renderData()
-                    })
-                } else {
-                    pageBtn.style.background = 'white'
-                }
-                upgrader.popupObj.footer.appendChild(pageBtn)
-            })
+            createPagination(this.popupObj.footer, this.page.current, this.page.max, (page) => {
+                this.page.current = page;
+                this.renderData();
+            });
         }
         renderFilterInfo() {
             let sizeTotal = 0

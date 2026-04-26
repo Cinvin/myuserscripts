@@ -1,4 +1,4 @@
-import { createBigButton, showTips, showConfirmBox, isLiveSong, escapeHtml } from "../utils/common";
+import { createBigButton, showTips, showConfirmBox, isLiveSong, escapeHtml, createPagination } from "../utils/common";
 import { weapiRequestSync } from "../utils/request";
 import { getMD5 } from "../utils/crypto";
 import { fileSizeDesc, duringTimeDesc, dateDesc } from "../utils/descHelper";
@@ -360,32 +360,10 @@ class CloudDeduplication {
                         pageArea.style.cssText = "display:flex;gap:6px;justify-content:center;flex-wrap:wrap;";
                         footerEl.insertBefore(pageArea, footerEl.firstChild);
                     }
-                    pageArea.innerHTML = '';
-
-                    const pageIndexs = [1];
-                    const floor = Math.max(2, currentPage - 2);
-                    const ceil = Math.min(pageMax - 1, currentPage + 2);
-                    for (let i = floor; i <= ceil; i++) pageIndexs.push(i);
-                    if (pageMax > 1) pageIndexs.push(pageMax);
-
-                    pageIndexs.forEach(pageIndex => {
-                        const pageBtn = document.createElement('button');
-                        pageBtn.setAttribute('type', 'button');
-                        pageBtn.className = 'swal2-styled';
-                        pageBtn.innerHTML = pageIndex;
-                        pageBtn.style.padding = '6px 12px';
-                        pageBtn.style.minWidth = '40px';
-                        if (pageIndex !== currentPage) {
-                            pageBtn.addEventListener('click', () => {
-                                currentPage = pageIndex;
-                                renderPage();
-                            });
-                        } else {
-                            pageBtn.style.background = '#cccccc';
-                            pageBtn.disabled = true;
-                        }
-                        pageArea.appendChild(pageBtn);
-                    });
+                    createPagination(pageArea, currentPage, pageMax, (page) => {
+                        currentPage = page;
+                        renderPage();
+                    }, this.working);
                 };
 
                 // 初始渲染第一页

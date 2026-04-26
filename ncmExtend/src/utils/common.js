@@ -213,3 +213,89 @@ export const isLiveSong = (item) => {
 
     return false;
 }
+
+export const getTableStyles = (columnWidths, extraStyles = '') => {
+    let widthCSS = '';
+    columnWidths.forEach((width, index) => {
+        widthCSS += `
+tr th:nth-child(${index + 1}),tr td:nth-child(${index + 1}){
+width: ${width};
+}`;
+    });
+    return `<style>
+    table {
+        width: 100%;
+        border-spacing: 0px;
+        border-collapse: collapse;
+        border: 2px solid #f0f0f0;
+    }
+    table th, table td {
+        text-align: left;
+        text-overflow: ellipsis;
+    }
+    table tbody {
+        display: block;
+        width: 100%;
+        max-height: 400px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    table thead tr, table tbody tr, table tfoot tr {
+        box-sizing: border-box;
+        table-layout: fixed;
+        display: table;
+        width: 100%;
+    }
+    table tbody tr td{
+        border-bottom: none;
+    }
+${widthCSS}
+${extraStyles}
+</style>
+`;
+}
+
+export const createPagination = (container, currentPage, maxPage, onPageChange, disabled = false) => {
+    container.innerHTML = '';
+    if (maxPage <= 1) return;
+
+    const pageIndexs = [1];
+    const floor = Math.max(2, currentPage - 2);
+    const ceil = Math.min(maxPage - 1, currentPage + 2);
+    for (let i = floor; i <= ceil; i++) {
+        pageIndexs.push(i);
+    }
+    if (maxPage > 1) {
+        pageIndexs.push(maxPage);
+    }
+
+    pageIndexs.forEach(index => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'swal2-styled';
+        btn.innerText = index;
+        if (disabled) btn.disabled = true;
+        if (index === currentPage) {
+            btn.style.background = 'white';
+        } else {
+            btn.addEventListener('click', () => {
+                onPageChange(index);
+            });
+        }
+        container.appendChild(btn);
+    });
+
+    if (pageIndexs.length < maxPage) {
+        const jumpToPageInput = createPageJumpInput(currentPage, maxPage);
+        if (disabled) jumpToPageInput.disabled = true;
+        jumpToPageInput.addEventListener('change', () => {
+            const newPage = parseInt(jumpToPageInput.value);
+            if (newPage >= 1 && newPage <= maxPage) {
+                onPageChange(newPage);
+            } else {
+                jumpToPageInput.value = currentPage;
+            }
+        });
+        container.appendChild(jumpToPageInput);
+    }
+}

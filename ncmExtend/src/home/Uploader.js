@@ -1,6 +1,6 @@
 import { weapiRequest } from "../utils/request"
 import { getArtistTextInSongDetail, getAlbumTextInSongDetail, duringTimeDesc, nameFileWithoutExt, fileSizeDesc } from "../utils/descHelper"
-import { sleep, showTips, isLiveSong, escapeHtml } from "../utils/common"
+import { sleep, showTips, isLiveSong, escapeHtml, getTableStyles, createPagination } from "../utils/common"
 import { CheckAPIDataLimit, importAPIDataLimit } from "../components/ncmDownUploadBatch"
 
 // ========== 常量定义 ==========
@@ -505,42 +505,10 @@ export class Uploader {
     }
 
     renderPagination() {
-        const pageIndexs = this.getPageIndexes()
-        this.popupObj.footer.innerHTML = ''
-
-        pageIndexs.forEach(pageIndex => {
-            const btn = document.createElement('button')
-            btn.type = 'button'
-            btn.className = 'swal2-styled'
-            btn.innerHTML = pageIndex
-
-            if (pageIndex === this.page.current) {
-                btn.style.background = 'white'
-            } else {
-                btn.addEventListener('click', () => {
-                    this.page.current = pageIndex
-                    this.renderData()
-                })
-            }
-
-            this.popupObj.footer.appendChild(btn)
-        })
-    }
-
-    getPageIndexes() {
-        const pageIndexs = [1]
-        const floor = Math.max(2, this.page.current - 2)
-        const ceil = Math.min(this.page.max - 1, this.page.current + 2)
-
-        for (let i = floor; i <= ceil; i++) {
-            pageIndexs.push(i)
-        }
-
-        if (this.page.max > 1) {
-            pageIndexs.push(this.page.max)
-        }
-
-        return pageIndexs
+        createPagination(this.popupObj.footer, this.page.current, this.page.max, (page) => {
+            this.page.current = page;
+            this.renderData();
+        });
     }
     renderFilterInfo() {
         let sizeTotal = 0

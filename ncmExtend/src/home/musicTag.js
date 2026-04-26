@@ -1,4 +1,4 @@
-import { showTips, createBigButton, downloadFileSync, sanitizeFilename, escapeHtml } from "../utils/common"
+import { showTips, createBigButton, downloadFileSync, sanitizeFilename, escapeHtml, getTableStyles } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { duringTimeDesc, nameFileWithoutExt, dateDesc } from '../utils/descHelper'
 import { handleLyric } from "../utils/lyric"
@@ -53,49 +53,7 @@ export const musicTag = (uiArea) => {
             Swal.fire({
                 width: '980px',
                 showCloseButton: true,
-                html: `<style>
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-    border: 2px solid #f0f0f0;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 6%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 30%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 6%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 29%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 29%;
-}
-</style>
+                html: `${getTableStyles(['6%', '30%', '6%', '29%', '29%'])}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>文件名</th><th></th><th>目标歌曲</th><th>歌手</th></tr></thead><tbody></tbody></table>
 `,
                 didOpen: async () => {
@@ -142,50 +100,7 @@ width: 29%;
             Swal.fire({
                 showCloseButton: true,
                 width: '980px',
-                html: `<style>
-    table {
-        width: 100%;
-        height: 400px;
-        border-spacing: 0px;
-        border-collapse: collapse;
-        border: 2px solid #f0f0f0;
-    }
-    table th, table td {
-        text-align: left;
-        text-overflow: ellipsis;
-    }
-    table tbody {
-        display: block;
-        width: 100%;
-        max-height: 400px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    table thead tr, table tbody tr, table tfoot tr {
-        box-sizing: border-box;
-        table-layout: fixed;
-        display: table;
-        width: 100%;
-    }
-    table tbody tr td{
-        border-bottom: none;
-    }
-tr th:nth-child(1),tr td:nth-child(1){
-width: 6%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 6%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 40%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 40%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 8%;
-}
-</style>
+                html: `${getTableStyles(['6%', '6%', '40%', '40%', '8%'], 'table { height: 400px; }')}
 <div><label>关键词/歌曲链接/歌曲ID:<input class="swal2-input" id="search-text" style="width: 400px;" placeholder="关键词/链接/ID"></label><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
@@ -489,40 +404,7 @@ width: 8%;
                 allowEscapeKey: false,
                 showCloseButton: false,
                 showConfirmButton: false,
-                html: `<style>
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-    border: 2px solid #f0f0f0;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 50%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 50%;
-}
-</style>
+                html: `${getTableStyles(['50%', '50%'])}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>文件名</th><th>进度</th></tr></thead><tbody></tbody></table>
 `,
                 didOpen: async () => {

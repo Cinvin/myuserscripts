@@ -1,4 +1,4 @@
-import { showTips, createPageJumpInput, isLiveSong, escapeHtml } from "../utils/common"
+import { showTips, createPagination, isLiveSong, escapeHtml } from "../utils/common"
 import { getBatchFilter, setBatchFilter, getBatchDownloadSettings, getBatchTransUploadSettings, getDownloadSettings, setBatchDownloadSettings, setBatchTransUploadSettings, setDownloadSettings } from "../utils/constant"
 import { ncmDownUploadBatch } from "../components/ncmDownUploadBatch"
 import { batchDownloadSongs } from "../components/batchDownloadSongs"
@@ -422,43 +422,10 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
             }
 
             function renderPager() {
-                pager.innerHTML = ''
-
-                const pageIndexs = [1]
-                const floor = Math.max(2, state.page - 2);
-                const ceil = Math.min(state.pageMax - 1, state.page + 2);
-                for (let i = floor; i <= ceil; i++) {
-                    pageIndexs.push(i)
-                }
-                if (state.pageMax > 1) {
-                    pageIndexs.push(state.pageMax)
-                }
-                pageIndexs.forEach(pageIndex => {
-                    const pageBtn = document.createElement('button')
-                    pageBtn.setAttribute("type", "button")
-                    pageBtn.className = "swal2-styled"
-                    pageBtn.innerHTML = pageIndex
-                    if (pageIndex !== state.page) {
-                        pageBtn.addEventListener('click', () => { state.page = pageIndex; renderView() })
-                    } else {
-                        pageBtn.style.background = 'white'
-                    }
-                    pager.appendChild(pageBtn)
-                })
-                //页码跳转
-                if (pageIndexs.length < state.pageMax) {
-                    const jumpToPageInput = createPageJumpInput(state.page, state.pageMax)
-                    jumpToPageInput.addEventListener('change', () => {
-                        const newPage = parseInt(jumpToPageInput.value)
-                        if (newPage >= 1 && newPage <= state.pageMax) {
-                            state.page = newPage;
-                            renderView()
-                        } else {
-                            jumpToPageInput.value = state.page
-                        }
-                    })
-                    pager.appendChild(jumpToPageInput)
-                }
+                createPagination(pager, state.page, state.pageMax, (page) => {
+                    state.page = page;
+                    renderView();
+                });
             }
 
             // 初始化为歌曲列表视图
