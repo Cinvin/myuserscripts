@@ -1,6 +1,6 @@
 import { levelOptions, defaultOfDEFAULT_LEVEL } from '../utils/constant'
 import { hookWebPlayerFetch } from '../hooks'
-import { showConfirmBox } from '../utils/common';
+import { showConfirmBox, safeJsonParse } from '../utils/common';
 
 export const onWebPlayerStart = () => {
     hookWebpackJsonp();
@@ -70,7 +70,7 @@ const hookWebpackJsonp = () => {
 }
 
 const setWebPlayerStyle = () => {
-    const webPlayerFontSetting = JSON.parse(GM_getValue('webPlayerFontSetting', '{}'));
+    const webPlayerFontSetting = safeJsonParse(GM_getValue('webPlayerFontSetting', '{}'), {});
     const defaultFont = webPlayerFontSetting.default || '';
     const lyricFont = webPlayerFontSetting.lyric || '';
     if (defaultFont.length > 0) {
@@ -225,7 +225,7 @@ const AddFontSetting = (node) => {
                 focusConfirm: false,
                 didOpen: () => {
                     const container = Swal.getHtmlContainer();
-                    const webPlayerFontSetting = JSON.parse(GM_getValue('webPlayerFontSetting', '{}'));
+                    const webPlayerFontSetting = safeJsonParse(GM_getValue('webPlayerFontSetting', '{}'), {});
                     container.querySelector('#ncm-font-default').value = webPlayerFontSetting.default || '';
                     container.querySelector('#ncm-font-lyric').value = webPlayerFontSetting.lyric || '';
                 },

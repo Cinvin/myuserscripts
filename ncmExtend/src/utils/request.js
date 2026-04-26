@@ -1,5 +1,6 @@
 import { weapi } from "./crypto";
 import { tryParseJSON, parseCookie } from '../home/scriptSettings'
+import { safeJsonParse } from './common'
 const CookieMap = {
     web: '',
     android: 'os=android;appver=9.1.78;channel=netease;osver=14;buildver=241009150147;',
@@ -99,7 +100,7 @@ function callAPI(data, resolve, reject) {
     })
 }
 function setDeviceId() {
-    const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
+    const requestHeader = safeJsonParse(GM_getValue('requestHeader', '{}'), {})
     if (!requestHeader.coverCookie && requestHeader.originalCookie) {
         // 原版切换新版
         const cookieObject = tryParseJSON(requestHeader.originalCookie) || parseCookie(requestHeader.originalCookie)

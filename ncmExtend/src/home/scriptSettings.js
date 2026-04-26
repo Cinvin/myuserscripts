@@ -1,4 +1,4 @@
-import { createBigButton, showTips, showConfirmBox } from "../utils/common"
+import { createBigButton, showTips, showConfirmBox, safeJsonParse } from "../utils/common"
 import { getDownloadSettings, setDownloadSettings, levelOptions, defaultOfDEFAULT_LEVEL } from "../utils/constant"
 import { isOldSettedHeader } from "../utils/request"
 
@@ -99,7 +99,7 @@ export const scriptSettings = (uiArea) => {
                     <button type="button" class="swal2-styled" aria-label="" id="btn-set" style="display: inline-block;">设置</button>`
                 const cookieInput = container.querySelector('#text-cookie')
                 const userAgentInput = container.querySelector('#text-userAgent')
-                const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
+                const requestHeader = safeJsonParse(GM_getValue('requestHeader', '{}'), {})
                 if (requestHeader.originalCookie) {
                     cookieInput.value = requestHeader.originalCookie
                 }
@@ -149,7 +149,7 @@ export const scriptSettings = (uiArea) => {
         showConfirmBox('设置完成，刷新网页生效。')
     }
     function removeHeader() {
-        const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
+        const requestHeader = safeJsonParse(GM_getValue('requestHeader', '{}'), {})
         if (!requestHeader.originalCookie) {
             showTips('并没有设置请求头', 2)
             return

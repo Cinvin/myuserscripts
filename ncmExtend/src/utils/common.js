@@ -5,6 +5,16 @@ import { liveRegex } from "./constant"
  * @param {string} str - 需要转义的字符串
  * @returns {string} 转义后的安全字符串
  */
+export const safeJsonParse = (value, fallback) => {
+    try {
+        if (value === null || value === undefined || value === '') return fallback;
+        return JSON.parse(value);
+    } catch (e) {
+        console.warn(`[ncmExtend] 配置解析错误, 回退到默认值:`, value, e);
+        return fallback;
+    }
+}
+
 export const escapeHtml = (str) => {
     if (str == null) return '';
     return String(str)

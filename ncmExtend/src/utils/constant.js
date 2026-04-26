@@ -1,3 +1,4 @@
+import { safeJsonParse } from "./common";
 
 export const levelOptions = { jymaster: '超清母带', dolby: '杜比全景声', sky: '沉浸环绕声', jyeffect: '高清臻音', hires: '高解析度无损', lossless: '无损', exhigh: '极高', higher: '较高', standard: '标准' }
 export const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 5, lossless: 4, exhigh: 3, higher: 2, standard: 1, none: 0 }
@@ -13,7 +14,7 @@ const defaultOfBatchFilter = {
     cloud: false, // 云盘歌曲
 }
 export const getBatchFilter = () => {
-    return Object.assign({}, defaultOfBatchFilter, JSON.parse(GM_getValue('batchFilter', '{}')))
+    return Object.assign({}, defaultOfBatchFilter, safeJsonParse(GM_getValue('batchFilter', '{}'), {}))
 }
 export const setBatchFilter = (value) => {
     GM_setValue('batchFilter', JSON.stringify(Object.assign({}, defaultOfBatchFilter, value)))
@@ -25,7 +26,7 @@ const defaultOfDownloadSettings = {
     folder: 'none',  // 输出文件夹
 }
 export const getDownloadSettings = () => {
-    return Object.assign({}, defaultOfDownloadSettings, JSON.parse(GM_getValue('downloadSettings', '{}')))
+    return Object.assign({}, defaultOfDownloadSettings, safeJsonParse(GM_getValue('downloadSettings', '{}'), {}))
 }
 export const setDownloadSettings = (value) => {
     GM_setValue('downloadSettings', JSON.stringify(Object.assign({}, defaultOfDownloadSettings, value)))
@@ -38,7 +39,7 @@ const defaultOfBatchDownloadSettings = {
     levelonly: false, // 仅获取到目标音质时下载
 }
 export const getBatchDownloadSettings = () => {
-    return Object.assign({}, defaultOfBatchDownloadSettings, JSON.parse(GM_getValue('batchDownloadSettings', '{}')))
+    return Object.assign({}, defaultOfBatchDownloadSettings, safeJsonParse(GM_getValue('batchDownloadSettings', '{}'), {}))
 }
 export const setBatchDownloadSettings = (value) => {
     GM_setValue('batchDownloadSettings', JSON.stringify(Object.assign({}, defaultOfBatchDownloadSettings, value)))
@@ -49,7 +50,7 @@ const defaultOfBatchTransUploadSettings = {
     levelonly: false, // 仅获取到目标音质时下载
 }
 export const getBatchTransUploadSettings = () => {
-    return Object.assign({}, defaultOfBatchTransUploadSettings, JSON.parse(GM_getValue('batchTransUploadSettings', '{}')))
+    return Object.assign({}, defaultOfBatchTransUploadSettings, safeJsonParse(GM_getValue('batchTransUploadSettings', '{}'), {}))
 }
 export const setBatchTransUploadSettings = (value) => {
     GM_setValue('batchTransUploadSettings', JSON.stringify(Object.assign({}, defaultOfBatchTransUploadSettings, value)))
