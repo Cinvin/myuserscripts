@@ -1,4 +1,4 @@
-import { createBigButton, showTips, getTableStyles } from "../utils/common"
+import { createBigButton, showTips, getTableStyles, escapeHtml } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail, nameFileWithoutExt } from '../utils/descHelper'
 import { ncmDownUpload } from '../components/ncmDownUpload'
@@ -65,9 +65,9 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                                     let songArtist = getArtistTextInSongDetail(content.songs[i])
                                     let songTitle = content.songs[i].name
                                     let filename = nameFileWithoutExt(songTitle, songArtist, 'artist-title')
-                                    songArtist = content.songs[i].ar ? content.songs[i].ar.map(ar => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>`).join() : ''
+                                    songArtist = content.songs[i].ar ? content.songs[i].ar.map(ar => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${escapeHtml(ar.name)}<a>`).join() : ''
                                     let tablerow = document.createElement('tr')
-                                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${getAlbumTextInSongDetail(content.songs[i])}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${content.songs[i].name}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`
+                                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${escapeHtml(getAlbumTextInSongDetail(content.songs[i]))}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${escapeHtml(content.songs[i].name)}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`
                                     let btnDL = tablerow.querySelector('.mydl')
                                     btnDL.addEventListener('click', () => { TrialDownLoad(content.songs[i].id, trialMode, filename) })
                                     let btnUL = tablerow.querySelector('.myul')

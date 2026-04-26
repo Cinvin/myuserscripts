@@ -5,7 +5,7 @@ import { levelWeight, songMark, getDownloadSettings } from "../utils/constant"
 import { handleLyric } from "../utils/lyric"
 import { ncmDownUpload } from "../components/ncmDownUpload"
 import { batchDownloadSongs } from "../components/batchDownloadSongs"
-import { saveContentAsFile } from "../utils/common"
+import { saveContentAsFile, escapeHtml } from "../utils/common"
 class SongDetail {
     constructor() {
         this.domReady = false
@@ -230,7 +230,7 @@ class SongDetail {
         h3.style.alignItems = 'center'
         h3.style.justifyContent = 'space-between'
         h3.style.width = '100%'
-        h3.innerHTML = `<span style="margin-top: 10px;margin-bottom: 10px;">${title}</span>`
+        h3.innerHTML = `<span style="margin-top: 10px;margin-bottom: 10px;">${escapeHtml(title)}</span>`
         this.maindDiv.appendChild(h3)
         return h3
     }
@@ -246,7 +246,7 @@ class SongDetail {
         const row = document.createElement("tr");
         if (tbody.children.length % 2 === 0) row.className = "even";
         if (needHide && tbody.children.length > 0) row.style.display = 'none'
-        row.innerHTML = `<td><div><span>${title || ""}</span></div></td><td><div></div></td>`;
+        row.innerHTML = `<td><div><span>${escapeHtml(title) || ""}</span></div></td><td><div></div></td>`;
         tbody.appendChild(row);
         return row.querySelector("tr > td:nth-child(2) > div");
     }
@@ -254,7 +254,7 @@ class SongDetail {
         const row = document.createElement("tr");
         if (tbody.children.length % 2 === 0) row.className = "even";
         if (needHide && tbody.children.length > 0) row.style.display = 'none'
-        row.innerHTML = `<td ${desc ? 'style="width: 23%;"' : ''}><div></div></td><td><div><span>${desc || ""}</span></div></td>`;
+        row.innerHTML = `<td ${desc ? 'style="width: 23%;"' : ''}><div></div></td><td><div><span>${escapeHtml(desc) || ""}</span></div></td>`;
         const firstArea = row.querySelector("tr > td:nth-child(1) > div")
         firstArea.appendChild(btn)
         tbody.appendChild(row);
@@ -295,7 +295,7 @@ class SongDetail {
     }
     createText(desc) {
         let btn = document.createElement('span');
-        btn.innerHTML = desc
+        btn.innerHTML = escapeHtml(desc)
         btn.style.marginRight = '10px'
         return btn
     }

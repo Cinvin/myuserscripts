@@ -1,4 +1,4 @@
-import { showConfirmBox } from "./utils/common"
+import { showConfirmBox, escapeHtml } from "./utils/common"
 import { weapiRequest } from "./utils/request"
 
 export const storageCommentInfo = (CommentRes) => {
@@ -34,7 +34,7 @@ const commentItemAddInfo = (commentItem) => {
     const commentId = commentItem.getAttribute('data-id')
     let timeArea = commentItem.querySelector('div.time')
     if (unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId]) {
-        timeArea.innerHTML += ` <span class="ipInfo">${unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId]}</span>`
+        timeArea.innerHTML += ` <span class="ipInfo">${escapeHtml(unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId])}</span>`
     }
 }
 export const InfoFirstPage = (commentBox) => {
