@@ -1151,7 +1151,8 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
                                 pid: playlist.id,
                                 tracks: song.simpleSong.id,
                                 trackIds: JSON.stringify([song.simpleSong.id])
-                            }
+                            },
+                            clientType: 'web',
                         })
                         if (collectRes.code === 200) {
                             showTips('加入歌单成功', 1)
@@ -1191,7 +1192,8 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
                                 pid: playlist.id,
                                 trackIds: JSON.stringify(songIds),
                                 immutable: true
-                            }
+                            },
+                            clientType: 'web',
                         })
                         if (collectRes.code === 200) {
                             showTips(`成功将 ${songIds.length} 首歌曲加入歌单`, 1)
