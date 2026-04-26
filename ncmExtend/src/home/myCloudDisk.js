@@ -382,7 +382,7 @@ export const myCloudDisk = (uiArea) => {
 
         fiilSearchTable(searchContent, cloudSongId, matchId = null) {
             if (searchContent.result.songCount > 0) {
-                this.tbody.innerHTML = ''
+                this.controls.matchTbody.innerHTML = ''
 
                 const timeMatchSongs = []
                 const timeNoMatchSongs = []
@@ -412,10 +412,10 @@ export const myCloudDisk = (uiArea) => {
                         this.matchSong(cloudSongId, resultSong.id)
                     })
 
-                    this.tbody.appendChild(tablerow)
+                    this.controls.matchTbody.appendChild(tablerow)
                 })
             } else {
-                this.tbody.innerHTML = '搜索结果为空'
+                this.controls.matchTbody.innerHTML = '搜索结果为空'
             }
         }
 
@@ -981,7 +981,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
             this.searchBtn = container.querySelector("#btn-search")
             this.unMatchBtn = actions.querySelector("#btn-unmatch")
             this.titleDOM = title
-            this.tbody = container.querySelector('tbody')
+            this.controls.matchTbody = container.querySelector('tbody')
             this.fileDuringTime = 0
 
             if (song.matchType === "matched") {
@@ -1071,7 +1071,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
                 }
 
                 if (requestData["/api/cloudsearch/get/web"] || requestData["/api/v3/song/detail"]) {
-                    this.tbody.innerHTML = '正在搜索...'
+                    this.controls.matchTbody.innerHTML = '正在搜索...'
                     weapiRequest("/api/batch", {
                         data: requestData,
                         onload: (content) => {
@@ -1106,7 +1106,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
                         }
                     })
                 } else {
-                    this.tbody.innerHTML = '无法解析链接'
+                    this.controls.matchTbody.innerHTML = '无法解析链接'
                 }
             })
         }
@@ -1127,7 +1127,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
          * @private
          */
         async _handlePlaylistPopupOpen(song, container) {
-            this.tbody = container.querySelector('tbody')
+            const tbody = container.querySelector('tbody')
             const userPlaylistRes = await weapiRequestSync("/api/user/playlist", {
                 data: {
                     uid: unsafeWindow.GUser.userId,
@@ -1160,7 +1160,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
                             showTips(collectRes.message || '加入歌单失败', 2)
                         }
                     })
-                    this.tbody.appendChild(row)
+                    tbody.appendChild(row)
                 })
             }
         }
