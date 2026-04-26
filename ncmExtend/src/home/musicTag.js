@@ -68,7 +68,6 @@ export const musicTag = (uiArea) => {
                             ext: result.file.name.split('.').pop().toLowerCase(),
                             duration: Math.round(result.duration * 1000),
                             mode: 'unfill',
-                            songDescription: '</td><td>未设置</td><td>',
                         }));
                     }
 
@@ -208,7 +207,6 @@ export const musicTag = (uiArea) => {
                                             selectbtn.addEventListener('click', () => {
                                                 file.targetSong = resultSong
                                                 file.mode = 'netease'
-                                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}</a></td><td>${artists}`
                                                 this.openFilesDialog()
                                             })
                                             tbody.appendChild(tablerow)
@@ -293,8 +291,6 @@ export const musicTag = (uiArea) => {
                             lyric: lyricInput.value
                         }
                         file.mode = 'custom'
-                        file.songDescription = file.customSong.cover ? `<img src="${file.customSong.cover.url}" height=50 title="${escapeHtml(file.customSong.album)}"></td><td>` : '';
-                        file.songDescription += `${escapeHtml(file.customSong.name)}</td><td>${escapeHtml(file.customSong.artist)}`;
                         this.openFilesDialog()
                     })
                 },
@@ -330,11 +326,23 @@ export const musicTag = (uiArea) => {
         refreshSongListTable() {
             this.songListTbody.innerHTML = '';
             this.fileList.forEach(item => {
+                let targetSongHtml = '';
+                if (item.mode === 'netease' && item.targetSong) {
+                    const resultSong = item.targetSong;
+                    const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join();
+                    targetSongHtml = `<td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(resultSong.name)}</a></td><td>${artists}</td>`;
+                } else if (item.mode === 'custom' && item.customSong) {
+                    const coverHtml = item.customSong.cover ? `<img src="${item.customSong.cover.url}" height=50 title="${escapeHtml(item.customSong.album)}">` : '';
+                    targetSongHtml = `<td>${coverHtml}</td><td>${escapeHtml(item.customSong.name)}</td><td>${escapeHtml(item.customSong.artist)}</td>`;
+                } else {
+                    targetSongHtml = `<td></td><td>未设置</td><td></td>`;
+                }
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                         <td><button type="button" class="swal2-styled"><i class="fa-solid fa-gear"></i></button></td>
                         <td>${escapeHtml(item.fileName)}</td>
-                        <td class="target-song">${item.songDescription}</td>
+                        ${targetSongHtml}
                     `;
                 const selectButton = tr.querySelector('.swal2-styled');
                 selectButton.addEventListener('click', () => {
@@ -375,8 +383,7 @@ export const musicTag = (uiArea) => {
                                 let songName = resultSong.name
                                 const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join()
                                 file.targetSong = resultSong;
-                                file.mode = 'netease'
-                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}</a></td><td>${artists}`
+                                file.mode = 'netease';
                                 this.refreshSongListTable();
                                 break;
                             }
@@ -393,7 +400,6 @@ export const musicTag = (uiArea) => {
         unsetSong(file) {
             file.targetSong = null;
             file.customSong = null;
-            file.songDescription = '</td><td>未设置</td><td>';
             file.mode = 'unfill';
         }
 
