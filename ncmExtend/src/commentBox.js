@@ -12,8 +12,12 @@ export const storageCommentInfo = (CommentRes) => {
         unsafeWindow.top.GUserScriptObjects.storageCommentInfos[String(comment.commentId)] = appendText.trim()
     }
 }
+let commentObserver = null;
 export const observerCommentBox = (commentBox) => {
-    let observer = new MutationObserver((mutations, observer) => {
+    if (commentObserver) {
+        commentObserver.disconnect();
+    }
+    commentObserver = new MutationObserver((mutations, observer) => {
         mutations.forEach((mutation) => {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 for (let node of mutation.addedNodes) {
@@ -24,7 +28,7 @@ export const observerCommentBox = (commentBox) => {
             }
         });
     });
-    observer.observe(commentBox, {
+    commentObserver.observe(commentBox, {
         childList: true,
         subtree: true,
     });
@@ -47,8 +51,10 @@ export const addCommentWithCumstomIP = (commentBox) => {
     const commentTextarea = commentBox.querySelector('textarea')
     const threadId = commentBox.getAttribute('data-tid')
     const btnsArea = commentBox.querySelector('.btns')
+    if (btnsArea.querySelector('.ncm-ip-btn')) return
+
     let ipBtn = document.createElement('a')
-    ipBtn.className = 's-fc7'
+    ipBtn.className = 's-fc7 ncm-ip-btn'
     ipBtn.innerHTML = '使用指定IP地址评论'
     ipBtn.addEventListener('click', () => {
         const content = commentTextarea.value.trim()

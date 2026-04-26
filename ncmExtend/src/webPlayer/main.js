@@ -87,11 +87,16 @@ const setWebPlayerStyle = () => {
     }
 }
 
+let webPlayerObserver = null;
+
 /**
  * 监控页面变化
  */
 const observerWebPlayer = () => {
-    let observer = new MutationObserver((mutations, observer) => {
+    if (webPlayerObserver) {
+        webPlayerObserver.disconnect();
+    }
+    webPlayerObserver = new MutationObserver((mutations, observer) => {
 
         mutations.forEach((mutation) => {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
@@ -107,7 +112,7 @@ const observerWebPlayer = () => {
             }
         });
     });
-    observer.observe(document.body, {
+    webPlayerObserver.observe(document.body, {
         childList: true,
         subtree: true,
     });
@@ -257,11 +262,12 @@ const AddFontSetting = (node) => {
  */
 const HandleCloudButton = (node) => {
     const button = node.querySelector('div > div > button:nth-child(2)');
-    if (button) {
+    if (button && !button.__ncmExtendHasHooked) {
         button.addEventListener('click', function (event) {
             event.stopPropagation();  // 阻止事件冒泡
             event.preventDefault();   // 阻止默认行为
             showConfirmBox('新版网页端没有实现上传功能，估计网易云因此隐藏“我的音乐云盘”的。脚本在原版网页端的个人主页提供了上传功能。欢迎前去使用。');
         }, true);
+        button.__ncmExtendHasHooked = true;
     }
 }
