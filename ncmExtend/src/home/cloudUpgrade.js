@@ -1,4 +1,4 @@
-import { createBigButton, showTips, showConfirmBox } from "../utils/common"
+import { createBigButton, showTips, showConfirmBox, escapeHtml } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { duringTimeDesc, levelDesc, fileSizeDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail } from '../utils/descHelper'
 import { levelWeight } from '../utils/constant'
@@ -407,7 +407,7 @@ width: 16%;
                     targetInfo = `${tagetLevelDesc} ${song.fileinfo.tagetBr}k`
                 }
 
-                tablerow.innerHTML = `<td><button type="button" class="swal2-styled" title="${this.filterMode === 'lower' ? '提升' : '降低'}"><i class="fa-solid fa-arrow-${this.filterMode === 'lower' ? 'up' : 'down'}"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${cloudInfo}</td><td>${targetInfo}</td>`
+                tablerow.innerHTML = `<td><button type="button" class="swal2-styled" title="${this.filterMode === 'lower' ? '提升' : '降低'}"><i class="fa-solid fa-arrow-${this.filterMode === 'lower' ? 'up' : 'down'}"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${escapeHtml(song.album)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${escapeHtml(song.name)}</a></td><td>${escapeHtml(song.artists)}</td><td>${cloudInfo}</td><td>${targetInfo}</td>`
                 let btn = tablerow.querySelector('button')
                 btn.addEventListener('click', () => {
                     if (this.batchUpgrade.working) {

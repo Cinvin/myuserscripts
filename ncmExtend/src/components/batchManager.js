@@ -1,4 +1,4 @@
-import { showTips, createPageJumpInput, isLiveSong } from "../utils/common"
+import { showTips, createPageJumpInput, isLiveSong, escapeHtml } from "../utils/common"
 import { getBatchFilter, setBatchFilter, getBatchDownloadSettings, getBatchTransUploadSettings, getDownloadSettings, setBatchDownloadSettings, setBatchTransUploadSettings, setDownloadSettings } from "../utils/constant"
 import { ncmDownUploadBatch } from "../components/ncmDownUploadBatch"
 import { batchDownloadSongs } from "../components/batchDownloadSongs"
@@ -242,7 +242,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
   
   <!-- 封面：固定宽度，居中 -->
   <div style="flex: 0 0 56px; display: flex; align-items: center; justify-content: center;">
-    <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" title="${s.album}" style="display: block;">
+    <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" title="${escapeHtml(s.album)}" style="display: block;">
       <img src="${s.song.al.picUrl + '?param=50y50&quality=100'}" 
            alt="cover" 
            style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; background: #f5f5f5; transition: transform 0.2s ease;">
@@ -252,19 +252,19 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
   <!-- 歌曲信息：弹性伸缩，优先占用空间 -->
   <div style="flex: 2 1 200px; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
     <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
-      <a href="https://music.163.com/#/song?id=${s.song.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${s.title}</a>
+      <a href="https://music.163.com/#/song?id=${s.song.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${escapeHtml(s.title)}</a>
     </div>
     <div style="font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
     ${(s.song.mark & 1048576) === 1048576 ? '🅴 ' : ''}
     ${s.privilege.cs ? '<i class="fa-regular fa-cloud"></i> ': ''}
-      ${s.artist}
+      ${escapeHtml(s.artist)}
     </div>
   </div>
   
   <!-- 专辑信息：弹性伸缩，次要占用空间 -->
   <div style="flex: 1 1 120px; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center;">
     <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
-      <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${s.album}</a>
+      <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${escapeHtml(s.album)}</a>
     </div>
   </div>
                     `

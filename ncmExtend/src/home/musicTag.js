@@ -1,4 +1,4 @@
-import { showTips, createBigButton, downloadFileSync, sanitizeFilename } from "../utils/common"
+import { showTips, createBigButton, downloadFileSync, sanitizeFilename, escapeHtml } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { duringTimeDesc, nameFileWithoutExt, dateDesc } from '../utils/descHelper'
 import { handleLyric } from "../utils/lyric"
@@ -284,16 +284,16 @@ width: 8%;
                                         resultSongs.forEach(resultSong => {
                                             let tablerow = document.createElement('tr')
                                             let songName = resultSong.name
-                                            const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
+                                            const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join()
                                             const needHighLight = Math.abs(resultSong.dt - file.duration) < 1000
                                             const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
 
-                                            tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
+                                            tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
                                             let selectbtn = tablerow.querySelector('.selectbtn')
                                             selectbtn.addEventListener('click', () => {
                                                 file.targetSong = resultSong
                                                 file.mode = 'netease'
-                                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
+                                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}</a></td><td>${artists}`
                                                 this.openFilesDialog()
                                             })
                                             tbody.appendChild(tablerow)
@@ -378,8 +378,8 @@ width: 8%;
                             lyric: lyricInput.value
                         }
                         file.mode = 'custom'
-                        file.songDescription = file.customSong.cover ? `<img src="${file.customSong.cover.url}" height=50 title="${file.customSong.album}"></td><td>` : '';
-                        file.songDescription += `${file.customSong.name}</td><td>${file.customSong.artist}`;
+                        file.songDescription = file.customSong.cover ? `<img src="${file.customSong.cover.url}" height=50 title="${escapeHtml(file.customSong.album)}"></td><td>` : '';
+                        file.songDescription += `${escapeHtml(file.customSong.name)}</td><td>${escapeHtml(file.customSong.artist)}`;
                         this.openFilesDialog()
                     })
                 },
@@ -418,7 +418,7 @@ width: 8%;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                         <td><button type="button" class="swal2-styled"><i class="fa-solid fa-gear"></i></button></td>
-                        <td>${item.fileName}</td>
+                        <td>${escapeHtml(item.fileName)}</td>
                         <td class="target-song">${item.songDescription}</td>
                     `;
                 const selectButton = tr.querySelector('.swal2-styled');
@@ -458,10 +458,10 @@ width: 8%;
                         for (const resultSong of response.result.songs) {
                             if (Math.abs(resultSong.dt - file.duration) < 1000 && searchWord.toLowerCase().includes(resultSong.name.toLowerCase())) {
                                 let songName = resultSong.name
-                                const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
+                                const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join()
                                 file.targetSong = resultSong;
                                 file.mode = 'netease'
-                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`
+                                file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}</a></td><td>${artists}`
                                 this.refreshSongListTable();
                                 break;
                             }
@@ -535,7 +535,7 @@ width: 50%;
                     this.songListTbody = container.querySelector('tbody');
                     this.selectedSongs.forEach(song => {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `<td>${song.fileName}</td><td>未开始</td>`;
+                        tr.innerHTML = `<td>${escapeHtml(song.fileName)}</td><td>未开始</td>`;
                         this.songListTbody.appendChild(tr);
                         song.progressDOM = tr.querySelector('td:nth-child(2)');
                     });

@@ -1,4 +1,4 @@
-import { showTips, saveContentAsFile, showConfirmBox, sanitizeFilename } from "../utils/common"
+import { showTips, saveContentAsFile, showConfirmBox, sanitizeFilename, escapeHtml } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { fileSizeDesc, levelDesc, nameFileWithoutExt, dateDesc } from "../utils/descHelper"
 import { handleLyric } from "../utils/lyric"
@@ -133,7 +133,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
                 finnshText += '\n' + `有${config.skipSongs.length}首歌曲不是目标音质，未进行下载。`
             }
             if (config.errorSongs.length > 0) {
-                finnshText += '\n' + `以下${config.errorSongs.length}首歌曲下载失败: ${config.errorSongs.map(song => `<a href="https://music.163.com/#/song?id=${song.id}">${song.title}</a>`).join()}`
+                finnshText += '\n' + `以下${config.errorSongs.length}首歌曲下载失败: ${config.errorSongs.map(song => `<a href="https://music.163.com/#/song?id=${song.id}">${escapeHtml(song.title)}</a>`).join()}`
             }
             Swal.update({
                 allowOutsideClick: true,
@@ -145,7 +145,7 @@ const downloadSongSub = (threadIndex, songList, config) => {
         }
         return
     }
-    tableRowDOM.innerHTML = `<td>${song.title}</td><td>${song.artist}</td><td>${song.album}</td><td class='my-level'></td><td class='my-size'></td><td class='my-pr'></td>`
+    tableRowDOM.innerHTML = `<td>${escapeHtml(song.title)}</td><td>${escapeHtml(song.artist)}</td><td>${escapeHtml(song.album)}</td><td class='my-level'></td><td class='my-size'></td><td class='my-pr'></td>`
     let levelText = tableRowDOM.querySelector('.my-level')
     let sizeText = tableRowDOM.querySelector('.my-size')
     let prText = tableRowDOM.querySelector('.my-pr')

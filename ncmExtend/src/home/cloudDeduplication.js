@@ -1,4 +1,4 @@
-import { createBigButton, showTips, showConfirmBox, isLiveSong } from "../utils/common";
+import { createBigButton, showTips, showConfirmBox, isLiveSong, escapeHtml } from "../utils/common";
 import { weapiRequestSync } from "../utils/request";
 import { getMD5 } from "../utils/crypto";
 import { fileSizeDesc, duringTimeDesc, dateDesc } from "../utils/descHelper";
@@ -274,14 +274,14 @@ class CloudDeduplication {
 
                         const coverHtml = `
                               <div style="flex: 0 0 72px; display:flex;align-items:center;justify-content:center;">
-                                <a href="https://music.163.com/#/song?id=${song.id}" target="_blank" title="${song.album && song.album.name ? song.album.name : ""}" style="display:block;">
+                                <a href="https://music.163.com/#/song?id=${song.id}" target="_blank" title="${escapeHtml(song.album && song.album.name ? song.album.name : "")}" style="display:block;">
                                   <img src="${song.album && song.album.picUrl ? song.album.picUrl + "?param=50y50&quality=100" : ""}" alt="cover" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5;">
                                 </a>
                               </div>`;
                         const albumHtml = `
                               <div style="flex:1 1 160px;min-width:0;overflow:hidden;">
                                 <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                                  <a href="https://music.163.com/#/album?id=${song.album && song.album.id ? song.album.id : ""}" target="_blank" style="color:#000;text-decoration:none">${song.album && song.album.name ? song.album.name : ""}</a>
+                                  <a href="https://music.163.com/#/album?id=${song.album && song.album.id ? song.album.id : ""}" target="_blank" style="color:#000;text-decoration:none">${escapeHtml(song.album && song.album.name ? song.album.name : "")}</a>
                                 </div>
                               </div>`;
 

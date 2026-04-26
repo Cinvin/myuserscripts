@@ -1,4 +1,4 @@
-import { createBigButton, showTips, songItemAddToFormat, createPageJumpInput, isLiveSong } from "../utils/common"
+import { createBigButton, showTips, songItemAddToFormat, createPageJumpInput, isLiveSong, escapeHtml } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc, dateDesc } from '../utils/descHelper'
 
@@ -158,8 +158,8 @@ export const myCloudDisk = (uiArea) => {
                     let arcount = 0
                     song.simpleSong.ar.forEach(ar => {
                         if (ar.name) {
-                            if (ar.id > 0) artist2 += `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>,`
-                            else artist2 += ar.name + ','
+                            if (ar.id > 0) artist2 += `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${escapeHtml(ar.name)}<a>,`
+                            else artist2 += escapeHtml(ar.name) + ','
                             arcount += 1
                         }
                     })
@@ -173,8 +173,8 @@ export const myCloudDisk = (uiArea) => {
 
                 tablerow.innerHTML = `<td class="song-checkbox-cell"><input type="checkbox" class="song-checkbox" value="${song.simpleSong.id}" ${isChecked}></td>
                 <td><button type="button" class="swal2-styled btn-match" title="匹配"><i class="fa-solid fa-link"></i></button></td>
-                <td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td>
-                <td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${song.simpleSong.name}</a></td>
+                <td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${escapeHtml(album)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td>
+                <td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${escapeHtml(song.simpleSong.name)}</a></td>
                 <td>${artist}</td><td>${duringTimeDesc(song.simpleSong.dt)}</td><td>${fileSizeDesc(song.fileSize)} ${levelDesc(song.simpleSong.privilege.plLevel)}</td>
                 <td>${addTime}
                 <div class="row-actions">
@@ -475,11 +475,11 @@ export const myCloudDisk = (uiArea) => {
                 resultSongs.forEach(resultSong => {
                     const tablerow = document.createElement('tr')
                     const songName = resultSong.name
-                    const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join()
+                    const artists = resultSong.ar.map(ar => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join()
                     const needHighLight = Math.abs(resultSong.dt - this.fileDuringTime) < 1000
                     const dtstyle = needHighLight ? 'color:SpringGreen;' : ''
 
-                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}${resultSong.privilege.cs ? ' <i class="fa-regular fa-cloud"></i>' : ''}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
+                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}${resultSong.privilege.cs ? ' <i class="fa-regular fa-cloud"></i>' : ''}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`
                     const selectbtn = tablerow.querySelector('.selectbtn')
                     selectbtn.addEventListener('click', () => {
                         this.matchSong(cloudSongId, resultSong.id)
@@ -1341,8 +1341,8 @@ width: 70%;
                 userPlaylistRes.playlist.filter(p => !p.subscribed).forEach(playlist => {
                     const row = document.createElement('tr')
                     row.innerHTML = `<td><button type="button" class="swal2-styled btn-add" title="加入歌单"><i class="fa-solid fa-plus"></i></button></td>
-                                    <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${playlist.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
-                                    <td>${playlist.name}</td>`
+                                    <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${escapeHtml(playlist.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
+                                    <td>${escapeHtml(playlist.name)}</td>`
 
                     row.querySelector('.btn-add').addEventListener('click', async () => {
                         const collectRes = await weapiRequestSync("/api/playlist/manipulate/tracks", {
@@ -1380,8 +1380,8 @@ width: 70%;
                 userPlaylistRes.playlist.filter(p => !p.subscribed).forEach(playlist => {
                     const row = document.createElement('tr')
                     row.innerHTML = `<td><button type="button" class="swal2-styled btn-add" title="加入歌单"><i class="fa-solid fa-plus"></i></button></td>
-                                    <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${playlist.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
-                                    <td>${playlist.name}</td>`
+                                    <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${escapeHtml(playlist.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
+                                    <td>${escapeHtml(playlist.name)}</td>`
 
                     row.querySelector('.btn-add').addEventListener('click', async () => {
                         const songIds = Array.from(this.selectedSongIds)
