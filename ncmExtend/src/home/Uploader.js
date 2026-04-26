@@ -372,7 +372,7 @@ export class Uploader {
         item.isLive = isLiveSong(songDetail) || isLiveSong(item)
         item.isInstrumental = (songDetail.mark & MATCH_OFFSET_BASE) === MATCH_OFFSET_BASE
             || (item.name && item.name.includes('伴奏'))
-            || (item.name && item.name.toLowerCase().includes('Instrumental'))
+            || (item.name && item.name.toLowerCase().includes('instrumental'))
     }
 
     onSongInfoFetched() {
