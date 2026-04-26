@@ -223,124 +223,72 @@ export const cloudUpgrade = (uiArea) => {
                     c: JSON.stringify(songIds.slice(offset, offset + 1000))
                 },
                 onload: function (content) {
-                    let songlen = content.songs.length
                     let privilegelen = content.privileges.length
+                    let privilegeMap = new Map()
+                    for (let j = 0; j < privilegelen; j++) {
+                        privilegeMap.set(content.privileges[j].id, content.privileges[j])
+                    }
+
+                    let songlen = content.songs.length
                     for (let i = 0; i < songlen; i++) {
-                        for (let j = 0; j < privilegelen; j++) {
-                            if (content.songs[i].id == content.privileges[j].id) {
-                                let songItem = {
-                                    id: content.songs[i].id,
-                                    name: content.songs[i].name,
-                                    album: getAlbumTextInSongDetail(content.songs[i]),
-                                    albumid: content.songs[i].al.id || 0,
-                                    artists: getArtistTextInSongDetail(content.songs[i]),
-                                    tns: content.songs[i].tns ? content.songs[i].tns.join() : '', //翻译
-                                    dt: duringTimeDesc(content.songs[i].dt || 0),
-                                    picUrl: (content.songs[i].al && content.songs[i].al.picUrl) ? content.songs[i].al.picUrl : 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg',
-                                    upgraded: false,
+                        let privilege = privilegeMap.get(content.songs[i].id)
+                        if (privilege) {
+                            let songItem = {
+                                id: content.songs[i].id,
+                                name: content.songs[i].name,
+                                album: getAlbumTextInSongDetail(content.songs[i]),
+                                albumid: content.songs[i].al.id || 0,
+                                artists: getArtistTextInSongDetail(content.songs[i]),
+                                tns: content.songs[i].tns ? content.songs[i].tns.join() : '', //翻译
+                                dt: duringTimeDesc(content.songs[i].dt || 0),
+                                picUrl: (content.songs[i].al && content.songs[i].al.picUrl) ? content.songs[i].al.picUrl : 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg',
+                                upgraded: false,
+                            }
+
+                            // Get cloud file size
+                            const cloudFileSize = content.songs[i].pc?.privateCloud?.fileSize || 0
+
+                            let targetAudio = null;
+                            if (upgrader.targetLevel === 'lossless') {
+                                targetAudio = content.songs[i].sq;
+                            } else if (upgrader.targetLevel === 'hires') {
+                                targetAudio = content.songs[i].hr;
+                            } else if (upgrader.targetLevel === 'exhigh') {
+                                targetAudio = content.songs[i].h;
+                            }
+
+                            if (targetAudio) {
+                                const targetSize = targetAudio.size || 0
+                                songItem.fileinfo = {
+                                    originalLevel: privilege.plLevel,
+                                    originalBr: content.songs[i].pc.br,
+                                    tagetBr: Math.round(targetAudio.br / 1000),
+                                    originalSize: cloudFileSize,
+                                    targetSize: targetSize
                                 }
 
-                                // Get cloud file size
-                                const cloudFileSize = content.songs[i].pc?.privateCloud?.fileSize || 0
-
-                                if (upgrader.targetLevel === 'lossless' && content.songs[i].sq) {
-                                    const targetSize = content.songs[i].sq.size || 0
-                                    songItem.fileinfo = {
-                                        originalLevel: content.privileges[j].plLevel,
-                                        originalBr: content.songs[i].pc.br,
-                                        tagetBr: Math.round(content.songs[i].sq.br / 1000),
-                                        originalSize: cloudFileSize,
-                                        targetSize: targetSize
+                                let shouldAdd = false
+                                if (upgrader.judgmentMethod === 'filesize') {
+                                    // File size comparison, ignore differences less than 1024 bytes
+                                    if (upgrader.filterMode === 'lower') {
+                                        shouldAdd = (cloudFileSize + 1024 <= targetSize)
+                                    } else if (upgrader.filterMode === 'higher') {
+                                        shouldAdd = (cloudFileSize - 1024 >= targetSize)
                                     }
-
-                                    let shouldAdd = false
-                                    if (upgrader.judgmentMethod === 'filesize') {
-                                        // File size comparison, ignore differences less than 1024 bytes
-                                        if (upgrader.filterMode === 'lower') {
-                                            shouldAdd = (cloudFileSize + 1024 <= targetSize)
-                                        } else if (upgrader.filterMode === 'higher') {
-                                            shouldAdd = (cloudFileSize - 1024 >= targetSize)
-                                        }
-                                    } else {
-                                        // Bitrate comparison
-                                        if (upgrader.filterMode === 'lower') {
-                                            shouldAdd = (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr)
-                                        } else if (upgrader.filterMode === 'higher') {
-                                            shouldAdd = (songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr)
-                                        }
-                                    }
-
-                                    if (shouldAdd) {
-                                        upgrader.songs.push(songItem)
+                                } else {
+                                    // Bitrate comparison
+                                    if (upgrader.filterMode === 'lower') {
+                                        shouldAdd = (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr)
+                                    } else if (upgrader.filterMode === 'higher') {
+                                        shouldAdd = (songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr)
                                     }
                                 }
-                                else if (upgrader.targetLevel === 'hires' && content.songs[i].hr) {
-                                    const targetSize = content.songs[i].hr.size || 0
-                                    songItem.fileinfo = {
-                                        originalLevel: content.privileges[j].plLevel,
-                                        originalBr: content.songs[i].pc.br,
-                                        tagetBr: Math.round(content.songs[i].hr.br / 1000),
-                                        originalSize: cloudFileSize,
-                                        targetSize: targetSize
-                                    }
 
-                                    let shouldAdd = false
-                                    if (upgrader.judgmentMethod === 'filesize') {
-                                        // File size comparison, ignore differences less than 1024 bytes
-                                        if (upgrader.filterMode === 'lower') {
-                                            shouldAdd = (cloudFileSize + 1024 <= targetSize)
-                                        } else if (upgrader.filterMode === 'higher') {
-                                            shouldAdd = (cloudFileSize - 1024 >= targetSize)
-                                        }
-                                    } else {
-                                        // Bitrate comparison
-                                        if (upgrader.filterMode === 'lower') {
-                                            shouldAdd = (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr)
-                                        } else if (upgrader.filterMode === 'higher') {
-                                            shouldAdd = (songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr)
-                                        }
-                                    }
-
-                                    if (shouldAdd) {
-                                        upgrader.songs.push(songItem)
-                                    }
+                                if (shouldAdd) {
+                                    upgrader.songs.push(songItem)
                                 }
-                                else if (upgrader.targetLevel === 'exhigh' && content.songs[i].h) {
-                                    const targetSize = content.songs[i].h.size || 0
-                                    songItem.fileinfo = {
-                                        originalLevel: content.privileges[j].plLevel,
-                                        originalBr: content.songs[i].pc.br,
-                                        tagetBr: Math.round(content.songs[i].h.br / 1000),
-                                        originalSize: cloudFileSize,
-                                        targetSize: targetSize
-                                    }
-
-                                    let shouldAdd = false
-                                    if (upgrader.judgmentMethod === 'filesize') {
-                                        // File size comparison, ignore differences less than 1024 bytes
-                                        if (upgrader.filterMode === 'lower') {
-                                            shouldAdd = (cloudFileSize + 1024 <= targetSize)
-                                        } else if (upgrader.filterMode === 'higher') {
-                                            shouldAdd = (cloudFileSize - 1024 >= targetSize)
-                                        }
-                                    } else {
-                                        // Bitrate comparison
-                                        if (upgrader.filterMode === 'lower') {
-                                            shouldAdd = (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr)
-                                        } else if (upgrader.filterMode === 'higher') {
-                                            shouldAdd = (songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr)
-                                        }
-                                    }
-
-                                    if (shouldAdd) {
-                                        upgrader.songs.push(songItem)
-                                    }
-                                }
-                                break
                             }
                         }
-
-
                     }
                     upgrader.filterTargetLevelSongSub(offset + 1000, songIds)
                 }
