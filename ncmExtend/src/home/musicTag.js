@@ -397,6 +397,179 @@ export const musicTag = (uiArea) => {
             file.mode = 'unfill';
         }
 
+        async readSongFileBuffer(song) {
+            const fileData = new File([song.file], song.file.name, { type: song.file.type })
+            const fileBuffer = await fileData.arrayBuffer();
+            const fileFormat = detectAudioFormat(fileBuffer)
+            if (fileFormat !== 'unknown') {
+                song.ext = fileFormat
+                return fileBuffer;
+            } else {
+                song.progressDOM.innerHTML = '不支持该文件格式'
+                return null;
+            }
+        }
+
+        async fetchSongMetadata(song) {
+            let title = song.mode === 'netease' ? song.targetSong.name : song.customSong.name;
+            let artist = song.mode === 'netease' ? song.targetSong.ar.map(ar => ar.name).join() : song.customSong.artist;
+            const album = song.mode === 'netease' ? song.targetSong.al.name : song.customSong.album;
+            
+            if (this.rename) {
+                const nameWithoutExt = nameFileWithoutExt(title, artist, 'artist-title');
+                if (nameWithoutExt && nameWithoutExt.length > 0) song.fileName = `${nameWithoutExt}.${song.ext}`;
+            }
+            if (song.mode === 'netease') {
+                artist = song.targetSong.ar.map(ar => ar.name).join('; ');
+            }
+
+            let coverBuffer = null;
+            let coverFormat = "image/jpeg";
+            if (song.mode === 'netease') {
+                if (song.targetSong.al.pic > 0) {
+                    coverBuffer = await new Promise((resolve, reject) => {
+                        GM_xmlhttpRequest({
+                            method: "GET",
+                            url: song.targetSong.al.picUrl,
+                            responseType: "arraybuffer",
+                            onload: res => resolve(res.response),
+                            onerror: err => reject(err)
+                        });
+                    });
+                    coverBuffer = new Uint8Array(coverBuffer).buffer;
+                    song.progressDOM.innerHTML = '已获取图片'
+                }
+            } else {
+                if (song.customSong.cover) {
+                    let imgext = song.customSong.cover.file.name.split(".").pop().toLowerCase();
+                    if (imgext === "jpg") {
+                        imgext = "jpeg";
+                    }
+                    coverFormat = `image/${imgext}`;
+                    coverBuffer = await song.customSong.cover.file.arrayBuffer();
+                    coverBuffer = new Uint8Array(coverBuffer).buffer;
+                    URL.revokeObjectURL(song.customSong.cover.url);
+                }
+            }
+
+            let lyricText = '';
+            if (song.mode === 'netease') {
+                const requestData = {
+                    '/api/song/lyric/v1': JSON.stringify({ id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, }),
+                }
+                if (song.targetSong.al.id > 0) {
+                    if (this.albumDetailCache[song.targetSong.al.id]) {
+                        song.albumDetail = this.albumDetailCache[song.targetSong.al.id]
+                    } else {
+                        requestData[`/api/v1/album/${song.targetSong.al.id}`] = '{}'
+                    }
+                }
+                const res = await weapiRequestSync('/api/batch', {
+                    data: requestData,
+                })
+                const lyricRes = res['/api/song/lyric/v1'];
+                if (lyricRes && !lyricRes.pureMusic) {
+                    const LyricObj = handleLyric(lyricRes);
+                    if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
+                        lyricText = LyricObj.oritlrc.lyric;
+                        song.progressDOM.innerHTML = '已获取歌词';
+                    } else if (LyricObj && LyricObj.orilrc && LyricObj.orilrc.parsedLyric.length > 0) {
+                        lyricText = LyricObj.orilrc.lyric;
+                        song.progressDOM.innerHTML = '已获取歌词';
+                    }
+                }
+
+                const albumRes = res[`/api/v1/album/${song.targetSong.al.id}`];
+                if (albumRes) {
+                    song.albumDetail = {
+                        publisher: albumRes.album.company.length > 0 ? albumRes.album.company : null,
+                        artists: albumRes.album.artists ? albumRes.album.artists.map(artist => artist.name).join('; ') : null,
+                        publishTime: albumRes.album.publishTime > 0 ? dateDesc(albumRes.album.publishTime) : null
+                    }
+                    this.albumDetailCache[song.targetSong.al.id] = song.albumDetail
+                }
+            } else {
+                lyricText = song.customSong.lyric.trim();
+            }
+
+            return { title, artist, album, coverBuffer, coverFormat, lyricText };
+        }
+
+        async processMP3Tag(song, fileBuffer, metadata) {
+            const { title, artist, album, coverBuffer, coverFormat, lyricText } = metadata;
+            const mp3tag = new MP3Tag(fileBuffer);
+            mp3tag.read();
+            if (mp3tag.error !== ''){
+                return `无法解析该文件：${mp3tag.error}`;
+            }
+            if (!mp3tag.tags || !mp3tag.tags.v2) {
+                return '不支持该文件格式';
+            }
+            mp3tag.tags.title = title;
+            mp3tag.tags.artist = artist;
+            if (song.mode === 'netease') {
+                if (song.targetSong.no && song.targetSong.no > 0) mp3tag.tags.v2.TRCK = String(song.targetSong.no).padStart(2, '0');
+                if (song.targetSong.cd && song.targetSong.cd.length > 0) mp3tag.tags.v2.TPOS = song.targetSong.cd;
+                if (song.albumDetail) {
+                    if (song.albumDetail.publisher) mp3tag.tags.v2.TPUB = song.albumDetail.publisher;
+                    if (song.albumDetail.artists) mp3tag.tags.v2.TPE2 = song.albumDetail.artists;
+                    if (song.albumDetail.publishTime) mp3tag.tags.v2.TDRC = song.albumDetail.publishTime;
+                }
+            }
+            if (album.length > 0) mp3tag.tags.album = album;
+            if (coverBuffer) {
+                mp3tag.tags.v2.APIC = [{
+                    description: "",
+                    data: coverBuffer,
+                    type: 3,
+                    format: coverFormat,
+                }];
+            }
+            if (lyricText && lyricText.length > 0) {
+                mp3tag.tags.v2.TXXX = [{
+                    description: "LYRICS",
+                    text: lyricText,
+                }];
+            }
+            mp3tag.save();
+            if (mp3tag.error) {
+                console.error("mp3tag.error", mp3tag.error);
+                return `标记时出错：${mp3tag.error}`;
+            }
+            const blob = new Blob([mp3tag.buffer], { type: "audio/mp3" });
+            const url = URL.createObjectURL(blob);
+            const downloadRes = await downloadFileSync(url, sanitizeFilename(song.fileName));
+            URL.revokeObjectURL(url);
+            return downloadRes;
+        }
+
+        async processFLACTag(song, fileBuffer, metadata) {
+            const { title, artist, album, coverBuffer, coverFormat, lyricText } = metadata;
+            const flac = new MetaFlac(fileBuffer);
+            flac.removeAllTags();
+            flac.removeAllPictures();
+            flac.setTag(`TITLE=${title}`);
+            flac.setTag(`ARTIST=${artist}`);
+            if (song.mode === 'netease') {
+                if (song.targetSong.no && song.targetSong.no > 0) flac.setTag(`TRACKNUMBER=${String(song.targetSong.no).padStart(2, '0')}`);
+                if (song.targetSong.cd && song.targetSong.cd.length > 0) flac.setTag(`DISCNUMBER=${song.targetSong.cd}`);
+                if (song.albumDetail) {
+                    if (song.albumDetail.publisher) flac.setTag(`PUBLISHER=${song.albumDetail.publisher}`);
+                    if (song.albumDetail.artists) flac.setTag(`ALBUMARTIST=${song.albumDetail.artists}`);
+                    if (song.albumDetail.publishTime) flac.setTag(`DATE=${song.albumDetail.publishTime}`);
+                }
+            }
+            if (album.length > 0) flac.setTag(`ALBUM=${album}`);
+            if (lyricText.length > 0) flac.setTag(`LYRICS=${lyricText}`);
+            if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, coverFormat);
+            const newBuffer = flac.save();
+            const blob = new Blob([newBuffer], { type: "audio/flac" });
+            const url = URL.createObjectURL(blob);
+            const downloadRes = await downloadFileSync(url, sanitizeFilename(song.fileName));
+            URL.revokeObjectURL(url);
+            return downloadRes;
+        }
+
         handleSongTag() {
             Swal.fire({
                 width: '980px',
@@ -421,200 +594,21 @@ export const musicTag = (uiArea) => {
                         this.songListTbody.appendChild(tr);
                         song.progressDOM = tr.querySelector('td:nth-child(2)');
                     });
-                    // 处理选中的歌曲
+                    
                     let finishCount = 0;
                     for (const song of this.selectedSongs) {
-
                         song.progressDOM.innerHTML = '开始处理';
-                        // 解决因为window不同时读取文件的问题
-                        const fileData = new File([song.file], song.file.name, { type: song.file.type })
-                        // 等待读取文件为 ArrayBuffer
-                        const fileBuffer = await fileData.arrayBuffer();
-                        // 判断文件格式
-                        const fileFormat = detectAudioFormat(fileBuffer)
-                        if (fileFormat !== 'unknown') {
-                            song.ext = fileFormat
-                        }
-                        else {
-                            song.progressDOM.innerHTML = '不支持该文件格式'
-                            continue
-                        }
+                        const fileBuffer = await this.readSongFileBuffer(song);
+                        if (!fileBuffer) continue;
 
-                        const songTitle = song.mode === 'netease' ? song.targetSong.name : song.customSong.name;
-                        let songArtist = song.mode === 'netease' ? song.targetSong.ar.map(ar => ar.name).join() : song.customSong.artist;
-                        const songAlbum = song.mode === 'netease' ? song.targetSong.al.name : song.customSong.album;
-                        if (this.rename) {
-                            const nameWithoutExt = nameFileWithoutExt(songTitle, songArtist, 'artist-title');
-                            if (nameWithoutExt && nameWithoutExt.length > 0) song.fileName = `${nameWithoutExt}.${song.ext}`;
-                        }
-                        if (song.mode === 'netease') {
-                            songArtist = song.targetSong.ar.map(ar => ar.name).join('; ');
-                        }
-                        let coverBuffer = null;
-                        let coverFormat = "image/jpeg";
-                        if (song.mode === 'netease') {
-                            if (song.targetSong.al.pic > 0) {
-                                coverBuffer = await new Promise((resolve, reject) => {
-                                    GM_xmlhttpRequest({
-                                        method: "GET",
-                                        url: song.targetSong.al.picUrl,
-                                        responseType: "arraybuffer",
-                                        onload: res => resolve(res.response),
-                                        onerror: err => reject(err)
-                                    });
-                                });
-                                coverBuffer = new Uint8Array(coverBuffer).buffer;
-                                song.progressDOM.innerHTML = '已获取图片'
-                            }
-                        }
-                        else {
-                            if (song.customSong.cover) {
-                                let imgext = song.customSong.cover.file.name.split(".").pop().toLowerCase();
-                                if (imgext === "jpg") {
-                                    imgext = "jpeg";
-                                }
-                                coverFormat = `image/${imgext}`;
-                                coverBuffer = await song.customSong.cover.file.arrayBuffer();
-                                coverBuffer = new Uint8Array(coverBuffer).buffer;
-                                URL.revokeObjectURL(song.customSong.cover.url);
-                            }
-                        }
-
-                        let lyricText = '';
-                        if (song.mode === 'netease') {
-                            const requestData = {
-                                '/api/song/lyric/v1': JSON.stringify({ id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0, }),
-                            }
-                            if (song.targetSong.al.id > 0) {
-                                if (this.albumDetailCache[song.targetSong.al.id]) {
-                                    song.albumDetail = this.albumDetailCache[song.targetSong.al.id]
-                                }
-                                else {
-                                    requestData[`/api/v1/album/${song.targetSong.al.id}`] = '{}'
-                                }
-                            }
-                            const res = await weapiRequestSync('/api/batch', {
-                                data: requestData,
-                            })
-                            const lyricRes = res['/api/song/lyric/v1'];
-                            if (lyricRes && !lyricRes.pureMusic) {
-                                const LyricObj = handleLyric(lyricRes);
-                                if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
-                                    lyricText = LyricObj.oritlrc.lyric;
-                                    song.progressDOM.innerHTML = '已获取歌词';
-                                } else if (LyricObj && LyricObj.orilrc && LyricObj.orilrc.parsedLyric.length > 0) {
-                                    lyricText = LyricObj.orilrc.lyric;
-                                    song.progressDOM.innerHTML = '已获取歌词';
-                                }
-                            }
-
-                            const albumRes = res[`/api/v1/album/${song.targetSong.al.id}`];
-                            if (albumRes) {
-                                song.albumDetail = {
-                                    publisher: albumRes.album.company.length > 0 ? albumRes.album.company : null,
-                                    artists: albumRes.album.artists ? albumRes.album.artists.map(artist => artist.name).join('; ') : null,
-                                    publishTime: albumRes.album.publishTime > 0 ? dateDesc(albumRes.album.publishTime) : null
-                                }
-                                this.albumDetailCache[song.targetSong.al.id] = song.albumDetail
-                            }
-                        }
-                        else {
-                            lyricText = song.customSong.lyric.trim();
-                        }
-
-                        if (song.ext === 'mp3') {
-                            const mp3tag = new MP3Tag(fileBuffer);
-                            mp3tag.read();
-                            mp3tag.tags.title = songTitle;
-                            mp3tag.tags.artist = songArtist;
-                            if (song.mode === 'netease') {
-                                // 音轨编号
-                                if (song.targetSong.no && song.targetSong.no > 0) mp3tag.tags.v2.TRCK = String(song.targetSong.no).padStart(2, '0');
-                                //光盘编号
-                                if (song.targetSong.cd && song.targetSong.cd.length > 0) mp3tag.tags.v2.TPOS = song.targetSong.cd;
-                                if (song.albumDetail) {
-                                    if (song.albumDetail.publisher) {
-                                        // 发行公司
-                                        mp3tag.tags.v2.TPUB = song.albumDetail.publisher;
-                                    }
-                                    if (song.albumDetail.artists) {
-                                        //专辑艺术家
-                                        mp3tag.tags.v2.TPE2 = song.albumDetail.artists;
-                                    }
-                                    if (song.albumDetail.publishTime) {
-                                        //专辑发行时间
-                                        mp3tag.tags.v2.TDRC = song.albumDetail.publishTime;
-                                    }
-                                }
-                            }
-                            if (songAlbum.length > 0) mp3tag.tags.album = songAlbum;
-                            if (coverBuffer) {
-                                mp3tag.tags.v2.APIC = [{
-                                    description: "",
-                                    data: coverBuffer,
-                                    type: 3,
-                                    format: coverFormat,
-                                }];
-                            }
-                            if (lyricText && lyricText.length > 0) {
-                                mp3tag.tags.v2.TXXX = [{
-                                    description: "LYRICS",
-                                    text: lyricText,
-                                }];
-                            }
-                            mp3tag.save();
-                            if (mp3tag.error) {
-                                console.error("mp3tag.error", mp3tag.error);
-                                song.progressDOM.innerHTML = `标记时出错：${mp3tag.error}`
-                                continue;
-                            }
-                            const blob = new Blob([mp3tag.buffer], { type: "audio/mp3" });
-                            const url = URL.createObjectURL(blob);
-                            const downloadRes = await downloadFileSync(url, sanitizeFilename(song.fileName));
-                            song.progressDOM.innerHTML = downloadRes;
-                            URL.revokeObjectURL(url);
-                            if (downloadRes.endsWith("完成")) {
-                                finishCount += 1;
-                            }
-                        }
-                        else if (song.ext === 'flac') {
-                            const flac = new MetaFlac(fileBuffer);
-                            flac.removeAllTags();
-                            flac.removeAllPictures();
-                            flac.setTag(`TITLE=${songTitle}`);
-                            flac.setTag(`ARTIST=${songArtist}`);
-                            if (song.mode === 'netease') {
-                                // 音轨编号
-                                if (song.targetSong.no && song.targetSong.no > 0) flac.setTag(`TRACKNUMBER=${String(song.targetSong.no).padStart(2, '0')}`);
-                                //光盘编号
-                                if (song.targetSong.cd && song.targetSong.cd.length > 0) flac.setTag(`DISCNUMBER=${song.targetSong.cd}`);
-                                if (song.albumDetail) {
-                                    if (song.albumDetail.publisher) {
-                                        // 发行公司
-                                        flac.setTag(`PUBLISHER=${song.albumDetail.publisher}`);
-                                    }
-                                    if (song.albumDetail.artists) {
-                                        //专辑艺术家
-                                        flac.setTag(`ALBUMARTIST=${song.albumDetail.artists}`);
-                                    }
-                                    if (song.albumDetail.publishTime) {
-                                        //专辑发行时间
-                                        flac.setTag(`DATE=${song.albumDetail.publishTime}`);
-                                    }
-                                }
-                            }
-                            if (songAlbum.length > 0) flac.setTag(`ALBUM=${songAlbum}`);
-                            if (lyricText.length > 0) flac.setTag(`LYRICS=${lyricText}`);
-                            if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, coverFormat);
-                            const newBuffer = flac.save();
-                            const blob = new Blob([newBuffer], { type: "audio/flac" });
-                            const url = URL.createObjectURL(blob);
-                            const downloadRes = await downloadFileSync(url, sanitizeFilename(song.fileName));
-                            song.progressDOM.innerHTML = downloadRes;
-                            URL.revokeObjectURL(url);
-                            if (downloadRes.endsWith("完成")) {
-                                finishCount += 1;
-                            }
+                        const metadata = await this.fetchSongMetadata(song);
+                        const downloadRes = song.ext === 'mp3' 
+                            ? await this.processMP3Tag(song, fileBuffer, metadata)
+                            : await this.processFLACTag(song, fileBuffer, metadata);
+                        
+                        song.progressDOM.innerHTML = downloadRes;
+                        if (downloadRes.endsWith("完成")) {
+                            finishCount += 1;
                         }
                     }
                     this.showFinishBox(finishCount)
