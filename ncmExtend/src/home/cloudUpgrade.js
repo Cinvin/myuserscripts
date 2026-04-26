@@ -7,7 +7,7 @@ import { ncmDownUpload } from '../components/ncmDownUpload'
 
 export const cloudUpgrade = (uiArea) => {
     //音质升级
-    let btnUpgrade = createBigButton('云盘音质升降', uiArea, 2)
+    const btnUpgrade = createBigButton('云盘音质升降', uiArea, 2)
     btnUpgrade.addEventListener('click', ShowCloudUpgradePopUp)
     function ShowCloudUpgradePopUp() {
         Swal.fire({
@@ -66,7 +66,7 @@ export const cloudUpgrade = (uiArea) => {
                     showConfirmBox('当前不是会员,无法获取无损以上音源,领取个会员礼品卡再来吧。')
                 }
                 else {
-                    let upgrade = new Upgrader(level, filterMode, judgmentMethod)
+                    const upgrade = new Upgrader(level, filterMode, judgmentMethod)
                     upgrade.start()
                 }
             }
@@ -113,9 +113,9 @@ export const cloudUpgrade = (uiArea) => {
 `,
                 footer: '<div></div>',
                 didOpen: () => {
-                    let container = Swal.getHtmlContainer()
-                    let tbody = container.querySelector('tbody')
-                    let footer = Swal.getFooter()
+                    const container = Swal.getHtmlContainer()
+                    const tbody = container.querySelector('tbody')
+                    const footer = Swal.getFooter()
                     this.popupObj = {
                         container: container,
                         tbody: tbody,
@@ -123,13 +123,12 @@ export const cloudUpgrade = (uiArea) => {
                     }
                     let filterInput = container.querySelector('#text-filter')
                     filterInput.addEventListener('change', () => {
-                        let filtertext = filterInput.value.trim()
+                        const filtertext = filterInput.value.trim()
                         if (this.filter.text !== filtertext) {
                             this.filter.text = filtertext
                             this.applyFilter()
                         }
                     })
-                    let upgrader = this
                     this.btnUpgradeBatch = container.querySelector('#btn-upgrade-batch')
                     this.btnUpgradeBatch.addEventListener('click', () => {
                         if (this.batchUpgrade.working) {
@@ -140,8 +139,8 @@ export const cloudUpgrade = (uiArea) => {
 
                         this.batchUpgrade.songIndexs = []
                         this.filter.songIndexs.forEach(idx => {
-                            if (!upgrader.songs[idx].upgraded) {
-                                upgrader.batchUpgrade.songIndexs.push(idx)
+                            if (!this.songs[idx].upgraded) {
+                                this.batchUpgrade.songIndexs.push(idx)
                             }
                         })
 
@@ -171,7 +170,6 @@ export const cloudUpgrade = (uiArea) => {
             this.fetchCloudSongInfoSub(0, [])
         }
         fetchCloudSongInfoSub(offset, songIds) {
-            let upgrader = this
             weapiRequest('/api/v1/cloud/get', {
                 data: {
                     limit: 1000,
@@ -179,7 +177,7 @@ export const cloudUpgrade = (uiArea) => {
                 },
                 onload: (res) => {
                     //console.log(res)
-                    upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲`
+                    this.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲`
                     res.data.forEach(song => {
                         if (song.simpleSong.privilege.toast) return
                         if (song.simpleSong.privilege.fee == 0 && song.simpleSong.privilege.flLevel == "none") return
@@ -198,40 +196,39 @@ export const cloudUpgrade = (uiArea) => {
 
                         songIds.push({ 'id': song.simpleSong.id })
                         const actionText = this.filterMode === 'lower' ? '提升' : '降低'
-                        upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲 找到${songIds.length}首可能可以${actionText}的歌曲`
+                        this.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1000, res.count)}云盘歌曲 找到${songIds.length}首可能可以${actionText}的歌曲`
                     })
                     if (res.hasMore) {
                         //if (offset < 2000) {//testing
                         res = {}
-                        upgrader.fetchCloudSongInfoSub(offset + 1000, songIds)
+                        this.fetchCloudSongInfoSub(offset + 1000, songIds)
                     } else {
-                        upgrader.filterTargetLevelSongSub(0, songIds)
+                        this.filterTargetLevelSongSub(0, songIds)
                     }
                 }
             })
         }
         filterTargetLevelSongSub(offset, songIds) {
-            let upgrader = this
-            upgrader.popupObj.tbody.innerHTML = `正在确认 ${offset + 1} / ${songIds.length} 首潜在歌曲是否有目标音质`
+            this.popupObj.tbody.innerHTML = `正在确认 ${offset + 1} / ${songIds.length} 首潜在歌曲是否有目标音质`
             if (offset >= songIds.length) {
-                upgrader.createTableRow()
-                upgrader.applyFilter()
+                this.createTableRow()
+                this.applyFilter()
                 return
             }
             weapiRequest("/api/v3/song/detail", {
                 data: {
                     c: JSON.stringify(songIds.slice(offset, offset + 1000))
                 },
-                onload: function (content) {
-                    let privilegelen = content.privileges.length
-                    let privilegeMap = new Map()
+                onload: (content) => {
+                    const privilegelen = content.privileges.length
+                    const privilegeMap = new Map()
                     for (let j = 0; j < privilegelen; j++) {
                         privilegeMap.set(content.privileges[j].id, content.privileges[j])
                     }
 
-                    let songlen = content.songs.length
+                    const songlen = content.songs.length
                     for (let i = 0; i < songlen; i++) {
-                        let privilege = privilegeMap.get(content.songs[i].id)
+                        const privilege = privilegeMap.get(content.songs[i].id)
                         if (privilege) {
                             let songItem = {
                                 id: content.songs[i].id,
@@ -249,11 +246,11 @@ export const cloudUpgrade = (uiArea) => {
                             const cloudFileSize = content.songs[i].pc?.privateCloud?.fileSize || 0
 
                             let targetAudio = null;
-                            if (upgrader.targetLevel === 'lossless') {
+                            if (this.targetLevel === 'lossless') {
                                 targetAudio = content.songs[i].sq;
-                            } else if (upgrader.targetLevel === 'hires') {
+                            } else if (this.targetLevel === 'hires') {
                                 targetAudio = content.songs[i].hr;
-                            } else if (upgrader.targetLevel === 'exhigh') {
+                            } else if (this.targetLevel === 'exhigh') {
                                 targetAudio = content.songs[i].h;
                             }
 
@@ -268,37 +265,37 @@ export const cloudUpgrade = (uiArea) => {
                                 }
 
                                 let shouldAdd = false
-                                if (upgrader.judgmentMethod === 'filesize') {
+                                if (this.judgmentMethod === 'filesize') {
                                     // File size comparison, ignore differences less than 1024 bytes
-                                    if (upgrader.filterMode === 'lower') {
+                                    if (this.filterMode === 'lower') {
                                         shouldAdd = (cloudFileSize + 1024 <= targetSize)
-                                    } else if (upgrader.filterMode === 'higher') {
+                                    } else if (this.filterMode === 'higher') {
                                         shouldAdd = (cloudFileSize - 1024 >= targetSize)
                                     }
                                 } else {
                                     // Bitrate comparison
-                                    if (upgrader.filterMode === 'lower') {
+                                    if (this.filterMode === 'lower') {
                                         shouldAdd = (songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr)
-                                    } else if (upgrader.filterMode === 'higher') {
+                                    } else if (this.filterMode === 'higher') {
                                         shouldAdd = (songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr)
                                     }
                                 }
 
                                 if (shouldAdd) {
-                                    upgrader.songs.push(songItem)
+                                    this.songs.push(songItem)
                                 }
                             }
                         }
                     }
-                    upgrader.filterTargetLevelSongSub(offset + 1000, songIds)
+                    this.filterTargetLevelSongSub(offset + 1000, songIds)
                 }
             })
         }
         createTableRow() {
-            let tagetLevelDesc = levelDesc(this.targetLevel)
+            const tagetLevelDesc = levelDesc(this.targetLevel)
             for (let i = 0; i < this.songs.length; i++) {
-                let song = this.songs[i]
-                let tablerow = document.createElement('tr')
+                const song = this.songs[i]
+                const tablerow = document.createElement('tr')
 
                 // Display file size or bitrate based on judgment method
                 let cloudInfo, targetInfo
@@ -311,7 +308,7 @@ export const cloudUpgrade = (uiArea) => {
                 }
 
                 tablerow.innerHTML = `<td><button type="button" class="swal2-styled" title="${this.filterMode === 'lower' ? '提升' : '降低'}"><i class="fa-solid fa-arrow-${this.filterMode === 'lower' ? 'up' : 'down'}"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${escapeHtml(song.album)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${escapeHtml(song.name)}</a></td><td>${escapeHtml(song.artists)}</td><td>${cloudInfo}</td><td>${targetInfo}</td>`
-                let btn = tablerow.querySelector('button')
+                const btn = tablerow.querySelector('button')
                 btn.addEventListener('click', () => {
                     if (this.batchUpgrade.working) {
                         return
@@ -323,9 +320,9 @@ export const cloudUpgrade = (uiArea) => {
         }
         applyFilter() {
             this.filter.songIndexs = []
-            let filterText = this.filter.text
+            const filterText = this.filter.text
             for (let i = 0; i < this.songs.length; i++) {
-                let song = this.songs[i]
+                const song = this.songs[i]
                 if (filterText.length > 0 && !song.name.includes(filterText) && !song.album.includes(filterText) && !song.artists.includes(filterText) && !song.tns.includes(filterText)) {
                     continue
                 }
@@ -344,8 +341,8 @@ export const cloudUpgrade = (uiArea) => {
             }
             //table
             this.popupObj.tbody.innerHTML = ''
-            let songBegin = (this.page.current - 1) * this.page.limitCount
-            let songEnd = Math.min(this.filter.songIndexs.length, songBegin + this.page.limitCount)
+            const songBegin = (this.page.current - 1) * this.page.limitCount
+            const songEnd = Math.min(this.filter.songIndexs.length, songBegin + this.page.limitCount)
             for (let i = songBegin; i < songEnd; i++) {
                 this.popupObj.tbody.appendChild(this.songs[this.filter.songIndexs[i]].tablerow)
             }
@@ -359,7 +356,7 @@ export const cloudUpgrade = (uiArea) => {
             let sizeTotal = 0
             let countCanUpgrade = 0
             this.filter.songIndexs.forEach(idx => {
-                let song = this.songs[idx]
+                const song = this.songs[idx]
                 if (!song.upgraded) {
                     countCanUpgrade += 1
                     sizeTotal += song.size
@@ -371,8 +368,7 @@ export const cloudUpgrade = (uiArea) => {
             }
         }
         upgradeSong(songIndex) {
-            let song = this.songs[songIndex]
-            let upgrade = this
+            const song = this.songs[songIndex]
             try {
                 weapiRequest("/api/cloud/del", {
                     data: {
@@ -383,35 +379,35 @@ export const cloudUpgrade = (uiArea) => {
                         if (content.code == 200) {
                             showTips(`${song.name}删除成功`, 1)
                         }
-                        let songItem = { api: { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([song.id]), level: upgrade.targetLevel, encodeType: 'mp3' } }, id: song.id, title: song.name, artist: song.artists, album: song.album, songIndex: songIndex }
-                        let ULobj = new ncmDownUpload([songItem], false, (s) => this.onUpgradeSuccess(s), (s) => this.onUpgradeFail(s))
+                        const songItem = { api: { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([song.id]), level: this.targetLevel, encodeType: 'mp3' } }, id: song.id, title: song.name, artist: song.artists, album: song.album, songIndex: songIndex }
+                        const ULobj = new ncmDownUpload([songItem], false, (s) => this.onUpgradeSuccess(s), (s) => this.onUpgradeFail(s))
                         ULobj.startUpload()
                     },
                 })
             } catch (e) {
                 console.error(e);
-                upgrade.onUpgradeFail(songIndex)
+                this.onUpgradeFail(songIndex)
             }
         }
         onUpgradeFail(ULsong) {
-            let song = this.songs[ULsong.songIndex]
+            const song = this.songs[ULsong.songIndex]
             const actionText = this.filterMode === 'lower' ? '提升' : '降低'
             showTips(`${song.name} 音质${actionText}失败`, 2)
             this.onUpgradeFinish(ULsong.songIndex)
         }
         onUpgradeSuccess(ULsong) {
-            let song = this.songs[ULsong.songIndex]
+            const song = this.songs[ULsong.songIndex]
             const actionText = this.filterMode === 'lower' ? '提升' : '降低'
             showTips(`${song.name} 音质${actionText}成功`, 1)
             song.upgraded = true
-            let btnUpgrade = song.tablerow.querySelector('button')
+            const btnUpgrade = song.tablerow.querySelector('button')
             btnUpgrade.innerHTML = '<i class="fa-solid fa-check"></i>'
             btnUpgrade.disabled = 'disabled'
             this.onUpgradeFinish(ULsong.songIndex)
         }
         onUpgradeFinish(songIndex) {
             if (this.batchUpgrade.working) {
-                let batchSongIdx = this.batchUpgrade.songIndexs.indexOf(songIndex)
+                const batchSongIdx = this.batchUpgrade.songIndexs.indexOf(songIndex)
                 if (!this.batchUpgrade.stopFlag && batchSongIdx + this.batchUpgrade.threadCount < this.batchUpgrade.songIndexs.length) {
                     this.upgradeSong(this.batchUpgrade.songIndexs[batchSongIdx + this.batchUpgrade.threadCount])
                 } else {
