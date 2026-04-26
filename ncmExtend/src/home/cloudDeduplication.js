@@ -525,7 +525,7 @@ class CloudDeduplication {
                                 if (countRes.code === 200 && countRes.data) {
                                     song.redCount = countRes.data.count || 0;
                                 } else {
-                                    showTips(`获取歌曲 ${song.name} 收藏量出错: ${e.message}`, 2);
+                                    showTips(`获取歌曲 ${song.name} 收藏量出错。${countRes.message || countRes.msg || ''}`, 2);
                                     errorOccurred = true;
                                 }
                             } catch (e) {
