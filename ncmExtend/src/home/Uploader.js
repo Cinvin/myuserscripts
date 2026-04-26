@@ -2,6 +2,7 @@ import { weapiRequest } from "../utils/request"
 import { getArtistTextInSongDetail, getAlbumTextInSongDetail, duringTimeDesc, nameFileWithoutExt, fileSizeDesc } from "../utils/descHelper"
 import { sleep, showTips, isLiveSong, escapeHtml, getTableStyles, createPagination } from "../utils/common"
 import { CheckAPIDataLimit, importAPIDataLimit } from "../components/ncmDownUploadBatch"
+import { DEFAULT_ALBUM_PIC_URL } from "../utils/constant"
 
 // ========== 常量定义 ==========
 const API_ENDPOINTS = {
@@ -20,7 +21,7 @@ const UPLOAD_TYPE = {
     cannotUpload: 2
 }
 
-const DEFAULT_PIC_URL = 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
+
 const TOKEN_EXPIRE_TIME = 60000
 const BATCH_FETCH_SIZE = 1000
 const PAGINATION_LIMIT = 50
@@ -334,7 +335,7 @@ export class Uploader {
             md5: config.md5,
             size: config.size,
             bitrate: config.bitrate,
-            picUrl: DEFAULT_PIC_URL,
+            picUrl: DEFAULT_ALBUM_PIC_URL,
             isNoCopyright: privilege.st < 0,
             isVIP: false,
             isPay: false,
@@ -366,7 +367,7 @@ export class Uploader {
         item.tns = songDetail.tns ? songDetail.tns.join() : ''
         item.dt = duringTimeDesc(songDetail.dt || 0)
         item.filename = nameFileWithoutExt(item.name, item.artists, 'artist-title') + '.' + config.ext
-        item.picUrl = songDetail.al?.picUrl || DEFAULT_PIC_URL
+        item.picUrl = songDetail.al?.picUrl || DEFAULT_ALBUM_PIC_URL
         item.isVIP = songDetail.fee === 1
         item.isPay = songDetail.fee === 4
         item.isLive = isLiveSong(songDetail) || isLiveSong(item)

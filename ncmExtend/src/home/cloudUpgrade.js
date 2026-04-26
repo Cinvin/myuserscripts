@@ -1,7 +1,7 @@
 import { createBigButton, showTips, showConfirmBox, escapeHtml, getTableStyles, createPagination } from "../utils/common"
 import { weapiRequest } from "../utils/request"
 import { duringTimeDesc, levelDesc, fileSizeDesc, getAlbumTextInSongDetail, getArtistTextInSongDetail } from '../utils/descHelper'
-import { levelWeight } from '../utils/constant'
+import { levelWeight, DEFAULT_ALBUM_PIC_URL } from '../utils/constant'
 import { unsafeWindow } from "$"
 import { ncmDownUpload } from '../components/ncmDownUpload'
 
@@ -238,7 +238,7 @@ export const cloudUpgrade = (uiArea) => {
                                 artists: getArtistTextInSongDetail(content.songs[i]),
                                 tns: content.songs[i].tns ? content.songs[i].tns.join() : '', //翻译
                                 dt: duringTimeDesc(content.songs[i].dt || 0),
-                                picUrl: (content.songs[i].al && content.songs[i].al.picUrl) ? content.songs[i].al.picUrl : 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg',
+                                picUrl: (content.songs[i].al && content.songs[i].al.picUrl) ? content.songs[i].al.picUrl : DEFAULT_ALBUM_PIC_URL,
                                 upgraded: false,
                             }
 

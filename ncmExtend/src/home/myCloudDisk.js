@@ -1,6 +1,7 @@
 import { createBigButton, showTips, songItemAddToFormat, isLiveSong, escapeHtml, getTableStyles, createPagination } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc, dateDesc } from '../utils/descHelper'
+import { DEFAULT_ALBUM_PIC_URL } from '../utils/constant'
 
 export const myCloudDisk = (uiArea) => {
     const btnMyCloudDisk = createBigButton('我的云盘', uiArea, 2)
@@ -109,7 +110,7 @@ export const myCloudDisk = (uiArea) => {
 
             songs.forEach((song) => {
                 let album = song.album
-                let picUrl = 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
+                let picUrl = DEFAULT_ALBUM_PIC_URL
                 if (song.simpleSong.al && song.simpleSong.al.picUrl) {
                     picUrl = song.simpleSong.al.picUrl
                 }
@@ -1087,7 +1088,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
                                         al: {
                                             id: 0,
                                             name: '',
-                                            picUrl: 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
+                                            picUrl: DEFAULT_ALBUM_PIC_URL
                                         },
                                         ar: []
                                     })

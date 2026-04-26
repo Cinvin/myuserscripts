@@ -58,3 +58,4 @@ export const uploadChunkSize = 8 * 1024 * 1024
 export const songMark = { explicit: 1048576 }
 
 export const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
+export const DEFAULT_ALBUM_PIC_URL = 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
