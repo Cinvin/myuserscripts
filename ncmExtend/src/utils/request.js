@@ -13,6 +13,19 @@ const UserAgentMap = {
 
 let isSettedHeader = false;
 export let isOldSettedHeader = false;
+let cachedCsrfToken = '';
+let lastCsrfUpdate = 0;
+const CSRF_REFRESH_INTERVAL = 60000; // 60 seconds
+
+function getCsrfToken() {
+    const now = Date.now();
+    if (!cachedCsrfToken || (now - lastCsrfUpdate > CSRF_REFRESH_INTERVAL)) {
+        const match = document.cookie.match(/_csrf=([^(;|$)]+)/);
+        cachedCsrfToken = match ? match[1] : '';
+        lastCsrfUpdate = now;
+    }
+    return cachedCsrfToken;
+}
 
 const requestQueue = []
 // 定时器，每50毫秒执行一次，从队列中取出一个请求执行
@@ -29,8 +42,7 @@ setDeviceId()
 export const weapiRequest = (url, config) => {
     const data = config.data || {}
     const clientType = config.clientType || 'pc'
-    const csrfToken = document.cookie.match(/_csrf=([^(;|$)]+)/)
-    data.csrf_token = csrfToken ? csrfToken[1] : ''
+    data.csrf_token = getCsrfToken()
     const encRes = weapi(data)
     const headers = {
         "content-type": "application/x-www-form-urlencoded",
