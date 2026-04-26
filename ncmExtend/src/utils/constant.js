@@ -13,10 +13,10 @@ const defaultOfBatchFilter = {
     cloud: false, // 云盘歌曲
 }
 export const getBatchFilter = () => {
-    return Object.assign(defaultOfBatchFilter, JSON.parse(GM_getValue('batchFilter', '{}')))
+    return Object.assign({}, defaultOfBatchFilter, JSON.parse(GM_getValue('batchFilter', '{}')))
 }
 export const setBatchFilter = (value) => {
-    GM_setValue('batchFilter', JSON.stringify(Object.assign(defaultOfBatchFilter, value)))
+    GM_setValue('batchFilter', JSON.stringify(Object.assign({}, defaultOfBatchFilter, value)))
 }
 // 默认的通用下载设置
 const defaultOfDownloadSettings = {
@@ -25,10 +25,10 @@ const defaultOfDownloadSettings = {
     folder: 'none',  // 输出文件夹
 }
 export const getDownloadSettings = () => {
-    return Object.assign(defaultOfDownloadSettings, JSON.parse(GM_getValue('downloadSettings', '{}')))
+    return Object.assign({}, defaultOfDownloadSettings, JSON.parse(GM_getValue('downloadSettings', '{}')))
 }
 export const setDownloadSettings = (value) => {
-    GM_setValue('downloadSettings', JSON.stringify(Object.assign(defaultOfDownloadSettings, value)))
+    GM_setValue('downloadSettings', JSON.stringify(Object.assign({}, defaultOfDownloadSettings, value)))
 }
 // 默认的批量下载设置
 const defaultOfBatchDownloadSettings = {
@@ -38,10 +38,10 @@ const defaultOfBatchDownloadSettings = {
     levelonly: false, // 仅获取到目标音质时下载
 }
 export const getBatchDownloadSettings = () => {
-    return Object.assign(defaultOfBatchDownloadSettings, JSON.parse(GM_getValue('batchDownloadSettings', '{}')))
+    return Object.assign({}, defaultOfBatchDownloadSettings, JSON.parse(GM_getValue('batchDownloadSettings', '{}')))
 }
 export const setBatchDownloadSettings = (value) => {
-    GM_setValue('batchDownloadSettings', JSON.stringify(Object.assign(defaultOfBatchDownloadSettings, value)))
+    GM_setValue('batchDownloadSettings', JSON.stringify(Object.assign({}, defaultOfBatchDownloadSettings, value)))
 }
 // 默认的批量转存设置
 const defaultOfBatchTransUploadSettings = {
@@ -49,10 +49,10 @@ const defaultOfBatchTransUploadSettings = {
     levelonly: false, // 仅获取到目标音质时下载
 }
 export const getBatchTransUploadSettings = () => {
-    return Object.assign(defaultOfBatchTransUploadSettings, JSON.parse(GM_getValue('batchTransUploadSettings', '{}')))
+    return Object.assign({}, defaultOfBatchTransUploadSettings, JSON.parse(GM_getValue('batchTransUploadSettings', '{}')))
 }
 export const setBatchTransUploadSettings = (value) => {
-    GM_setValue('batchTransUploadSettings', JSON.stringify(Object.assign(defaultOfBatchTransUploadSettings, value)))
+    GM_setValue('batchTransUploadSettings', JSON.stringify(Object.assign({}, defaultOfBatchTransUploadSettings, value)))
 }
 export const uploadChunkSize = 8 * 1024 * 1024
 export const songMark = { explicit: 1048576 }
