@@ -1,4 +1,4 @@
-import { showTips, createBigButton, downloadFileSync, sanitizeFilename, escapeHtml, getTableStyles } from "../utils/common"
+import { showTips, createBigButton, downloadFileSync, sanitizeFilename, escapeHtml, getTableStyles, logWarn } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { duringTimeDesc, nameFileWithoutExt, dateDesc } from '../utils/descHelper'
 import { handleLyric } from "../utils/lyric"
@@ -138,7 +138,11 @@ export const musicTag = (uiArea) => {
 
                         let URLObj = null
                         if (searchWord.includes('song?')) {
-                            try { URLObj = new URL(searchWord) } catch (e) { }
+                            try {
+                                URLObj = new URL(searchWord)
+                            } catch (e) {
+                                logWarn('Failed to parse URL in musicTag', { searchWord, error: e });
+                            }
                         }
                         if (URLObj && URLObj.hostname === 'music.163.com') {
                             const urlParamsStr = URLObj.search.length > 0 ? URLObj.search : URLObj.href.slice(URLObj.href.lastIndexOf('?'))

@@ -1,4 +1,4 @@
-import { createBigButton, showTips, showConfirmBox, safeJsonParse } from "../utils/common"
+import { createBigButton, showTips, showConfirmBox, safeJsonParse, logWarn } from "../utils/common"
 import { getDownloadSettings, setDownloadSettings, levelOptions, defaultOfDEFAULT_LEVEL } from "../utils/constant"
 import { isOldSettedHeader } from "../utils/request"
 
@@ -185,7 +185,9 @@ export const tryParseJSON = (jsonString) => {
             return o
         }
     }
-    catch (e) { }
+    catch (e) {
+        logWarn('Failed to parse JSON', { jsonString, error: e });
+    }
     return false;
 }
 

@@ -1,4 +1,4 @@
-import { createBigButton, showTips, songItemAddToFormat, isLiveSong, escapeHtml, getTableStyles, createPagination } from "../utils/common"
+import { createBigButton, showTips, songItemAddToFormat, isLiveSong, escapeHtml, getTableStyles, createPagination, logWarn } from "../utils/common"
 import { weapiRequest, weapiRequestSync } from "../utils/request"
 import { fileSizeDesc, duringTimeDesc, levelDesc, dateDesc } from '../utils/descHelper'
 import { DEFAULT_ALBUM_PIC_URL } from '../utils/constant'
@@ -1050,7 +1050,11 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
 
                 let URLObj = null
                 if (searchWord.includes('song?')) {
-                    try { URLObj = new URL(searchWord) } catch (e) { }
+                    try {
+                        URLObj = new URL(searchWord)
+                    } catch (e) {
+                        logWarn('Failed to parse URL in myCloudDisk', { searchWord, error: e });
+                    }
                 }
                 if (URLObj && URLObj.hostname === 'music.163.com') {
                     const urlParamsStr = URLObj.search.length > 0 ? URLObj.search : URLObj.href.slice(URLObj.href.lastIndexOf('?'))

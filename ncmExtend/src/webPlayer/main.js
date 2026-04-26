@@ -1,6 +1,6 @@
 import { levelOptions, defaultOfDEFAULT_LEVEL } from '../utils/constant'
 import { hookWebPlayerFetch } from '../hooks'
-import { showConfirmBox, safeJsonParse } from '../utils/common';
+import { showConfirmBox, safeJsonParse, logWarn } from '../utils/common';
 
 export const onWebPlayerStart = () => {
     hookWebpackJsonp();
@@ -139,7 +139,11 @@ const AddQualitySetting = (node) => {
 
     const existContainer = mainDiv.querySelector('.ncmextend-quality-react-container');
     if (existContainer) {
-        try { ReactDOM.unmountComponentAtNode(existContainer); } catch (e) { }
+        try {
+            ReactDOM.unmountComponentAtNode(existContainer);
+        } catch (e) {
+            logWarn('ReactDOM unmount error (QualitySetting)', e);
+        }
         existContainer.remove();
     }
 
@@ -154,7 +158,9 @@ const AddQualitySetting = (node) => {
 
         const onSelect = (key) => {
             setLevel(key);
-            try { GM_setValue('DEFAULT_LEVEL', key); } catch (e) { }
+            try { GM_setValue('DEFAULT_LEVEL', key); } catch (e) {
+                logWarn('Failed to set DEFAULT_LEVEL', e);
+            }
         }
 
         const items = Object.keys(levelOptions).map((key) => {
@@ -208,7 +214,11 @@ const AddFontSetting = (node) => {
 
     const existContainer = mainDiv.querySelector('.ncmextend-font-react-container');
     if (existContainer) {
-        try { ReactDOM.unmountComponentAtNode(existContainer); } catch (e) { }
+        try {
+            ReactDOM.unmountComponentAtNode(existContainer);
+        } catch (e) {
+            logWarn('ReactDOM unmount error (FontSetting)', e);
+        }
         existContainer.remove();
     }
 

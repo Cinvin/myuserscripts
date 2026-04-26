@@ -10,9 +10,18 @@ export const safeJsonParse = (value, fallback) => {
         if (value === null || value === undefined || value === '') return fallback;
         return JSON.parse(value);
     } catch (e) {
-        console.warn(`[ncmExtend] 配置解析错误, 回退到默认值:`, value, e);
+        logWarn('配置解析错误, 回退到默认值', { value, error: e });
         return fallback;
     }
+}
+
+/**
+ * 统一的日志记录工具
+ * @param {string} message - 日志信息
+ * @param {any} data - 附加数据
+ */
+export const logWarn = (message, data) => {
+    console.warn(`[ncmExtend] ${message}`, data);
 }
 
 export const escapeHtml = (str) => {
