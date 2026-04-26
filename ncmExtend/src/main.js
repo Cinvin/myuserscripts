@@ -1,6 +1,5 @@
 import "ajax-hook"
 import "sweetalert2"
-import "jsmediatags"
 import "mp3tag.js"
 import { unsafeWindow } from '$'
 

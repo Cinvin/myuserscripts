@@ -3,6 +3,8 @@ import { weapiRequest } from "../utils/request"
 import { fileSizeDesc } from '../utils/descHelper'
 import { unsafeWindow } from '$'
 import { uploadChunkSize } from '../utils/constant'
+import { MetaFlac } from "../utils/metaflac"
+import { detectAudioFormat } from "../utils/file"
 
 export const cloudLocalUpload = (uiArea) => {
     //本地上传
@@ -57,7 +59,7 @@ export const cloudLocalUpload = (uiArea) => {
                     artist: '未知',
                     album: '未知',
                     size: file.size,
-                    ext: fileName.slice(fileName.lastIndexOf('.') + 1),
+                    ext: fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase(),
                     bitrate: 128
                 }
                 this.task.push(song)
@@ -65,7 +67,7 @@ export const cloudLocalUpload = (uiArea) => {
             showTips(`开始获取文件中的标签信息`, 1)
             this.readFileTags(0)
         }
-        readFileTags(songIndex) {
+        async readFileTags(songIndex) {
             if (songIndex >= this.task.length) {
                 if (this.needFillInfo) {
                     this.showFillSongInforBox()
@@ -75,21 +77,30 @@ export const cloudLocalUpload = (uiArea) => {
                 }
                 return
             }
-            let fileData = this.task[songIndex].songFile
+            let song = this.task[songIndex]
+            let fileData = song.songFile
             // 解决因为window不同时读取文件的问题
             fileData = new File([fileData], fileData.name, { type: fileData.type })
-            new jsmediatags.Reader(fileData)
-                .read({
-                    onSuccess: (res) => {
-                        if (res.tags.title) this.task[songIndex].title = res.tags.title
-                        if (res.tags.artist) this.task[songIndex].artist = res.tags.artist
-                        if (res.tags.album) this.task[songIndex].album = res.tags.album
-                        this.readFileTags(songIndex + 1)
-                    },
-                    onError: (error) => {
-                        this.readFileTags(songIndex + 1)
-                    }
-                });
+            const fileBuffer = await fileData.arrayBuffer();
+            const fileFormat = detectAudioFormat(fileBuffer);
+            if (fileFormat === 'mp3') {
+                const mp3tag = new MP3Tag(fileBuffer);
+                mp3tag.read();
+                if (mp3tag.tags) {
+                    if (mp3tag.tags.title) song.title = mp3tag.tags.title
+                    if (mp3tag.tags.artist) song.artist = mp3tag.tags.artist
+                    if (mp3tag.tags.album) song.album = mp3tag.tags.album
+                }
+            } else if (fileFormat === 'flac') {
+                const flac = new MetaFlac(fileBuffer);
+                const titleTag = flac.getTag('TITLE');
+                const artistTag = flac.getTag('ARTIST');
+                const albumTag = flac.getTag('ALBUM');
+                if (titleTag) song.title = titleTag.substring(titleTag.indexOf('=') + 1)
+                if (artistTag) song.artist = artistTag.substring(artistTag.indexOf('=') + 1)
+                if (albumTag) song.album = albumTag.substring(albumTag.indexOf('=') + 1)
+            }
+            this.readFileTags(songIndex + 1)
         }
         showFillSongInforBox() {
             Swal.fire({
