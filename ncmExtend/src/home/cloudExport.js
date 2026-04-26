@@ -297,7 +297,7 @@ export const cloudExport = (uiArea) => {
         temp.href = fileurl
         temp.download = '网易云云盘信息.json'
         temp.click()
-        URL.revokeObjectURL(data);
+        URL.revokeObjectURL(fileurl);
         showTips(`导出云盘信息完成,共${config.data.length}首歌曲`, 1)
     }
 }

@@ -60,7 +60,7 @@ export const saveContentAsFile = (content, fileName) => {
         url: fileurl,
         name: fileName,
         onload: function () {
-            URL.revokeObjectURL(data)
+            URL.revokeObjectURL(fileurl)
         },
         onerror: function (e) {
             console.error(e)
