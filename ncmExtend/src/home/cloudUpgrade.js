@@ -93,7 +93,7 @@ export const cloudUpgrade = (uiArea) => {
                 threadCount: 1,
                 working: false,
                 stopFlag: false,
-                finnishThread: 0,
+                finishedThread: 0,
                 songIndexs: []
             }
         };
@@ -152,7 +152,7 @@ export const cloudUpgrade = (uiArea) => {
                         this.btnUpgradeBatch.innerHTML = "停止"
                         this.batchUpgrade.working = true
                         this.batchUpgrade.stopFlag = false
-                        this.batchUpgrade.finnishThread = 0
+                        this.batchUpgrade.finishedThread = 0
                         this.batchUpgrade.threadCount = Math.min(this.batchUpgrade.songIndexs.length, this.batchUpgrade.threadMax)
                         for (let i = 0; i < this.batchUpgrade.threadCount; i++) {
                             this.upgradeSong(this.batchUpgrade.songIndexs[i])
@@ -435,8 +435,8 @@ export const cloudUpgrade = (uiArea) => {
                         if (content.code == 200) {
                             showTips(`${song.name}删除成功`, 1)
                         }
-                        let songItem = { api: { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([song.id]), level: upgrade.targetLevel, encodeType: 'mp3' } }, id: song.id, title: song.name, artist: song.artists, album: song.album, songIndex: songIndex, Upgrader: this }
-                        let ULobj = new ncmDownUpload([songItem], false, this.onUpgradeSucess, this.onUpgradeFail)
+                        let songItem = { api: { url: '/api/song/enhance/player/url/v1', data: { ids: JSON.stringify([song.id]), level: upgrade.targetLevel, encodeType: 'mp3' } }, id: song.id, title: song.name, artist: song.artists, album: song.album, songIndex: songIndex }
+                        let ULobj = new ncmDownUpload([songItem], false, (s) => this.onUpgradeSuccess(s), (s) => this.onUpgradeFail(s))
                         ULobj.startUpload()
                     },
                 })
@@ -446,29 +446,29 @@ export const cloudUpgrade = (uiArea) => {
             }
         }
         onUpgradeFail(ULsong) {
-            let song = ULsong.Upgrader.songs[ULsong.songIndex]
-            const actionText = ULsong.Upgrader.filterMode === 'lower' ? '提升' : '降低'
+            let song = this.songs[ULsong.songIndex]
+            const actionText = this.filterMode === 'lower' ? '提升' : '降低'
             showTips(`${song.name} 音质${actionText}失败`, 2)
-            ULsong.Upgrader.onUpgradeFinnsh(ULsong.songIndex)
+            this.onUpgradeFinish(ULsong.songIndex)
         }
-        onUpgradeSucess(ULsong) {
-            let song = ULsong.Upgrader.songs[ULsong.songIndex]
-            const actionText = ULsong.Upgrader.filterMode === 'lower' ? '提升' : '降低'
+        onUpgradeSuccess(ULsong) {
+            let song = this.songs[ULsong.songIndex]
+            const actionText = this.filterMode === 'lower' ? '提升' : '降低'
             showTips(`${song.name} 音质${actionText}成功`, 1)
             song.upgraded = true
             let btnUpgrade = song.tablerow.querySelector('button')
             btnUpgrade.innerHTML = '<i class="fa-solid fa-check"></i>'
             btnUpgrade.disabled = 'disabled'
-            ULsong.Upgrader.onUpgradeFinnsh(ULsong.songIndex)
+            this.onUpgradeFinish(ULsong.songIndex)
         }
-        onUpgradeFinnsh(songIndex) {
+        onUpgradeFinish(songIndex) {
             if (this.batchUpgrade.working) {
                 let batchSongIdx = this.batchUpgrade.songIndexs.indexOf(songIndex)
                 if (!this.batchUpgrade.stopFlag && batchSongIdx + this.batchUpgrade.threadCount < this.batchUpgrade.songIndexs.length) {
                     this.upgradeSong(this.batchUpgrade.songIndexs[batchSongIdx + this.batchUpgrade.threadCount])
                 } else {
-                    this.batchUpgrade.finnishThread += 1
-                    if (this.batchUpgrade.finnishThread == this.batchUpgrade.threadCount) {
+                    this.batchUpgrade.finishedThread += 1
+                    if (this.batchUpgrade.finishedThread == this.batchUpgrade.threadCount) {
                         this.batchUpgrade.working = false
                         this.batchUpgrade.stopFlag = false
                         this.renderFilterInfo()
