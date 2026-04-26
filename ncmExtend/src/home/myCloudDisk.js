@@ -264,7 +264,7 @@ export const myCloudDisk = (uiArea) => {
             if (!this.filter.allSongs) this.filter.allSongs = []
             this.filter.songs = this.filter.allSongs.filter(song => this.checkSongMatchesFilters(song))
             this.updateFilterButtonText()
-            this.sepreateFilterCloudListPage(1)
+            this.separateFilterCloudListPage(1)
         }
 
         /**
@@ -309,12 +309,12 @@ export const myCloudDisk = (uiArea) => {
         /**
          * 分页显示筛选后的数据
          */
-        sepreateFilterCloudListPage(currentPage) {
+        separateFilterCloudListPage(currentPage) {
             this.currentPage = currentPage
             const count = this.filter.songs.length
             const maxPage = Math.ceil(count / this.cloudCountLimit)
             createPagination(this.controls.pageArea, currentPage, maxPage, (page) => {
-                this.sepreateFilterCloudListPage(page);
+                this.separateFilterCloudListPage(page);
             });
 
             const songindex = (currentPage - 1) * this.cloudCountLimit
@@ -381,7 +381,7 @@ export const myCloudDisk = (uiArea) => {
             })
         }
 
-        fiilSearchTable(searchContent, cloudSongId, matchId = null) {
+        fillSearchTable(searchContent, cloudSongId, matchId = null) {
             if (searchContent.result.songCount > 0) {
                 this.controls.matchTbody.innerHTML = ''
 
@@ -953,7 +953,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
                 this.filter.liveVersion === 'all') {
                 this.fetchCloudInfoForMatchTable((this.currentPage - 1) * this.cloudCountLimit)
             } else {
-                this.sepreateFilterCloudListPage(this.currentPage)
+                this.separateFilterCloudListPage(this.currentPage)
             }
         }
 
@@ -1038,7 +1038,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
                         songDetailText += '，目前未关联到网易云。'
                     }
                     footer.innerHTML = `<div>${songDetailText}</div>` + footer.innerHTML
-                    this.fiilSearchTable(searchContent, song.simpleSong.id)
+                    this.fillSearchTable(searchContent, song.simpleSong.id)
                 }
             })
 
@@ -1103,7 +1103,7 @@ table tbody tr:hover td:nth-last-child(-n + 3) {
                                 }
                             }
                             const matchId = (songDetailContent && songDetailContent.songs && songDetailContent.songs.length > 0) ? songDetailContent.songs[0].id : null;
-                            this.fiilSearchTable(searchContent, song.simpleSong.id, matchId)
+                            this.fillSearchTable(searchContent, song.simpleSong.id, matchId)
                         }
                     })
                 } else {
