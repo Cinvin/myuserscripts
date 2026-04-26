@@ -15,8 +15,8 @@ let isSettedHeader = false;
 export let isOldSettedHeader = false;
 
 const requestQueue = []
-// 定时器，每200毫秒执行一次，从队列中取出一个请求执行
-const REQUEST_INTERVAL = 50; // 每200毫秒执行一个请求
+// 定时器，每50毫秒执行一次，从队列中取出一个请求执行
+const REQUEST_INTERVAL = 50; // 每50毫秒执行一个请求
 setInterval(() => {
     if (requestQueue.length > 0) {
         const requestFn = requestQueue.shift();
@@ -50,9 +50,9 @@ export const weapiRequest = (url, config) => {
         anonymous: isSettedHeader,
         data: `params=${encodeURIComponent(encRes.params)}&encSecKey=${encodeURIComponent(encRes.encSecKey)}`,
         onload: res => { config.onload(res.response) },
-        onerror: config.onerror,
+        onerror: config.onerror || (err => { console.error('请求失败:', err) }),
     }
-    enqueueAPIRequest(details)
+    return enqueueAPIRequest(details)
 }
 export function weapiRequestSync(url, config) {
     return new Promise((resolve, reject) => {
@@ -67,12 +67,24 @@ function enqueueAPIRequest(data) {
     return new Promise((resolve, reject) => {
         // 把一个函数推入队列，这个函数负责执行 API 请求并传递结果
         requestQueue.push(() => {
-            callAPI(data)
+            callAPI(data, resolve, reject)
         });
     });
 }
-function callAPI(data) {
-    GM_xmlhttpRequest(data)
+function callAPI(data, resolve, reject) {
+    const originalOnload = data.onload;
+    const originalOnerror = data.onerror;
+    GM_xmlhttpRequest({
+        ...data,
+        onload: (res) => {
+            if (originalOnload) originalOnload(res);
+            resolve(res);
+        },
+        onerror: (err) => {
+            if (originalOnerror) originalOnerror(err);
+            reject(err);
+        },
+    })
 }
 function setDeviceId() {
     const requestHeader = JSON.parse(GM_getValue('requestHeader', '{}'))
