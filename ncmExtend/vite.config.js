@@ -27,7 +27,6 @@ export default defineConfig({
         externalGlobals: {
           sweetalert2: cdn.jsdelivrFastly('sweetalert2', 'dist/sweetalert2.all.min.js'),
           'ajax-hook': cdn.jsdelivrFastly('ajax-hook', 'dist/ajaxhook.min.js'),
-          jsmediatags: cdn.jsdelivrFastly('jsmediatags', 'dist/jsmediatags.min.js'),
           'node-forge': cdn.jsdelivrFastly('node-forge', 'dist/forge.min.js'),
           'mp3tag.js': cdn.jsdelivrFastly('mp3tag.js', 'dist/mp3tag.min.js'),
         },

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.4.4
+// @version      4.4.5
 // @author       cinvin
 // @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
@@ -9,7 +9,6 @@
 // @match        https://music.163.com/*
 // @require      https://fastly.jsdelivr.net/npm/sweetalert2@11.26.3/dist/sweetalert2.all.min.js
 // @require      https://fastly.jsdelivr.net/npm/ajax-hook@3.0.3/dist/ajaxhook.min.js
-// @require      https://fastly.jsdelivr.net/npm/jsmediatags@3.9.7/dist/jsmediatags.min.js
 // @require      https://fastly.jsdelivr.net/npm/node-forge@1.3.1/dist/forge.min.js
 // @require      https://fastly.jsdelivr.net/npm/mp3tag.js@3.14.1/dist/mp3tag.min.js
 // @resource     fa  https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css
@@ -33,98 +32,21 @@
 
   var _GM_getValue = (() => typeof GM_getValue != "undefined" ? GM_getValue : void 0)();
   var _unsafeWindow = (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
-  const levelOptions = { jymaster: "超清母带", dolby: "杜比全景声", sky: "沉浸环绕声", jyeffect: "高清臻音", hires: "高解析度无损", lossless: "无损", exhigh: "极高", higher: "较高", standard: "标准" };
-  const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 5, lossless: 4, exhigh: 3, higher: 2, standard: 1, none: 0 };
-  const defaultOfDEFAULT_LEVEL = "jymaster";
-  const defaultOfBatchFilter = {
-    free: true,
-vip: true,
-pay: true,
-lowfree: true,
-instrumental: true,
-live: true,
-cloud: false
-};
-  const getBatchFilter = () => {
-    return Object.assign(defaultOfBatchFilter, JSON.parse(GM_getValue("batchFilter", "{}")));
-  };
-  const setBatchFilter = (value) => {
-    GM_setValue("batchFilter", JSON.stringify(Object.assign(defaultOfBatchFilter, value)));
-  };
-  const defaultOfDownloadSettings = {
-    appendMeta: "notAppend",
-out: "artist-title",
-folder: "none"
-};
-  const getDownloadSettings = () => {
-    return Object.assign(defaultOfDownloadSettings, JSON.parse(GM_getValue("downloadSettings", "{}")));
-  };
-  const setDownloadSettings = (value) => {
-    GM_setValue("downloadSettings", JSON.stringify(Object.assign(defaultOfDownloadSettings, value)));
-  };
-  const defaultOfBatchDownloadSettings = {
-    concurrent: 4,
-level: "jymaster",
-dllrc: false,
-levelonly: false
-};
-  const getBatchDownloadSettings = () => {
-    return Object.assign(defaultOfBatchDownloadSettings, JSON.parse(GM_getValue("batchDownloadSettings", "{}")));
-  };
-  const setBatchDownloadSettings = (value) => {
-    GM_setValue("batchDownloadSettings", JSON.stringify(Object.assign(defaultOfBatchDownloadSettings, value)));
-  };
-  const defaultOfBatchTransUploadSettings = {
-    level: "jymaster",
-levelonly: false
-};
-  const getBatchTransUploadSettings = () => {
-    return Object.assign(defaultOfBatchTransUploadSettings, JSON.parse(GM_getValue("batchTransUploadSettings", "{}")));
-  };
-  const setBatchTransUploadSettings = (value) => {
-    GM_setValue("batchTransUploadSettings", JSON.stringify(Object.assign(defaultOfBatchTransUploadSettings, value)));
-  };
-  const uploadChunkSize = 8 * 1024 * 1024;
-  const songMark = { explicit: 1048576 };
-  const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
-  const iv = "0102030405060708";
-  const presetKey = "0CoJUm6Qyw8W8jud";
-  const base62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const publicKey = `-----BEGIN PUBLIC KEY-----
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7clFSs6sXqHauqKWqdtLkF2KexO40H1YTX8z2lSgBBOAxLsvaklV8k4cBFK9snQXE9/DDaFt6Rr7iVZMldczhC0JNgTz+SHXT6CBHuX3e9SdB1Ua44oncaTWz7OBGLbCiK45wIDAQAB
------END PUBLIC KEY-----`;
-  const aesEncrypt = (text, key, iv2) => {
-    const cipher = forge.cipher.createCipher("AES-CBC", key);
-    cipher.start({ iv: iv2 });
-    cipher.update(forge.util.createBuffer(forge.util.encodeUtf8(text)));
-    cipher.finish();
-    const encrypted = cipher.output;
-    return forge.util.encode64(encrypted.getBytes());
-  };
-  const rsaEncrypt = (str, key) => {
-    const forgePublicKey = forge.pki.publicKeyFromPem(key);
-    const encrypted = forgePublicKey.encrypt(str, "NONE");
-    return forge.util.bytesToHex(encrypted);
-  };
-  const weapi = (object) => {
-    const text = JSON.stringify(object);
-    let secretKey = "";
-    for (let i = 0; i < 16; i++) {
-      secretKey += base62.charAt(Math.round(Math.random() * 61));
+  const safeJsonParse = (value, fallback) => {
+    try {
+      if (value === null || value === void 0 || value === "") return fallback;
+      return JSON.parse(value);
+    } catch (e) {
+      logWarn("配置解析错误, 回退到默认值", { value, error: e });
+      return fallback;
     }
-    return {
-      params: aesEncrypt(
-        aesEncrypt(text, presetKey, iv),
-        secretKey,
-        iv
-      ),
-      encSecKey: rsaEncrypt(secretKey.split("").reverse().join(""), publicKey)
-    };
   };
-  const getMD5 = (text) => {
-    const md = forge.md.md5.create();
-    md.update(text);
-    return md.digest().toHex();
+  const logWarn = (message, data) => {
+    console.warn(`[ncmExtend] ${message}`, data);
+  };
+  const escapeHtml = (str) => {
+    if (str == null) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   };
   const sleep = (millisec) => {
     return new Promise((resolve) => setTimeout(resolve, millisec));
@@ -159,10 +81,10 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       url: fileurl,
       name: fileName,
       onload: function() {
-        URL.revokeObjectURL(data);
+        URL.revokeObjectURL(fileurl);
       },
-      onerror: function(e2) {
-        console.error(e2);
+      onerror: function(e) {
+        console.error(e);
         showTips(`下载失败,请尝试将 .${fileName.split(".").pop()} 格式加入 文件扩展名白名单`, 2);
       }
     });
@@ -173,7 +95,8 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     const btnDesc = document.createElement("i");
     btnDesc.innerHTML = desc;
     btn.appendChild(btnDesc);
-    btn.style.margin = "5px";
+    btn.style.setProperty("margin-right", "6px");
+    btn.style.setProperty("margin-top", "6px");
     if (appendWay === 1) {
       parent.appendChild(btn);
     } else {
@@ -286,6 +209,181 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
     }
     return false;
   };
+  const getTableStyles = (columnWidths, extraStyles = "") => {
+    let widthCSS = "";
+    columnWidths.forEach((width, index) => {
+      widthCSS += `
+tr th:nth-child(${index + 1}),tr td:nth-child(${index + 1}){
+width: ${width};
+}`;
+    });
+    return `<style>
+    table {
+        width: 100%;
+        border-spacing: 0px;
+        border-collapse: collapse;
+        border: 2px solid #f0f0f0;
+    }
+    table th, table td {
+        text-align: left;
+        text-overflow: ellipsis;
+    }
+    table tbody {
+        display: block;
+        width: 100%;
+        max-height: 400px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    table thead tr, table tbody tr, table tfoot tr {
+        box-sizing: border-box;
+        table-layout: fixed;
+        display: table;
+        width: 100%;
+    }
+    table tbody tr td{
+        border-bottom: none;
+    }
+${widthCSS}
+${extraStyles}
+</style>
+`;
+  };
+  const createPagination = (container, currentPage, maxPage, onPageChange, disabled = false) => {
+    container.innerHTML = "";
+    if (maxPage <= 1) return;
+    const pageIndexs = [1];
+    const floor = Math.max(2, currentPage - 2);
+    const ceil = Math.min(maxPage - 1, currentPage + 2);
+    for (let i = floor; i <= ceil; i++) {
+      pageIndexs.push(i);
+    }
+    if (maxPage > 1) {
+      pageIndexs.push(maxPage);
+    }
+    pageIndexs.forEach((index) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "swal2-styled";
+      btn.innerText = index;
+      if (disabled) btn.disabled = true;
+      if (index === currentPage) {
+        btn.style.background = "white";
+      } else {
+        btn.addEventListener("click", () => {
+          onPageChange(index);
+        });
+      }
+      container.appendChild(btn);
+    });
+    if (pageIndexs.length < maxPage) {
+      const jumpToPageInput = createPageJumpInput(currentPage, maxPage);
+      if (disabled) jumpToPageInput.disabled = true;
+      jumpToPageInput.addEventListener("change", () => {
+        const newPage = parseInt(jumpToPageInput.value);
+        if (newPage >= 1 && newPage <= maxPage) {
+          onPageChange(newPage);
+        } else {
+          jumpToPageInput.value = currentPage;
+        }
+      });
+      container.appendChild(jumpToPageInput);
+    }
+  };
+  const levelOptions = { jymaster: "超清母带", dolby: "杜比全景声", sky: "沉浸环绕声", jyeffect: "高清臻音", hires: "高解析度无损", lossless: "无损", exhigh: "极高", higher: "较高", standard: "标准" };
+  const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 5, lossless: 4, exhigh: 3, higher: 2, standard: 1, none: 0 };
+  const defaultOfDEFAULT_LEVEL = "jymaster";
+  const defaultOfBatchFilter = {
+    free: true,
+vip: true,
+pay: true,
+lowfree: true,
+instrumental: true,
+live: true,
+cloud: false
+};
+  const getBatchFilter = () => {
+    return Object.assign({}, defaultOfBatchFilter, safeJsonParse(GM_getValue("batchFilter", "{}"), {}));
+  };
+  const setBatchFilter = (value) => {
+    GM_setValue("batchFilter", JSON.stringify(Object.assign({}, defaultOfBatchFilter, value)));
+  };
+  const defaultOfDownloadSettings = {
+    appendMeta: "notAppend",
+out: "artist-title",
+folder: "none"
+};
+  const getDownloadSettings = () => {
+    return Object.assign({}, defaultOfDownloadSettings, safeJsonParse(GM_getValue("downloadSettings", "{}"), {}));
+  };
+  const setDownloadSettings = (value) => {
+    GM_setValue("downloadSettings", JSON.stringify(Object.assign({}, defaultOfDownloadSettings, value)));
+  };
+  const defaultOfBatchDownloadSettings = {
+    concurrent: 4,
+level: "jymaster",
+dllrc: false,
+levelonly: false
+};
+  const getBatchDownloadSettings = () => {
+    return Object.assign({}, defaultOfBatchDownloadSettings, safeJsonParse(GM_getValue("batchDownloadSettings", "{}"), {}));
+  };
+  const setBatchDownloadSettings = (value) => {
+    GM_setValue("batchDownloadSettings", JSON.stringify(Object.assign({}, defaultOfBatchDownloadSettings, value)));
+  };
+  const defaultOfBatchTransUploadSettings = {
+    level: "jymaster",
+levelonly: false
+};
+  const getBatchTransUploadSettings = () => {
+    return Object.assign({}, defaultOfBatchTransUploadSettings, safeJsonParse(GM_getValue("batchTransUploadSettings", "{}"), {}));
+  };
+  const setBatchTransUploadSettings = (value) => {
+    GM_setValue("batchTransUploadSettings", JSON.stringify(Object.assign({}, defaultOfBatchTransUploadSettings, value)));
+  };
+  const uploadChunkSize = 8 * 1024 * 1024;
+  const songMark = { explicit: 1048576 };
+  const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
+  const DEFAULT_ALBUM_PIC_URL = "http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg";
+  const iv = "0102030405060708";
+  const presetKey = "0CoJUm6Qyw8W8jud";
+  const base62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const publicKey = `-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7clFSs6sXqHauqKWqdtLkF2KexO40H1YTX8z2lSgBBOAxLsvaklV8k4cBFK9snQXE9/DDaFt6Rr7iVZMldczhC0JNgTz+SHXT6CBHuX3e9SdB1Ua44oncaTWz7OBGLbCiK45wIDAQAB
+-----END PUBLIC KEY-----`;
+  const aesEncrypt = (text, key, iv2) => {
+    const cipher = forge.cipher.createCipher("AES-CBC", key);
+    cipher.start({ iv: iv2 });
+    cipher.update(forge.util.createBuffer(forge.util.encodeUtf8(text)));
+    cipher.finish();
+    const encrypted = cipher.output;
+    return forge.util.encode64(encrypted.getBytes());
+  };
+  const rsaEncrypt = (str, key) => {
+    const forgePublicKey = forge.pki.publicKeyFromPem(key);
+    const encrypted = forgePublicKey.encrypt(str, "NONE");
+    return forge.util.bytesToHex(encrypted);
+  };
+  const weapi = (object) => {
+    const text = JSON.stringify(object);
+    let secretKey = "";
+    for (let i = 0; i < 16; i++) {
+      secretKey += base62.charAt(Math.round(Math.random() * 61));
+    }
+    return {
+      params: aesEncrypt(
+        aesEncrypt(text, presetKey, iv),
+        secretKey,
+        iv
+      ),
+      encSecKey: rsaEncrypt(secretKey.split("").reverse().join(""), publicKey)
+    };
+  };
+  const getMD5 = (text) => {
+    const md = forge.md.md5.create();
+    md.update(text);
+    return md.digest().toHex();
+  };
   const scriptSettings = (uiArea) => {
     const btnExport = createBigButton("脚本设置", uiArea, 2);
     btnExport.addEventListener("click", openSettingPopup);
@@ -376,7 +474,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
                     <button type="button" class="swal2-styled" aria-label="" id="btn-set" style="display: inline-block;">设置</button>`;
           const cookieInput = container.querySelector("#text-cookie");
           const userAgentInput = container.querySelector("#text-userAgent");
-          const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
+          const requestHeader = safeJsonParse(GM_getValue("requestHeader", "{}"), {});
           if (requestHeader.originalCookie) {
             cookieInput.value = requestHeader.originalCookie;
           }
@@ -423,7 +521,7 @@ coverCookie: cookieString,
       showConfirmBox("设置完成，刷新网页生效。");
     }
     function removeHeader() {
-      const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
+      const requestHeader = safeJsonParse(GM_getValue("requestHeader", "{}"), {});
       if (!requestHeader.originalCookie) {
         showTips("并没有设置请求头", 2);
         return;
@@ -449,7 +547,8 @@ coverCookie: cookieString,
       if (o && typeof o === "object") {
         return o;
       }
-    } catch (e2) {
+    } catch (e) {
+      logWarn("Failed to parse JSON", { jsonString, error: e });
     }
     return false;
   };
@@ -489,6 +588,18 @@ coverCookie: cookieString,
   };
   let isSettedHeader = false;
   let isOldSettedHeader = false;
+  let cachedCsrfToken = "";
+  let lastCsrfUpdate = 0;
+  const CSRF_REFRESH_INTERVAL = 6e4;
+  function getCsrfToken() {
+    const now = Date.now();
+    if (!cachedCsrfToken || now - lastCsrfUpdate > CSRF_REFRESH_INTERVAL) {
+      const match = document.cookie.match(/_csrf=([^(;|$)]+)/);
+      cachedCsrfToken = match ? match[1] : "";
+      lastCsrfUpdate = now;
+    }
+    return cachedCsrfToken;
+  }
   const requestQueue = [];
   const REQUEST_INTERVAL = 50;
   setInterval(() => {
@@ -501,8 +612,7 @@ coverCookie: cookieString,
   const weapiRequest = (url2, config) => {
     const data = config.data || {};
     const clientType = config.clientType || "pc";
-    const csrfToken = document.cookie.match(/_csrf=([^(;|$)]+)/);
-    data.csrf_token = csrfToken ? csrfToken[1] : "";
+    data.csrf_token = getCsrfToken();
     const encRes = weapi(data);
     const headers = {
       "content-type": "application/x-www-form-urlencoded",
@@ -524,9 +634,11 @@ coverCookie: cookieString,
       onload: (res) => {
         config.onload(res.response);
       },
-      onerror: config.onerror
+      onerror: config.onerror || ((err) => {
+        console.error("请求失败:", err);
+      })
     };
-    enqueueAPIRequest(details);
+    return enqueueAPIRequest(details);
   };
   function weapiRequestSync(url2, config) {
     return new Promise((resolve, reject) => {
@@ -540,15 +652,27 @@ coverCookie: cookieString,
   function enqueueAPIRequest(data) {
     return new Promise((resolve, reject) => {
       requestQueue.push(() => {
-        callAPI(data);
+        callAPI(data, resolve, reject);
       });
     });
   }
-  function callAPI(data) {
-    GM_xmlhttpRequest(data);
+  function callAPI(data, resolve, reject) {
+    const originalOnload = data.onload;
+    const originalOnerror = data.onerror;
+    GM_xmlhttpRequest({
+      ...data,
+      onload: (res) => {
+        if (originalOnload) originalOnload(res);
+        resolve(res);
+      },
+      onerror: (err) => {
+        if (originalOnerror) originalOnerror(err);
+        reject(err);
+      }
+    });
   }
   function setDeviceId() {
-    const requestHeader = JSON.parse(GM_getValue("requestHeader", "{}"));
+    const requestHeader = safeJsonParse(GM_getValue("requestHeader", "{}"), {});
     if (!requestHeader.coverCookie && requestHeader.originalCookie) {
       const cookieObject = tryParseJSON(requestHeader.originalCookie) || parseCookie(requestHeader.originalCookie);
       let cookieString = "";
@@ -605,7 +729,7 @@ coverCookie: cookieString,
       const month = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
-    } catch (e2) {
+    } catch (e) {
       return "";
     }
   };
@@ -663,8 +787,12 @@ coverCookie: cookieString,
       unsafeWindow.top.GUserScriptObjects.storageCommentInfos[String(comment.commentId)] = appendText.trim();
     }
   };
+  let commentObserver = null;
   const observerCommentBox = (commentBox) => {
-    let observer = new MutationObserver((mutations, observer2) => {
+    if (commentObserver) {
+      commentObserver.disconnect();
+    }
+    commentObserver = new MutationObserver((mutations, observer) => {
       mutations.forEach((mutation) => {
         if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
           for (let node of mutation.addedNodes) {
@@ -675,7 +803,7 @@ coverCookie: cookieString,
         }
       });
     });
-    observer.observe(commentBox, {
+    commentObserver.observe(commentBox, {
       childList: true,
       subtree: true
     });
@@ -685,7 +813,7 @@ coverCookie: cookieString,
     const commentId = commentItem.getAttribute("data-id");
     let timeArea = commentItem.querySelector("div.time");
     if (unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId]) {
-      timeArea.innerHTML += ` <span class="ipInfo">${unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId]}</span>`;
+      timeArea.innerHTML += ` <span class="ipInfo">${escapeHtml(unsafeWindow.top.GUserScriptObjects.storageCommentInfos[commentId])}</span>`;
     }
   };
   const InfoFirstPage = (commentBox) => {
@@ -698,8 +826,9 @@ coverCookie: cookieString,
     const commentTextarea = commentBox.querySelector("textarea");
     const threadId = commentBox.getAttribute("data-tid");
     const btnsArea = commentBox.querySelector(".btns");
+    if (btnsArea.querySelector(".ncm-ip-btn")) return;
     let ipBtn = document.createElement("a");
-    ipBtn.className = "s-fc7";
+    ipBtn.className = "s-fc7 ncm-ip-btn";
     ipBtn.innerHTML = "使用指定IP地址评论";
     ipBtn.addEventListener("click", () => {
       const content = commentTextarea.value.trim();
@@ -890,7 +1019,7 @@ coverCookie: cookieString,
         _unsafeWindow.top.player.tipPlay(desc);
         return;
       }
-    } catch (e2) {
+    } catch (e) {
     }
   };
   const extractLrcRegex = /^(?<lyricTimestamps>(?:\[.+?\])+)(?!\[)(?<content>.+)$/gm;
@@ -1132,7 +1261,7 @@ toUint8Array() {
         URL.revokeObjectURL(url2);
         resolve({ width: w, height: h, type: "image" });
       };
-      img.onerror = function(e2) {
+      img.onerror = function(e) {
         URL.revokeObjectURL(url2);
         reject(new Error("imageSizeFromBuffer: failed to decode image"));
       };
@@ -1492,7 +1621,7 @@ cleanupItem: function(item) {
       if (item.blobUrl) {
         try {
           URL.revokeObjectURL(item.blobUrl);
-        } catch (e2) {
+        } catch (e) {
         }
       }
       if (item.songItem && item.songItem.download) {
@@ -1538,52 +1667,7 @@ cleanupAll: function() {
       showCloseButton: false,
       showConfirmButton: false,
       width: "980px",
-      html: `<style>
-table {
-width: 100%;
-border-spacing: 0px;
-border-collapse: collapse;
-border: 2px solid #f0f0f0;
-}
-table th, table td {
-text-align: left;
-text-overflow: ellipsis;
-}
-table tbody {
-display: block;
-width: 100%;
-max-height: 400px;
-overflow-y: auto;
--webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-box-sizing: border-box;
-table-layout: fixed;
-display: table;
-width: 100%;
-}
-table tbody tr td{
-border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 26%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 22%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 22%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 10%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 10%;
-}
-tr th:nth-child(6),tr td:nth-child(6){
-width: 10%;
-}
-</style>
+      html: `${getTableStyles(["26%", "22%", "22%", "10%", "10%", "10%"])}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>歌曲标题</th><th>歌手</th><th>专辑</th><th>音质</th><th>大小</th><th>进度</th> </tr></thead><tbody></tbody></table>
 `,
       footer: "<div></div>",
@@ -1632,7 +1716,7 @@ width: 10%;
         }
         if (config.errorSongs.length > 0) {
           finnshText += `
-以下${config.errorSongs.length}首歌曲下载失败: ${config.errorSongs.map((song2) => `<a href="https://music.163.com/#/song?id=${song2.id}">${song2.title}</a>`).join()}`;
+以下${config.errorSongs.length}首歌曲下载失败: ${config.errorSongs.map((song2) => `<a href="https://music.163.com/#/song?id=${song2.id}">${escapeHtml(song2.title)}</a>`).join()}`;
         }
         Swal.update({
           allowOutsideClick: true,
@@ -1644,7 +1728,7 @@ width: 10%;
       }
       return;
     }
-    tableRowDOM.innerHTML = `<td>${song.title}</td><td>${song.artist}</td><td>${song.album}</td><td class='my-level'></td><td class='my-size'></td><td class='my-pr'></td>`;
+    tableRowDOM.innerHTML = `<td>${escapeHtml(song.title)}</td><td>${escapeHtml(song.artist)}</td><td>${escapeHtml(song.album)}</td><td class='my-level'></td><td class='my-size'></td><td class='my-pr'></td>`;
     let levelText = tableRowDOM.querySelector(".my-level");
     let sizeText = tableRowDOM.querySelector(".my-size");
     let prText = tableRowDOM.querySelector(".my-pr");
@@ -1712,8 +1796,8 @@ width: 10%;
           downloadSongSub(threadIndex, songList, config);
         }
       });
-    } catch (e2) {
-      console.error(e2);
+    } catch (e) {
+      console.error(e);
       if (song.retry) {
         prText.innerHTML = `下载出错`;
         config.errorSongs.push(song);
@@ -1970,18 +2054,18 @@ width: 10%;
     let _savedDl = {};
     try {
       _savedBatchDl = getBatchDownloadSettings() || {};
-    } catch (e2) {
-      console.warn("getBatchDownloadSettings error", e2);
+    } catch (e) {
+      console.warn("getBatchDownloadSettings error", e);
     }
     try {
       _savedBatchUp = getBatchTransUploadSettings() || {};
-    } catch (e2) {
-      console.warn("getBatchTransUploadSettings error", e2);
+    } catch (e) {
+      console.warn("getBatchTransUploadSettings error", e);
     }
     try {
       _savedDl = getDownloadSettings() || {};
-    } catch (e2) {
-      console.warn("getDownloadSettings error", e2);
+    } catch (e) {
+      console.warn("getDownloadSettings error", e);
     }
     let state = {
       songs: songPlayableList.map((s, idx) => {
@@ -2048,8 +2132,8 @@ downloadConfig: Object.assign({
         container.querySelector("#bm-nav-desc");
         const toolbar = container.querySelector("#bm-toolbar");
         nav.querySelectorAll(".bm-nav-item").forEach((btn) => {
-          btn.addEventListener("click", (e2) => {
-            const view = e2.currentTarget.getAttribute("data-view");
+          btn.addEventListener("click", (e) => {
+            const view = e.currentTarget.getAttribute("data-view");
             state.view = view;
             renderView();
           });
@@ -2166,7 +2250,7 @@ downloadConfig: Object.assign({
   
   <!-- 封面：固定宽度，居中 -->
   <div style="flex: 0 0 56px; display: flex; align-items: center; justify-content: center;">
-    <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" title="${s.album}" style="display: block;">
+    <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" title="${escapeHtml(s.album)}" style="display: block;">
       <img src="${s.song.al.picUrl + "?param=50y50&quality=100"}" 
            alt="cover" 
            style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px; background: #f5f5f5; transition: transform 0.2s ease;">
@@ -2176,19 +2260,19 @@ downloadConfig: Object.assign({
   <!-- 歌曲信息：弹性伸缩，优先占用空间 -->
   <div style="flex: 2 1 200px; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
     <div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
-      <a href="https://music.163.com/#/song?id=${s.song.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${s.title}</a>
+      <a href="https://music.163.com/#/song?id=${s.song.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${escapeHtml(s.title)}</a>
     </div>
     <div style="font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
     ${(s.song.mark & 1048576) === 1048576 ? "🅴 " : ""}
     ${s.privilege.cs ? '<i class="fa-regular fa-cloud"></i> ' : ""}
-      ${s.artist}
+      ${escapeHtml(s.artist)}
     </div>
   </div>
   
   <!-- 专辑信息：弹性伸缩，次要占用空间 -->
   <div style="flex: 1 1 120px; min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center;">
     <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
-      <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${s.album}</a>
+      <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${escapeHtml(s.album)}</a>
     </div>
   </div>
                     `;
@@ -2224,8 +2308,8 @@ downloadConfig: Object.assign({
                   </div>
                 `;
           const input = mainContent.querySelector("#bm-filter-input");
-          input.addEventListener("input", (e2) => {
-            state.filterText = e2.target.value.trim();
+          input.addEventListener("input", (e) => {
+            state.filterText = e.target.value.trim();
             state.page = 1;
           });
           const checkboxes = mainContent.querySelectorAll('input[type="checkbox"]');
@@ -2280,33 +2364,33 @@ downloadConfig: Object.assign({
           selAppend.value = state.downloadConfig.appendMeta || "notAppend";
           cbLyric.checked = !!state.downloadConfig.downloadLyric;
           cbLevelOnly.checked = !!state.downloadConfig.levelonly;
-          selConcurrent.addEventListener("change", (e2) => {
-            const v = parseInt(e2.target.value || "4");
+          selConcurrent.addEventListener("change", (e) => {
+            const v = parseInt(e.target.value || "4");
             state.downloadConfig.threadCount = v;
             setBatchDownloadSettings({ concurrent: v, level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
           });
-          selLevel.addEventListener("change", (e2) => {
-            state.downloadConfig.level = e2.target.value;
+          selLevel.addEventListener("change", (e) => {
+            state.downloadConfig.level = e.target.value;
             setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
           });
-          selOut.addEventListener("change", (e2) => {
-            state.downloadConfig.out = e2.target.value;
+          selOut.addEventListener("change", (e) => {
+            state.downloadConfig.out = e.target.value;
             setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta });
           });
-          selFolder.addEventListener("change", (e2) => {
-            state.downloadConfig.folder = e2.target.value;
+          selFolder.addEventListener("change", (e) => {
+            state.downloadConfig.folder = e.target.value;
             setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta });
           });
-          selAppend.addEventListener("change", (e2) => {
-            state.downloadConfig.appendMeta = e2.target.value;
+          selAppend.addEventListener("change", (e) => {
+            state.downloadConfig.appendMeta = e.target.value;
             setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta });
           });
-          cbLyric.addEventListener("change", (e2) => {
-            state.downloadConfig.downloadLyric = e2.target.checked;
+          cbLyric.addEventListener("change", (e) => {
+            state.downloadConfig.downloadLyric = e.target.checked;
             setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
           });
-          cbLevelOnly.addEventListener("change", (e2) => {
-            state.downloadConfig.targetLevelOnly = e2.target.checked;
+          cbLevelOnly.addEventListener("change", (e) => {
+            state.downloadConfig.targetLevelOnly = e.target.checked;
             setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
           });
         }
@@ -2324,54 +2408,20 @@ downloadConfig: Object.assign({
           const cbUpLevelOnly = mainContent.querySelector("#bm-up-target-only");
           selUpLevel.value = state.uploadConfig.level || "jymaster";
           cbUpLevelOnly.checked = !!state.uploadConfig.targetLevelOnly;
-          selUpLevel.addEventListener("change", (e2) => {
-            state.uploadConfig.level = e2.target.value;
+          selUpLevel.addEventListener("change", (e) => {
+            state.uploadConfig.level = e.target.value;
             setBatchTransUploadSettings({ level: state.uploadConfig.level, levelonly: !!state.uploadConfig.targetLevelOnly });
           });
-          cbUpLevelOnly.addEventListener("change", (e2) => {
-            state.uploadConfig.targetLevelOnly = e2.target.checked;
+          cbUpLevelOnly.addEventListener("change", (e) => {
+            state.uploadConfig.targetLevelOnly = e.target.checked;
             setBatchTransUploadSettings({ level: state.uploadConfig.level, levelonly: !!state.uploadConfig.targetLevelOnly });
           });
         }
         function renderPager() {
-          pager.innerHTML = "";
-          const pageIndexs = [1];
-          const floor = Math.max(2, state.page - 2);
-          const ceil = Math.min(state.pageMax - 1, state.page + 2);
-          for (let i = floor; i <= ceil; i++) {
-            pageIndexs.push(i);
-          }
-          if (state.pageMax > 1) {
-            pageIndexs.push(state.pageMax);
-          }
-          pageIndexs.forEach((pageIndex) => {
-            const pageBtn = document.createElement("button");
-            pageBtn.setAttribute("type", "button");
-            pageBtn.className = "swal2-styled";
-            pageBtn.innerHTML = pageIndex;
-            if (pageIndex !== state.page) {
-              pageBtn.addEventListener("click", () => {
-                state.page = pageIndex;
-                renderView();
-              });
-            } else {
-              pageBtn.style.background = "white";
-            }
-            pager.appendChild(pageBtn);
+          createPagination(pager, state.page, state.pageMax, (page) => {
+            state.page = page;
+            renderView();
           });
-          if (pageIndexs.length < state.pageMax) {
-            const jumpToPageInput = createPageJumpInput(state.page, state.pageMax);
-            jumpToPageInput.addEventListener("change", () => {
-              const newPage = parseInt(jumpToPageInput.value);
-              if (newPage >= 1 && newPage <= state.pageMax) {
-                state.page = newPage;
-                renderView();
-              } else {
-                jumpToPageInput.value = state.page;
-              }
-            });
-            pager.appendChild(jumpToPageInput);
-          }
         }
         renderView();
       }
@@ -2418,7 +2468,7 @@ downloadConfig: Object.assign({
                 this.albumDiscList.push(null);
               }
               if (this.albumDiscList[discIndex - 1] === null) {
-                const discTitle = `Disc ${discIndex}`;
+                let discTitle = `Disc ${discIndex}`;
                 if (discInfos.length > 1) discTitle += " " + discInfos.slice(1).join(" ");
                 this.albumDiscList[discIndex - 1] = { title: discTitle, songs: [] };
               }
@@ -2868,7 +2918,7 @@ downloadConfig: Object.assign({
     }
     renderPlayAllBtn() {
       this.operationArea.innerHTML = `
-        <a style="display:none" class="u-btn2 u-btn2-2 u-btni-addply f-fl" hidefocus="true" title="播放"><i><em class="ply"></em>播放全部(${this.playableSongList.length})</i></a>
+        <a style="display:none" class="u-btn2 u-btn2-2 u-btni-addply f-fl" hidefocus="true" title="播放"><i><em class="ply"></em>播放(${this.playableSongList.length})</i></a>
         <a style="display:none" class="u-btni u-btni-add" hidefocus="true" title="添加到播放列表"></a>
         ` + this.operationArea.innerHTML;
       this.operationArea.children[0].addEventListener("click", () => {
@@ -3101,6 +3151,8 @@ downloadConfig: Object.assign({
     AppendBtns() {
       this.operationArea = document.querySelector("#content-operation");
       const btnSongsDownUpLoad = createBigButton("批量下载 & 转存", this.operationArea, 1);
+      btnSongsDownUpLoad.style.removeProperty("margin-top");
+      btnSongsDownUpLoad.style.removeProperty("margin-right");
       btnSongsDownUpLoad.addEventListener("click", () => {
         if (!this.dataFetched) {
           this.fetchArtistSongs();
@@ -3694,7 +3746,6 @@ updateSongCloudStatus() {
     needUpload: 1,
     alreadyInCloud: 0
   };
-  const DEFAULT_PIC_URL = "http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg";
   const TOKEN_EXPIRE_TIME = 6e4;
   const BATCH_FETCH_SIZE = 1e3;
   const PAGINATION_LIMIT = 50;
@@ -3979,7 +4030,7 @@ updateSongCloudStatus() {
         md5: config.md5,
         size: config.size,
         bitrate: config.bitrate,
-        picUrl: DEFAULT_PIC_URL,
+        picUrl: DEFAULT_ALBUM_PIC_URL,
         isNoCopyright: privilege.st < 0,
         isVIP: false,
         isPay: false,
@@ -4008,11 +4059,11 @@ updateSongCloudStatus() {
       item.tns = songDetail.tns ? songDetail.tns.join() : "";
       item.dt = duringTimeDesc(songDetail.dt || 0);
       item.filename = nameFileWithoutExt(item.name, item.artists, "artist-title") + "." + config.ext;
-      item.picUrl = ((_b = songDetail.al) == null ? void 0 : _b.picUrl) || DEFAULT_PIC_URL;
+      item.picUrl = ((_b = songDetail.al) == null ? void 0 : _b.picUrl) || DEFAULT_ALBUM_PIC_URL;
       item.isVIP = songDetail.fee === 1;
       item.isPay = songDetail.fee === 4;
       item.isLive = isLiveSong(songDetail) || isLiveSong(item);
-      item.isInstrumental = (songDetail.mark & MATCH_OFFSET_BASE) === MATCH_OFFSET_BASE || item.name && item.name.includes("伴奏") || item.name && item.name.toLowerCase().includes("Instrumental");
+      item.isInstrumental = (songDetail.mark & MATCH_OFFSET_BASE) === MATCH_OFFSET_BASE || item.name && item.name.includes("伴奏") || item.name && item.name.toLowerCase().includes("instrumental");
     }
     onSongInfoFetched() {
       if (this.songs.length === 0) {
@@ -4052,7 +4103,7 @@ updateSongCloudStatus() {
       return tr;
     }
     getSongTableRowHtml(song) {
-      return `<td><button type="button" class="swal2-styled uploadbtn"><i class="fa-solid fa-cloud-arrow-up"></i></button><button type="button" class="swal2-styled reuploadbtn" style="display: none" title="重新上传并关联到此歌曲"><i class="fa-solid fa-repeat"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`;
+      return `<td><button type="button" class="swal2-styled uploadbtn"><i class="fa-solid fa-cloud-arrow-up"></i></button><button type="button" class="swal2-styled reuploadbtn" style="display: none" title="重新上传并关联到此歌曲"><i class="fa-solid fa-repeat"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${escapeHtml(song.album)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${escapeHtml(song.name)}</a></td><td>${escapeHtml(song.artists)}</td><td>${song.dt}</td><td>${fileSizeDesc(song.size)} ${song.ext.toUpperCase()}</td><td class="song-remark"></td>`;
     }
     setSongRemarkHtml(tr, song) {
       const remarkElement = tr.querySelector(UI_CLASSES.songRemark);
@@ -4115,35 +4166,10 @@ updateSongCloudStatus() {
       }
     }
     renderPagination() {
-      const pageIndexs = this.getPageIndexes();
-      this.popupObj.footer.innerHTML = "";
-      pageIndexs.forEach((pageIndex) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "swal2-styled";
-        btn.innerHTML = pageIndex;
-        if (pageIndex === this.page.current) {
-          btn.style.background = "white";
-        } else {
-          btn.addEventListener("click", () => {
-            this.page.current = pageIndex;
-            this.renderData();
-          });
-        }
-        this.popupObj.footer.appendChild(btn);
+      createPagination(this.popupObj.footer, this.page.current, this.page.max, (page) => {
+        this.page.current = page;
+        this.renderData();
       });
-    }
-    getPageIndexes() {
-      const pageIndexs = [1];
-      const floor = Math.max(2, this.page.current - 2);
-      const ceil = Math.min(this.page.max - 1, this.page.current + 2);
-      for (let i = floor; i <= ceil; i++) {
-        pageIndexs.push(i);
-      }
-      if (this.page.max > 1) {
-        pageIndexs.push(this.page.max);
-      }
-      return pageIndexs;
     }
     renderFilterInfo() {
       let sizeTotal = 0;
@@ -4206,8 +4232,8 @@ uploadSong(songIndex) {
           onload: (res) => this.onUploadCheckResponse(res, songIndex),
           onerror: () => this.onUploadFail(songIndex)
         });
-      } catch (e2) {
-        console.error(e2);
+      } catch (e) {
+        console.error(e);
         this.onUploadFail(songIndex);
       }
     }
@@ -4270,8 +4296,8 @@ uploadSong(songIndex) {
           onload: (res) => this.onSongImportResponse(res, songIndex),
           onerror: () => this.onUploadFail(songIndex)
         });
-      } catch (e2) {
-        console.error(e2);
+      } catch (e) {
+        console.error(e);
         this.onUploadFail(songIndex);
       }
     }
@@ -4331,8 +4357,8 @@ uploadSong(songIndex) {
           onload: (tokenRes) => this.onTokenAllocResponse(tokenRes, songIndex),
           onerror: () => this.onUploadFail(songIndex)
         });
-      } catch (e2) {
-        console.error(e2);
+      } catch (e) {
+        console.error(e);
         this.onUploadFail(songIndex);
       }
     }
@@ -4763,42 +4789,9 @@ fetchCloudInfoForMatchTable(offset) {
             this.currentPage = offset / this.cloudCountLimit + 1;
             const maxPage = Math.ceil(res.count / this.cloudCountLimit);
             this.controls.cloudDesc.innerHTML = `云盘容量 ${fileSizeDesc(res.size)}/${fileSizeDesc(res.maxSize)} 共${res.count}首歌曲`;
-            const pageIndexs = [1];
-            const floor = Math.max(2, this.currentPage - 2);
-            const ceil = Math.min(maxPage - 1, this.currentPage + 2);
-            for (let i = floor; i <= ceil; i++) {
-              pageIndexs.push(i);
-            }
-            if (maxPage > 1) {
-              pageIndexs.push(maxPage);
-            }
-            this.controls.pageArea.innerHTML = "";
-            pageIndexs.forEach((pageIndex) => {
-              const pageBtn = document.createElement("button");
-              pageBtn.setAttribute("type", "button");
-              pageBtn.className = "swal2-styled";
-              pageBtn.innerHTML = pageIndex;
-              if (pageIndex !== this.currentPage) {
-                pageBtn.addEventListener("click", () => {
-                  this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (pageIndex - 1));
-                });
-              } else {
-                pageBtn.style.background = "white";
-              }
-              this.controls.pageArea.appendChild(pageBtn);
+            createPagination(this.controls.pageArea, this.currentPage, maxPage, (page) => {
+              this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (page - 1));
             });
-            if (pageIndexs.length < maxPage) {
-              const jumpToPageInput = createPageJumpInput(this.currentPage, maxPage);
-              jumpToPageInput.addEventListener("change", () => {
-                const newPage = parseInt(jumpToPageInput.value);
-                if (newPage >= 1 && newPage <= maxPage) {
-                  this.fetchCloudInfoForMatchTable(this.cloudCountLimit * (newPage - 1));
-                } else {
-                  jumpToPageInput.value = this.currentPage;
-                }
-              });
-              this.controls.pageArea.appendChild(jumpToPageInput);
-            }
             this.fillCloudListTable(res.data);
           }
         });
@@ -4812,7 +4805,7 @@ fillCloudListTable(songs) {
         this.updateSelectAllCheckboxState();
         songs.forEach((song) => {
           let album = song.album;
-          let picUrl = "http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg";
+          let picUrl = DEFAULT_ALBUM_PIC_URL;
           if (song.simpleSong.al && song.simpleSong.al.picUrl) {
             picUrl = song.simpleSong.al.picUrl;
           }
@@ -4825,8 +4818,8 @@ fillCloudListTable(songs) {
             let arcount = 0;
             song.simpleSong.ar.forEach((ar) => {
               if (ar.name) {
-                if (ar.id > 0) artist2 += `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>,`;
-                else artist2 += ar.name + ",";
+                if (ar.id > 0) artist2 += `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${escapeHtml(ar.name)}<a>,`;
+                else artist2 += escapeHtml(ar.name) + ",";
                 arcount += 1;
               }
             });
@@ -4839,8 +4832,8 @@ fillCloudListTable(songs) {
           const isChecked = this.selectedSongIds.has(song.simpleSong.id) ? "checked" : "";
           tablerow.innerHTML = `<td class="song-checkbox-cell"><input type="checkbox" class="song-checkbox" value="${song.simpleSong.id}" ${isChecked}></td>
                 <td><button type="button" class="swal2-styled btn-match" title="匹配"><i class="fa-solid fa-link"></i></button></td>
-                <td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td>
-                <td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${song.simpleSong.name}</a></td>
+                <td><a class="album-link"><img src="${picUrl}?param=50y50&quality=100" title="${escapeHtml(album)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td>
+                <td><a class="song-link" target="_blank" href="https://music.163.com/song?id=${song.simpleSong.id}">${escapeHtml(song.simpleSong.name)}</a></td>
                 <td>${artist}</td><td>${duringTimeDesc(song.simpleSong.dt)}</td><td>${fileSizeDesc(song.fileSize)} ${levelDesc(song.simpleSong.privilege.plLevel)}</td>
                 <td>${addTime}
                 <div class="row-actions">
@@ -4855,8 +4848,8 @@ fillCloudListTable(songs) {
             albumLink.target = "_blank";
           }
           tablerow.querySelector(".btn-match").addEventListener("click", () => this.openMatchPopup(song));
-          tablerow.querySelector(".song-checkbox").addEventListener("change", (e2) => {
-            this.toggleSelection(song.simpleSong.id, e2.target.checked);
+          tablerow.querySelector(".song-checkbox").addEventListener("change", (e) => {
+            this.toggleSelection(song.simpleSong.id, e.target.checked);
           });
           const addToFormat = songItemAddToFormat(song.simpleSong);
           tablerow.querySelector(".btn-play").addEventListener("click", () => {
@@ -4938,7 +4931,7 @@ checkSongMatchesFilters(song) {
         if (!this.filter.allSongs) this.filter.allSongs = [];
         this.filter.songs = this.filter.allSongs.filter((song) => this.checkSongMatchesFilters(song));
         this.updateFilterButtonText();
-        this.sepreateFilterCloudListPage(1);
+        this.separateFilterCloudListPage(1);
       }
 cloudInfoFilterFetchData(offset) {
         if (offset === 0) {
@@ -4971,46 +4964,13 @@ cloudInfoFilterFetchData(offset) {
           }
         });
       }
-sepreateFilterCloudListPage(currentPage) {
+separateFilterCloudListPage(currentPage) {
         this.currentPage = currentPage;
         const count = this.filter.songs.length;
         const maxPage = Math.ceil(count / this.cloudCountLimit);
-        this.controls.pageArea.innerHTML = "";
-        const pageIndexs = [1];
-        const floor = Math.max(2, currentPage - 2);
-        const ceil = Math.min(maxPage - 1, currentPage + 2);
-        for (let i = floor; i <= ceil; i++) {
-          pageIndexs.push(i);
-        }
-        if (maxPage > 1) {
-          pageIndexs.push(maxPage);
-        }
-        pageIndexs.forEach((pageIndex) => {
-          const pageBtn = document.createElement("button");
-          pageBtn.setAttribute("type", "button");
-          pageBtn.className = "swal2-styled";
-          pageBtn.innerHTML = pageIndex;
-          if (pageIndex !== currentPage) {
-            pageBtn.addEventListener("click", () => {
-              this.sepreateFilterCloudListPage(pageIndex);
-            });
-          } else {
-            pageBtn.style.background = "white";
-          }
-          this.controls.pageArea.appendChild(pageBtn);
+        createPagination(this.controls.pageArea, currentPage, maxPage, (page) => {
+          this.separateFilterCloudListPage(page);
         });
-        if (pageIndexs.length < maxPage) {
-          const jumpToPageInput = createPageJumpInput(this.currentPage, maxPage);
-          jumpToPageInput.addEventListener("change", () => {
-            const newPage = parseInt(jumpToPageInput.value);
-            if (newPage >= 1 && newPage <= maxPage) {
-              this.sepreateFilterCloudListPage(newPage);
-            } else {
-              jumpToPageInput.value = this.currentPage;
-            }
-          });
-          this.controls.pageArea.appendChild(jumpToPageInput);
-        }
         const songindex = (currentPage - 1) * this.cloudCountLimit;
         this.fillCloudListTable(this.filter.songs.slice(songindex, songindex + this.cloudCountLimit));
       }
@@ -5070,9 +5030,9 @@ sepreateFilterCloudListPage(currentPage) {
           }
         });
       }
-      fiilSearchTable(searchContent, cloudSongId, matchId = null) {
+      fillSearchTable(searchContent, cloudSongId, matchId = null) {
         if (searchContent.result.songCount > 0) {
-          this.tbody.innerHTML = "";
+          this.controls.matchTbody.innerHTML = "";
           const timeMatchSongs = [];
           const timeNoMatchSongs = [];
           let exactMatchSong = null;
@@ -5091,18 +5051,18 @@ sepreateFilterCloudListPage(currentPage) {
           resultSongs.forEach((resultSong) => {
             const tablerow = document.createElement("tr");
             const songName = resultSong.name;
-            const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join();
+            const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join();
             const needHighLight = Math.abs(resultSong.dt - this.fileDuringTime) < 1e3;
             const dtstyle = needHighLight ? "color:SpringGreen;" : "";
-            tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}${resultSong.privilege.cs ? ' <i class="fa-regular fa-cloud"></i>' : ""}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
+            tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}${resultSong.privilege.cs ? ' <i class="fa-regular fa-cloud"></i>' : ""}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
             const selectbtn = tablerow.querySelector(".selectbtn");
             selectbtn.addEventListener("click", () => {
               this.matchSong(cloudSongId, resultSong.id);
             });
-            this.tbody.appendChild(tablerow);
+            this.controls.matchTbody.appendChild(tablerow);
           });
         } else {
-          this.tbody.innerHTML = "搜索结果为空";
+          this.controls.matchTbody.innerHTML = "搜索结果为空";
         }
       }
       openAddToPlaylistPopup(song) {
@@ -5384,57 +5344,9 @@ _getCloudListHTML() {
     gap: 10px;
     margin-top: 12px;
 }
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-    border: 2px solid #f0f0f0;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 4%;
-text-align: center;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 6%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 6%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 26%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 22%;
-}
-tr th:nth-child(6),tr td:nth-child(6){
-width: 8%;
-}
-tr th:nth-child(7),tr td:nth-child(7){
-width: 18%;
-}
-tr th:nth-child(8),tr td:nth-child(8){
-width: 10%;
-}
+</style>
+${getTableStyles(["4%", "6%", "6%", "26%", "22%", "8%", "18%", "10%"], "tr th:nth-child(1),tr td:nth-child(1){ text-align: center; }")}
+<style>
 .row-actions {
     position: absolute;
     right: 10px;
@@ -5597,8 +5509,8 @@ _handleCloudListOpen(cloudListContainer, cloudListFooter) {
         songtb.innerHTML = `<thead><tr><th class="song-checkbox-header"><input type="checkbox" id="select-all-header"></th><th>匹配</th><th style="width: 6%">&nbsp;</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>文件信息</th><th>上传日期</th> </tr></thead><tbody></tbody>`;
         this.controls.tbody = songtb.querySelector("tbody");
         this.controls.selectAllCheckbox = songtb.querySelector("#select-all-header");
-        this.controls.selectAllCheckbox.addEventListener("change", (e2) => {
-          this.toggleSelectAll(e2.target.checked);
+        this.controls.selectAllCheckbox.addEventListener("change", (e) => {
+          this.toggleSelectAll(e.target.checked);
         });
         this.controls.baseTableMaxHeight = 400;
         this.controls.tbody.style.maxHeight = this.controls.baseTableMaxHeight + "px";
@@ -5609,54 +5521,11 @@ _handleCloudListOpen(cloudListContainer, cloudListFooter) {
         if (this.filter.text === "" && this.filter.matchStatus === "all" && this.filter.pureMusic === "all" && this.filter.liveVersion === "all") {
           this.fetchCloudInfoForMatchTable((this.currentPage - 1) * this.cloudCountLimit);
         } else {
-          this.sepreateFilterCloudListPage(this.currentPage);
+          this.separateFilterCloudListPage(this.currentPage);
         }
       }
 _getMatchPopupHTML() {
-        return `<style>
-    table {
-        width: 100%;
-        height: 400px; 
-        border-spacing: 0px;
-        border-collapse: collapse;
-        border: 2px solid #f0f0f0;
-    }
-    table th, table td {
-        text-align: left;
-        text-overflow: ellipsis;
-    }
-    table tbody {
-        display: block;
-        width: 100%;
-        max-height: 400px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    table thead tr, table tbody tr, table tfoot tr {
-        box-sizing: border-box;
-        table-layout: fixed;
-        display: table;
-        width: 100%;
-    }
-    table tbody tr td{
-        border-bottom: none;
-    }
-tr th:nth-child(1),tr td:nth-child(1){
-width: 6%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 6%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 40%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 40%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 8%;
-}
-</style>
+        return `${getTableStyles(["6%", "6%", "40%", "40%", "8%"], "table { height: 400px; }")}
 <div><label>关键词/歌曲链接/歌曲ID:<input class="swal2-input" id="search-text" style="width: 400px;" placeholder="关键词/链接/ID"></label><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>匹配</th><th></th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
@@ -5670,7 +5539,7 @@ _handleMatchPopupOpen(song, container, actions, footer, title) {
         this.searchBtn = container.querySelector("#btn-search");
         this.unMatchBtn = actions.querySelector("#btn-unmatch");
         this.titleDOM = title;
-        this.tbody = container.querySelector("tbody");
+        this.controls.matchTbody = container.querySelector("tbody");
         this.fileDuringTime = 0;
         if (song.matchType === "matched") {
           this.unMatchBtn.style.display = "inline-block";
@@ -5720,7 +5589,7 @@ _handleMatchPopupOpen(song, container, actions, footer, title) {
               songDetailText += "，目前未关联到网易云。";
             }
             footer.innerHTML = `<div>${songDetailText}</div>` + footer.innerHTML;
-            this.fiilSearchTable(searchContent, song.simpleSong.id);
+            this.fillSearchTable(searchContent, song.simpleSong.id);
           }
         });
         this.searchBtn.addEventListener("click", () => {
@@ -5731,7 +5600,8 @@ _handleMatchPopupOpen(song, container, actions, footer, title) {
           if (searchWord.includes("song?")) {
             try {
               URLObj = new URL(searchWord);
-            } catch (e2) {
+            } catch (e) {
+              logWarn("Failed to parse URL in myCloudDisk", { searchWord, error: e });
             }
           }
           if (URLObj && URLObj.hostname === "music.163.com") {
@@ -5752,7 +5622,7 @@ _handleMatchPopupOpen(song, container, actions, footer, title) {
             requestData["/api/v3/song/detail"] = JSON.stringify({ c: JSON.stringify([{ "id": songId }]) });
           }
           if (requestData["/api/cloudsearch/get/web"] || requestData["/api/v3/song/detail"]) {
-            this.tbody.innerHTML = "正在搜索...";
+            this.controls.matchTbody.innerHTML = "正在搜索...";
             weapiRequest("/api/batch", {
               data: requestData,
               onload: (content) => {
@@ -5768,7 +5638,7 @@ _handleMatchPopupOpen(song, container, actions, footer, title) {
                       al: {
                         id: 0,
                         name: "",
-                        picUrl: "http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg"
+                        picUrl: DEFAULT_ALBUM_PIC_URL
                       },
                       ar: []
                     });
@@ -5783,59 +5653,22 @@ _handleMatchPopupOpen(song, container, actions, footer, title) {
                   }
                 }
                 const matchId = songDetailContent && songDetailContent.songs && songDetailContent.songs.length > 0 ? songDetailContent.songs[0].id : null;
-                this.fiilSearchTable(searchContent, song.simpleSong.id, matchId);
+                this.fillSearchTable(searchContent, song.simpleSong.id, matchId);
               }
             });
           } else {
-            this.tbody.innerHTML = "无法解析链接";
+            this.controls.matchTbody.innerHTML = "无法解析链接";
           }
         });
       }
 _getPlaylistPopupHTML() {
-        return `<style>
-    table {
-        width: 100%;
-        height: 400px; 
-        border-spacing: 0px;
-        border-collapse: collapse;
-        border: 2px solid #f0f0f0;
-    }
-    table th, table td {
-        text-align: left;
-        text-overflow: ellipsis;
-    }
-    table tbody {
-        display: block;
-        width: 100%;
-        max-height: 400px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    table thead tr, table tbody tr, table tfoot tr {
-        box-sizing: border-box;
-        table-layout: fixed;
-        display: table;
-        width: 100%;
-    }
-    table tbody tr td{
-        border-bottom: none;
-    }
-tr th:nth-child(1),tr td:nth-child(1){
-width: 14%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 16%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 70%;
-}
-</style>
+        return `${getTableStyles(["14%", "16%", "70%"], "table { height: 400px; }")}
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌单</th></tr></thead><tbody></tbody></table>
 </div>`;
       }
 async _handlePlaylistPopupOpen(song, container) {
-        this.tbody = container.querySelector("tbody");
+        const tbody = container.querySelector("tbody");
         const userPlaylistRes = await weapiRequestSync("/api/user/playlist", {
           data: {
             uid: unsafeWindow.GUser.userId,
@@ -5847,8 +5680,8 @@ async _handlePlaylistPopupOpen(song, container) {
           userPlaylistRes.playlist.filter((p) => !p.subscribed).forEach((playlist) => {
             const row = document.createElement("tr");
             row.innerHTML = `<td><button type="button" class="swal2-styled btn-add" title="加入歌单"><i class="fa-solid fa-plus"></i></button></td>
-                                    <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${playlist.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
-                                    <td>${playlist.name}</td>`;
+                                    <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${escapeHtml(playlist.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
+                                    <td>${escapeHtml(playlist.name)}</td>`;
             row.querySelector(".btn-add").addEventListener("click", async () => {
               const collectRes = await weapiRequestSync("/api/playlist/manipulate/tracks", {
                 method: "POST",
@@ -5857,7 +5690,8 @@ async _handlePlaylistPopupOpen(song, container) {
                   pid: playlist.id,
                   tracks: song.simpleSong.id,
                   trackIds: JSON.stringify([song.simpleSong.id])
-                }
+                },
+                clientType: "web"
               });
               if (collectRes.code === 200) {
                 showTips("加入歌单成功", 1);
@@ -5866,7 +5700,7 @@ async _handlePlaylistPopupOpen(song, container) {
                 showTips(collectRes.message || "加入歌单失败", 2);
               }
             });
-            this.tbody.appendChild(row);
+            tbody.appendChild(row);
           });
         }
       }
@@ -5883,8 +5717,8 @@ async _handlePlaylistPopupOpen(song, container) {
           userPlaylistRes.playlist.filter((p) => !p.subscribed).forEach((playlist) => {
             const row = document.createElement("tr");
             row.innerHTML = `<td><button type="button" class="swal2-styled btn-add" title="加入歌单"><i class="fa-solid fa-plus"></i></button></td>
-                                    <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${playlist.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
-                                    <td>${playlist.name}</td>`;
+                                    <td><img src="${playlist.coverImgUrl}?param=50y50&quality=100" title="${escapeHtml(playlist.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></td>
+                                    <td>${escapeHtml(playlist.name)}</td>`;
             row.querySelector(".btn-add").addEventListener("click", async () => {
               const songIds = Array.from(this.selectedSongIds);
               const collectRes = await weapiRequestSync("/api/playlist/manipulate/tracks", {
@@ -5894,7 +5728,8 @@ async _handlePlaylistPopupOpen(song, container) {
                   pid: playlist.id,
                   trackIds: JSON.stringify(songIds),
                   immutable: true
-                }
+                },
+                clientType: "web"
               });
               if (collectRes.code === 200) {
                 showTips(`成功将 ${songIds.length} 首歌曲加入歌单`, 1);
@@ -5984,8 +5819,8 @@ async _handlePlaylistPopupOpen(song, container) {
             this.uploadSongFail(song);
           }
         });
-      } catch (e2) {
-        console.error(e2);
+      } catch (e) {
+        console.error(e);
         this.uploadSongFail(song);
       }
     }
@@ -6020,8 +5855,8 @@ async _handlePlaylistPopupOpen(song, container) {
             this.uploadSongFail(song);
           }
         });
-      } catch (e2) {
-        console.error(e2);
+      } catch (e) {
+        console.error(e);
         this.uploadSongFail(song);
       }
     }
@@ -6055,8 +5890,8 @@ async _handlePlaylistPopupOpen(song, container) {
             this.uploadSongFail(song);
           }
         });
-      } catch (e2) {
-        console.error(e2);
+      } catch (e) {
+        console.error(e);
         this.uploadSongFail(song);
       }
     }
@@ -6098,14 +5933,14 @@ async _handlePlaylistPopupOpen(song, container) {
             });
           }
         });
-      } catch (e2) {
-        console.error(e2);
+      } catch (e) {
+        console.error(e);
         this.uploadSongFail(song);
       }
     }
     uploadFile(data, song, offset, context = null) {
       const complete = offset + uploadChunkSize > song.size;
-      const url2 = `http://45.127.129.8/jd-musicrep-privatecloud-audio-public/${encodeURIComponent(song.objectKey)}?offset=${offset}&complete=${String(complete)}&version=1.0`;
+      let url2 = `http://45.127.129.8/jd-musicrep-privatecloud-audio-public/${encodeURIComponent(song.objectKey)}?offset=${offset}&complete=${String(complete)}&version=1.0`;
       if (context) url2 += `&context=${context}`;
       GM_xmlhttpRequest({
         method: "POST",
@@ -6162,8 +5997,8 @@ async _handlePlaylistPopupOpen(song, container) {
             this.uploadSongFail(song);
           }
         });
-      } catch (e2) {
-        console.error(e2);
+      } catch (e) {
+        console.error(e);
         this.uploadSongFail(song);
       }
     }
@@ -6223,8 +6058,8 @@ async _handlePlaylistPopupOpen(song, container) {
             this.uploadSongFail(song);
           }
         });
-      } catch (e2) {
-        console.error(e2);
+      } catch (e) {
+        console.error(e);
         this.uploadSongFail(song);
       }
     }
@@ -6281,7 +6116,7 @@ async _handlePlaylistPopupOpen(song, container) {
     }
   }
   const cloudUpgrade = (uiArea) => {
-    let btnUpgrade = createBigButton("云盘音质升降", uiArea, 2);
+    const btnUpgrade = createBigButton("云盘音质升降", uiArea, 2);
     btnUpgrade.addEventListener("click", ShowCloudUpgradePopUp);
     function ShowCloudUpgradePopUp() {
       Swal.fire({
@@ -6338,7 +6173,7 @@ async _handlePlaylistPopupOpen(song, container) {
           if (res.profile.vipType <= 10) {
             showConfirmBox("当前不是会员,无法获取无损以上音源,领取个会员礼品卡再来吧。");
           } else {
-            let upgrade = new Upgrader(level, filterMode, judgmentMethod);
+            const upgrade = new Upgrader(level, filterMode, judgmentMethod);
             upgrade.start();
           }
         }
@@ -6365,7 +6200,7 @@ async _handlePlaylistPopupOpen(song, container) {
           threadCount: 1,
           working: false,
           stopFlag: false,
-          finnishThread: 0,
+          finishedThread: 0,
           songIndexs: []
         };
       }
@@ -6377,61 +6212,16 @@ async _handlePlaylistPopupOpen(song, container) {
           showCloseButton: true,
           showConfirmButton: false,
           width: "980px",
-          html: `<style>
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-    border: 2px solid #f0f0f0;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 6%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 6%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 28%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 28%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 16%;
-}
-tr th:nth-child(6),tr td:nth-child(6){
-width: 16%;
-}
-</style>
+          html: `${getTableStyles(["6%", "6%", "28%", "28%", "16%", "16%"])}
 <input id="text-filter" class="swal2-input" placeholder="过滤：标题/歌手/专辑">
 <button type="button" class="swal2-confirm swal2-styled" aria-label="" style="display: inline-block;" id="btn-upgrade-batch">全部处理</button>
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌曲标题</th><th>歌手</th><th>云盘音源</th><th>目标音源</th> </tr></thead><tbody></tbody></table>
 `,
           footer: "<div></div>",
           didOpen: () => {
-            let container = Swal.getHtmlContainer();
-            let tbody = container.querySelector("tbody");
-            let footer = Swal.getFooter();
+            const container = Swal.getHtmlContainer();
+            const tbody = container.querySelector("tbody");
+            const footer = Swal.getFooter();
             this.popupObj = {
               container,
               tbody,
@@ -6439,13 +6229,12 @@ width: 16%;
             };
             let filterInput = container.querySelector("#text-filter");
             filterInput.addEventListener("change", () => {
-              let filtertext = filterInput.value.trim();
+              const filtertext = filterInput.value.trim();
               if (this.filter.text !== filtertext) {
                 this.filter.text = filtertext;
                 this.applyFilter();
               }
             });
-            let upgrader = this;
             this.btnUpgradeBatch = container.querySelector("#btn-upgrade-batch");
             this.btnUpgradeBatch.addEventListener("click", () => {
               if (this.batchUpgrade.working) {
@@ -6455,8 +6244,8 @@ width: 16%;
               }
               this.batchUpgrade.songIndexs = [];
               this.filter.songIndexs.forEach((idx) => {
-                if (!upgrader.songs[idx].upgraded) {
-                  upgrader.batchUpgrade.songIndexs.push(idx);
+                if (!this.songs[idx].upgraded) {
+                  this.batchUpgrade.songIndexs.push(idx);
                 }
               });
               if (this.batchUpgrade.songIndexs.length == 0) {
@@ -6466,7 +6255,7 @@ width: 16%;
               this.btnUpgradeBatch.innerHTML = "停止";
               this.batchUpgrade.working = true;
               this.batchUpgrade.stopFlag = false;
-              this.batchUpgrade.finnishThread = 0;
+              this.batchUpgrade.finishedThread = 0;
               this.batchUpgrade.threadCount = Math.min(this.batchUpgrade.songIndexs.length, this.batchUpgrade.threadMax);
               for (let i = 0; i < this.batchUpgrade.threadCount; i++) {
                 this.upgradeSong(this.batchUpgrade.songIndexs[i]);
@@ -6484,14 +6273,13 @@ width: 16%;
         this.fetchCloudSongInfoSub(0, []);
       }
       fetchCloudSongInfoSub(offset, songIds) {
-        let upgrader = this;
         weapiRequest("/api/v1/cloud/get", {
           data: {
             limit: 1e3,
             offset
           },
           onload: (res) => {
-            upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1e3, res.count)}云盘歌曲`;
+            this.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1e3, res.count)}云盘歌曲`;
             res.data.forEach((song) => {
               if (song.simpleSong.privilege.toast) return;
               if (song.simpleSong.privilege.fee == 0 && song.simpleSong.privilege.flLevel == "none") return;
@@ -6505,140 +6293,97 @@ width: 16%;
               }
               songIds.push({ "id": song.simpleSong.id });
               const actionText = this.filterMode === "lower" ? "提升" : "降低";
-              upgrader.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1e3, res.count)}云盘歌曲 找到${songIds.length}首可能可以${actionText}的歌曲`;
+              this.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1e3, res.count)}云盘歌曲 找到${songIds.length}首可能可以${actionText}的歌曲`;
             });
             if (res.hasMore) {
               res = {};
-              upgrader.fetchCloudSongInfoSub(offset + 1e3, songIds);
+              this.fetchCloudSongInfoSub(offset + 1e3, songIds);
             } else {
-              upgrader.filterTargetLevelSongSub(0, songIds);
+              this.filterTargetLevelSongSub(0, songIds);
             }
           }
         });
       }
       filterTargetLevelSongSub(offset, songIds) {
-        let upgrader = this;
-        upgrader.popupObj.tbody.innerHTML = `正在确认 ${offset + 1} / ${songIds.length} 首潜在歌曲是否有目标音质`;
+        this.popupObj.tbody.innerHTML = `正在确认 ${offset + 1} / ${songIds.length} 首潜在歌曲是否有目标音质`;
         if (offset >= songIds.length) {
-          upgrader.createTableRow();
-          upgrader.applyFilter();
+          this.createTableRow();
+          this.applyFilter();
           return;
         }
         weapiRequest("/api/v3/song/detail", {
           data: {
             c: JSON.stringify(songIds.slice(offset, offset + 1e3))
           },
-          onload: function(content) {
+          onload: (content) => {
             var _a, _b;
-            let songlen = content.songs.length;
-            let privilegelen = content.privileges.length;
+            const privilegelen = content.privileges.length;
+            const privilegeMap = new Map();
+            for (let j = 0; j < privilegelen; j++) {
+              privilegeMap.set(content.privileges[j].id, content.privileges[j]);
+            }
+            const songlen = content.songs.length;
             for (let i = 0; i < songlen; i++) {
-              for (let j = 0; j < privilegelen; j++) {
-                if (content.songs[i].id == content.privileges[j].id) {
-                  let songItem = {
-                    id: content.songs[i].id,
-                    name: content.songs[i].name,
-                    album: getAlbumTextInSongDetail(content.songs[i]),
-                    albumid: content.songs[i].al.id || 0,
-                    artists: getArtistTextInSongDetail(content.songs[i]),
-                    tns: content.songs[i].tns ? content.songs[i].tns.join() : "",
+              const privilege = privilegeMap.get(content.songs[i].id);
+              if (privilege) {
+                let songItem = {
+                  id: content.songs[i].id,
+                  name: content.songs[i].name,
+                  album: getAlbumTextInSongDetail(content.songs[i]),
+                  albumid: content.songs[i].al.id || 0,
+                  artists: getArtistTextInSongDetail(content.songs[i]),
+                  tns: content.songs[i].tns ? content.songs[i].tns.join() : "",
 dt: duringTimeDesc(content.songs[i].dt || 0),
-                    picUrl: content.songs[i].al && content.songs[i].al.picUrl ? content.songs[i].al.picUrl : "http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg",
-                    upgraded: false
+                  picUrl: content.songs[i].al && content.songs[i].al.picUrl ? content.songs[i].al.picUrl : DEFAULT_ALBUM_PIC_URL,
+                  upgraded: false
+                };
+                const cloudFileSize = ((_b = (_a = content.songs[i].pc) == null ? void 0 : _a.privateCloud) == null ? void 0 : _b.fileSize) || 0;
+                let targetAudio = null;
+                if (this.targetLevel === "lossless") {
+                  targetAudio = content.songs[i].sq;
+                } else if (this.targetLevel === "hires") {
+                  targetAudio = content.songs[i].hr;
+                } else if (this.targetLevel === "exhigh") {
+                  targetAudio = content.songs[i].h;
+                }
+                if (targetAudio) {
+                  const targetSize = targetAudio.size || 0;
+                  songItem.fileinfo = {
+                    originalLevel: privilege.plLevel,
+                    originalBr: content.songs[i].pc.br,
+                    tagetBr: Math.round(targetAudio.br / 1e3),
+                    originalSize: cloudFileSize,
+                    targetSize
                   };
-                  const cloudFileSize = ((_b = (_a = content.songs[i].pc) == null ? void 0 : _a.privateCloud) == null ? void 0 : _b.fileSize) || 0;
-                  if (upgrader.targetLevel === "lossless" && content.songs[i].sq) {
-                    const targetSize = content.songs[i].sq.size || 0;
-                    songItem.fileinfo = {
-                      originalLevel: content.privileges[j].plLevel,
-                      originalBr: content.songs[i].pc.br,
-                      tagetBr: Math.round(content.songs[i].sq.br / 1e3),
-                      originalSize: cloudFileSize,
-                      targetSize
-                    };
-                    let shouldAdd = false;
-                    if (upgrader.judgmentMethod === "filesize") {
-                      if (upgrader.filterMode === "lower") {
-                        shouldAdd = cloudFileSize + 1024 <= targetSize;
-                      } else if (upgrader.filterMode === "higher") {
-                        shouldAdd = cloudFileSize - 1024 >= targetSize;
-                      }
-                    } else {
-                      if (upgrader.filterMode === "lower") {
-                        shouldAdd = songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr;
-                      } else if (upgrader.filterMode === "higher") {
-                        shouldAdd = songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr;
-                      }
+                  let shouldAdd = false;
+                  if (this.judgmentMethod === "filesize") {
+                    if (this.filterMode === "lower") {
+                      shouldAdd = cloudFileSize + 1024 <= targetSize;
+                    } else if (this.filterMode === "higher") {
+                      shouldAdd = cloudFileSize - 1024 >= targetSize;
                     }
-                    if (shouldAdd) {
-                      upgrader.songs.push(songItem);
-                    }
-                  } else if (upgrader.targetLevel === "hires" && content.songs[i].hr) {
-                    const targetSize = content.songs[i].hr.size || 0;
-                    songItem.fileinfo = {
-                      originalLevel: content.privileges[j].plLevel,
-                      originalBr: content.songs[i].pc.br,
-                      tagetBr: Math.round(content.songs[i].hr.br / 1e3),
-                      originalSize: cloudFileSize,
-                      targetSize
-                    };
-                    let shouldAdd = false;
-                    if (upgrader.judgmentMethod === "filesize") {
-                      if (upgrader.filterMode === "lower") {
-                        shouldAdd = cloudFileSize + 1024 <= targetSize;
-                      } else if (upgrader.filterMode === "higher") {
-                        shouldAdd = cloudFileSize - 1024 >= targetSize;
-                      }
-                    } else {
-                      if (upgrader.filterMode === "lower") {
-                        shouldAdd = songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr;
-                      } else if (upgrader.filterMode === "higher") {
-                        shouldAdd = songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr;
-                      }
-                    }
-                    if (shouldAdd) {
-                      upgrader.songs.push(songItem);
-                    }
-                  } else if (upgrader.targetLevel === "exhigh" && content.songs[i].h) {
-                    const targetSize = content.songs[i].h.size || 0;
-                    songItem.fileinfo = {
-                      originalLevel: content.privileges[j].plLevel,
-                      originalBr: content.songs[i].pc.br,
-                      tagetBr: Math.round(content.songs[i].h.br / 1e3),
-                      originalSize: cloudFileSize,
-                      targetSize
-                    };
-                    let shouldAdd = false;
-                    if (upgrader.judgmentMethod === "filesize") {
-                      if (upgrader.filterMode === "lower") {
-                        shouldAdd = cloudFileSize + 1024 <= targetSize;
-                      } else if (upgrader.filterMode === "higher") {
-                        shouldAdd = cloudFileSize - 1024 >= targetSize;
-                      }
-                    } else {
-                      if (upgrader.filterMode === "lower") {
-                        shouldAdd = songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr;
-                      } else if (upgrader.filterMode === "higher") {
-                        shouldAdd = songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr;
-                      }
-                    }
-                    if (shouldAdd) {
-                      upgrader.songs.push(songItem);
+                  } else {
+                    if (this.filterMode === "lower") {
+                      shouldAdd = songItem.fileinfo.originalBr + 10 <= songItem.fileinfo.tagetBr;
+                    } else if (this.filterMode === "higher") {
+                      shouldAdd = songItem.fileinfo.originalBr - 10 >= songItem.fileinfo.tagetBr;
                     }
                   }
-                  break;
+                  if (shouldAdd) {
+                    this.songs.push(songItem);
+                  }
                 }
               }
             }
-            upgrader.filterTargetLevelSongSub(offset + 1e3, songIds);
+            this.filterTargetLevelSongSub(offset + 1e3, songIds);
           }
         });
       }
       createTableRow() {
-        let tagetLevelDesc = levelDesc(this.targetLevel);
+        const tagetLevelDesc = levelDesc(this.targetLevel);
         for (let i = 0; i < this.songs.length; i++) {
-          let song = this.songs[i];
-          let tablerow = document.createElement("tr");
+          const song = this.songs[i];
+          const tablerow = document.createElement("tr");
           let cloudInfo, targetInfo;
           if (this.judgmentMethod === "filesize") {
             cloudInfo = `${levelDesc(song.fileinfo.originalLevel)} ${fileSizeDesc(song.fileinfo.originalSize)}`;
@@ -6647,8 +6392,8 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
             cloudInfo = `${levelDesc(song.fileinfo.originalLevel)} ${song.fileinfo.originalBr}k`;
             targetInfo = `${tagetLevelDesc} ${song.fileinfo.tagetBr}k`;
           }
-          tablerow.innerHTML = `<td><button type="button" class="swal2-styled" title="${this.filterMode === "lower" ? "提升" : "降低"}"><i class="fa-solid fa-arrow-${this.filterMode === "lower" ? "up" : "down"}"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${song.album}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${song.name}</a></td><td>${song.artists}</td><td>${cloudInfo}</td><td>${targetInfo}</td>`;
-          let btn = tablerow.querySelector("button");
+          tablerow.innerHTML = `<td><button type="button" class="swal2-styled" title="${this.filterMode === "lower" ? "提升" : "降低"}"><i class="fa-solid fa-arrow-${this.filterMode === "lower" ? "up" : "down"}"></i></button></td><td><a href="https://music.163.com/album?id=${song.albumid}" target="_blank"><img src="${song.picUrl}?param=50y50&quality=100" title="${escapeHtml(song.album)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${song.id}" target="_blank">${escapeHtml(song.name)}</a></td><td>${escapeHtml(song.artists)}</td><td>${cloudInfo}</td><td>${targetInfo}</td>`;
+          const btn = tablerow.querySelector("button");
           btn.addEventListener("click", () => {
             if (this.batchUpgrade.working) {
               return;
@@ -6660,9 +6405,9 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
       }
       applyFilter() {
         this.filter.songIndexs = [];
-        let filterText = this.filter.text;
+        const filterText = this.filter.text;
         for (let i = 0; i < this.songs.length; i++) {
-          let song = this.songs[i];
+          const song = this.songs[i];
           if (filterText.length > 0 && !song.name.includes(filterText) && !song.album.includes(filterText) && !song.artists.includes(filterText) && !song.tns.includes(filterText)) {
             continue;
           }
@@ -6680,43 +6425,21 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
           return;
         }
         this.popupObj.tbody.innerHTML = "";
-        let songBegin = (this.page.current - 1) * this.page.limitCount;
-        let songEnd = Math.min(this.filter.songIndexs.length, songBegin + this.page.limitCount);
+        const songBegin = (this.page.current - 1) * this.page.limitCount;
+        const songEnd = Math.min(this.filter.songIndexs.length, songBegin + this.page.limitCount);
         for (let i = songBegin; i < songEnd; i++) {
           this.popupObj.tbody.appendChild(this.songs[this.filter.songIndexs[i]].tablerow);
         }
-        let pageIndexs = [1];
-        let floor = Math.max(2, this.page.current - 2);
-        let ceil = Math.min(this.page.max - 1, this.page.current + 2);
-        for (let i = floor; i <= ceil; i++) {
-          pageIndexs.push(i);
-        }
-        if (this.page.max > 1) {
-          pageIndexs.push(this.page.max);
-        }
-        let upgrader = this;
-        this.popupObj.footer.innerHTML = "";
-        pageIndexs.forEach((pageIndex) => {
-          let pageBtn = document.createElement("button");
-          pageBtn.setAttribute("type", "button");
-          pageBtn.className = "swal2-styled";
-          pageBtn.innerHTML = pageIndex;
-          if (pageIndex !== upgrader.page.current) {
-            pageBtn.addEventListener("click", () => {
-              upgrader.page.current = pageIndex;
-              upgrader.renderData();
-            });
-          } else {
-            pageBtn.style.background = "white";
-          }
-          upgrader.popupObj.footer.appendChild(pageBtn);
+        createPagination(this.popupObj.footer, this.page.current, this.page.max, (page) => {
+          this.page.current = page;
+          this.renderData();
         });
       }
       renderFilterInfo() {
         let sizeTotal = 0;
         let countCanUpgrade = 0;
         this.filter.songIndexs.forEach((idx) => {
-          let song = this.songs[idx];
+          const song = this.songs[idx];
           if (!song.upgraded) {
             countCanUpgrade += 1;
             sizeTotal += song.size;
@@ -6728,8 +6451,7 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
         }
       }
       upgradeSong(songIndex) {
-        let song = this.songs[songIndex];
-        let upgrade = this;
+        const song = this.songs[songIndex];
         try {
           weapiRequest("/api/cloud/del", {
             data: {
@@ -6740,40 +6462,40 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
               if (content.code == 200) {
                 showTips(`${song.name}删除成功`, 1);
               }
-              let songItem = { api: { url: "/api/song/enhance/player/url/v1", data: { ids: JSON.stringify([song.id]), level: upgrade.targetLevel, encodeType: "mp3" } }, id: song.id, title: song.name, artist: song.artists, album: song.album, songIndex, Upgrader: this };
-              let ULobj = new ncmDownUpload([songItem], false, this.onUpgradeSucess, this.onUpgradeFail);
+              const songItem = { api: { url: "/api/song/enhance/player/url/v1", data: { ids: JSON.stringify([song.id]), level: this.targetLevel, encodeType: "mp3" } }, id: song.id, title: song.name, artist: song.artists, album: song.album, songIndex };
+              const ULobj = new ncmDownUpload([songItem], false, (s) => this.onUpgradeSuccess(s), (s) => this.onUpgradeFail(s));
               ULobj.startUpload();
             }
           });
-        } catch (e2) {
-          console.error(e2);
-          upgrade.onUpgradeFail(songIndex);
+        } catch (e) {
+          console.error(e);
+          this.onUpgradeFail(songIndex);
         }
       }
       onUpgradeFail(ULsong) {
-        let song = ULsong.Upgrader.songs[ULsong.songIndex];
-        const actionText = ULsong.Upgrader.filterMode === "lower" ? "提升" : "降低";
+        const song = this.songs[ULsong.songIndex];
+        const actionText = this.filterMode === "lower" ? "提升" : "降低";
         showTips(`${song.name} 音质${actionText}失败`, 2);
-        ULsong.Upgrader.onUpgradeFinnsh(ULsong.songIndex);
+        this.onUpgradeFinish(ULsong.songIndex);
       }
-      onUpgradeSucess(ULsong) {
-        let song = ULsong.Upgrader.songs[ULsong.songIndex];
-        const actionText = ULsong.Upgrader.filterMode === "lower" ? "提升" : "降低";
+      onUpgradeSuccess(ULsong) {
+        const song = this.songs[ULsong.songIndex];
+        const actionText = this.filterMode === "lower" ? "提升" : "降低";
         showTips(`${song.name} 音质${actionText}成功`, 1);
         song.upgraded = true;
-        let btnUpgrade2 = song.tablerow.querySelector("button");
+        const btnUpgrade2 = song.tablerow.querySelector("button");
         btnUpgrade2.innerHTML = '<i class="fa-solid fa-check"></i>';
         btnUpgrade2.disabled = "disabled";
-        ULsong.Upgrader.onUpgradeFinnsh(ULsong.songIndex);
+        this.onUpgradeFinish(ULsong.songIndex);
       }
-      onUpgradeFinnsh(songIndex) {
+      onUpgradeFinish(songIndex) {
         if (this.batchUpgrade.working) {
-          let batchSongIdx = this.batchUpgrade.songIndexs.indexOf(songIndex);
+          const batchSongIdx = this.batchUpgrade.songIndexs.indexOf(songIndex);
           if (!this.batchUpgrade.stopFlag && batchSongIdx + this.batchUpgrade.threadCount < this.batchUpgrade.songIndexs.length) {
             this.upgradeSong(this.batchUpgrade.songIndexs[batchSongIdx + this.batchUpgrade.threadCount]);
           } else {
-            this.batchUpgrade.finnishThread += 1;
-            if (this.batchUpgrade.finnishThread == this.batchUpgrade.threadCount) {
+            this.batchUpgrade.finishedThread += 1;
+            if (this.batchUpgrade.finishedThread == this.batchUpgrade.threadCount) {
               this.batchUpgrade.working = false;
               this.batchUpgrade.stopFlag = false;
               this.renderFilterInfo();
@@ -6836,7 +6558,7 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
             artist: "未知",
             album: "未知",
             size: file.size,
-            ext: fileName.slice(fileName.lastIndexOf(".") + 1),
+            ext: fileName.slice(fileName.lastIndexOf(".") + 1).toLowerCase(),
             bitrate: 128
           };
           this.task.push(song);
@@ -6844,7 +6566,7 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
         showTips(`开始获取文件中的标签信息`, 1);
         this.readFileTags(0);
       }
-      readFileTags(songIndex) {
+      async readFileTags(songIndex) {
         if (songIndex >= this.task.length) {
           if (this.needFillInfo) {
             this.showFillSongInforBox();
@@ -6853,62 +6575,33 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
           }
           return;
         }
-        let fileData = this.task[songIndex].songFile;
+        let song = this.task[songIndex];
+        let fileData = song.songFile;
         fileData = new File([fileData], fileData.name, { type: fileData.type });
-        new jsmediatags.Reader(fileData).read({
-          onSuccess: (res) => {
-            if (res.tags.title) this.task[songIndex].title = res.tags.title;
-            if (res.tags.artist) this.task[songIndex].artist = res.tags.artist;
-            if (res.tags.album) this.task[songIndex].album = res.tags.album;
-            this.readFileTags(songIndex + 1);
-          },
-          onError: (error) => {
-            this.readFileTags(songIndex + 1);
+        const fileBuffer = await fileData.arrayBuffer();
+        const fileFormat = detectAudioFormat(fileBuffer);
+        if (fileFormat === "mp3") {
+          const mp3tag = new MP3Tag(fileBuffer);
+          mp3tag.read();
+          if (mp3tag.tags) {
+            if (mp3tag.tags.title) song.title = mp3tag.tags.title;
+            if (mp3tag.tags.artist) song.artist = mp3tag.tags.artist;
+            if (mp3tag.tags.album) song.album = mp3tag.tags.album;
           }
-        });
+        } else if (fileFormat === "flac") {
+          const flac = new MetaFlac(fileBuffer);
+          const titleTag = flac.getTag("TITLE");
+          const artistTag = flac.getTag("ARTIST");
+          const albumTag = flac.getTag("ALBUM");
+          if (titleTag) song.title = titleTag.substring(titleTag.indexOf("=") + 1);
+          if (artistTag) song.artist = artistTag.substring(artistTag.indexOf("=") + 1);
+          if (albumTag) song.album = albumTag.substring(albumTag.indexOf("=") + 1);
+        }
+        this.readFileTags(songIndex + 1);
       }
       showFillSongInforBox() {
         Swal.fire({
-          html: `<style>
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-    border: 2px solid #f0f0f0;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 16%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 30%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 27%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 27%;
-}
-</style>
+          html: `${getTableStyles(["16%", "30%", "27%", "27%"])}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>专辑</th></tr></thead><tbody></tbody></table>
 `,
           confirmButtonText: "上传",
@@ -6971,9 +6664,9 @@ width: 27%;
         let loaded = 0;
         let md5sum = _unsafeWindow.CryptoJS.algo.MD5.create();
         showTips(`(1/5)${song.title} 正在获取文件MD5值`, 1);
-        reader.onload = function(e2) {
+        reader.onload = function(e) {
           md5sum.update(_unsafeWindow.CryptoJS.enc.Latin1.parse(reader.result));
-          loaded += e2.loaded;
+          loaded += e.loaded;
           if (loaded < song.size) {
             readBlob(loaded);
           } else {
@@ -7038,8 +6731,8 @@ width: 27%;
                   self.uploadFail();
                 }
               });
-            } catch (e3) {
-              console.error(e3);
+            } catch (e2) {
+              console.error(e2);
               self.uploadFail();
             }
           }
@@ -7083,8 +6776,8 @@ width: 27%;
               self.uploadFail();
             }
           });
-        } catch (e2) {
-          console.error(e2);
+        } catch (e) {
+          console.error(e);
           self.uploadFail();
         }
       }
@@ -7143,8 +6836,8 @@ width: 27%;
               self.uploadFail();
             }
           });
-        } catch (e2) {
-          console.error(e2);
+        } catch (e) {
+          console.error(e);
           self.uploadFail();
         }
       }
@@ -7200,54 +6893,14 @@ width: 27%;
         showCloseButton: true,
         showConfirmButton: false,
         width: "980px",
-        html: `<style>
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 16%;
-}
-tr th:nth-child(2){
-width: 48%;
-}
-tr td:nth-child(2){
-width: 10%;
-}
-tr td:nth-child(3){
-width: 38%;
-}
-tr th:nth-child(3),tr td:nth-child(4){
-width: 28%;
-}
-tr th:nth-child(4),tr td:nth-child(5){
-width: 8%;
-}
-tr th:nth-child(5),tr td:nth-child(6){
-width: 8%;
-}
-</style>
+        html: `${getTableStyles([], `
+tr th:nth-child(1),tr td:nth-child(1){ width: 16%; }
+tr th:nth-child(2){ width: 48%; }
+tr td:nth-child(2){ width: 10%; }
+tr td:nth-child(3){ width: 38%; }
+tr th:nth-child(3),tr td:nth-child(4){ width: 28%; }
+tr th:nth-child(4),tr td:nth-child(5){ width: 8%; }
+tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>大小</th> </tr></thead><tbody></tbody></table>
 `,
         footer: footer + '，只有标准(128k)音质<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
@@ -7271,9 +6924,9 @@ width: 8%;
                     let songArtist = getArtistTextInSongDetail(content.songs[i]);
                     let songTitle = content.songs[i].name;
                     let filename = nameFileWithoutExt(songTitle, songArtist, "artist-title");
-                    songArtist = content.songs[i].ar ? content.songs[i].ar.map((ar) => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${ar.name}<a>`).join() : "";
+                    songArtist = content.songs[i].ar ? content.songs[i].ar.map((ar) => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${escapeHtml(ar.name)}<a>`).join() : "";
                     let tablerow = document.createElement("tr");
-                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${getAlbumTextInSongDetail(content.songs[i])}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${content.songs[i].name}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`;
+                    tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${escapeHtml(getAlbumTextInSongDetail(content.songs[i]))}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${escapeHtml(content.songs[i].name)}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`;
                     let btnDL = tablerow.querySelector(".mydl");
                     btnDL.addEventListener("click", () => {
                       TrialDownLoad(content.songs[i].id, trialMode, filename);
@@ -7321,8 +6974,8 @@ width: 8%;
                 document.body.removeChild(a);
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 1e3);
               },
-              onerror: function(e2) {
-                console.error(e2);
+              onerror: function(e) {
+                console.error(e);
                 showTips("下载失败", 2);
               }
             });
@@ -7598,7 +7251,7 @@ width: 8%;
       temp.href = fileurl;
       temp.download = "网易云云盘信息.json";
       temp.click();
-      URL.revokeObjectURL(data);
+      URL.revokeObjectURL(fileurl);
       showTips(`导出云盘信息完成,共${config.data.length}首歌曲`, 1);
     }
   };
@@ -7624,8 +7277,8 @@ width: 8%;
     function importCloud(file) {
       let reader = new FileReader();
       reader.readAsText(file);
-      reader.onload = (e2) => {
-        let uploader = new Uploader(JSON.parse(e2.target.result), true);
+      reader.onload = (e) => {
+        let uploader = new Uploader(JSON.parse(e.target.result), true);
         uploader.start();
       };
     }
@@ -7674,49 +7327,7 @@ width: 8%;
         Swal.fire({
           width: "980px",
           showCloseButton: true,
-          html: `<style>
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-    border: 2px solid #f0f0f0;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 6%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 30%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 6%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 29%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 29%;
-}
-</style>
+          html: `${getTableStyles(["6%", "30%", "6%", "29%", "29%"])}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>文件名</th><th></th><th>目标歌曲</th><th>歌手</th></tr></thead><tbody></tbody></table>
 `,
           didOpen: async () => {
@@ -7730,8 +7341,7 @@ width: 29%;
                 fileName: result.file.name,
                 ext: result.file.name.split(".").pop().toLowerCase(),
                 duration: Math.round(result.duration * 1e3),
-                mode: "unfill",
-                songDescription: "</td><td>未设置</td><td>"
+                mode: "unfill"
               }));
             }
             actions.innerHTML = `<div class="swal2-loader"></div>
@@ -7758,50 +7368,7 @@ width: 29%;
         Swal.fire({
           showCloseButton: true,
           width: "980px",
-          html: `<style>
-    table {
-        width: 100%;
-        height: 400px;
-        border-spacing: 0px;
-        border-collapse: collapse;
-        border: 2px solid #f0f0f0;
-    }
-    table th, table td {
-        text-align: left;
-        text-overflow: ellipsis;
-    }
-    table tbody {
-        display: block;
-        width: 100%;
-        max-height: 400px;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    table thead tr, table tbody tr, table tfoot tr {
-        box-sizing: border-box;
-        table-layout: fixed;
-        display: table;
-        width: 100%;
-    }
-    table tbody tr td{
-        border-bottom: none;
-    }
-tr th:nth-child(1),tr td:nth-child(1){
-width: 6%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 6%;
-}
-tr th:nth-child(3),tr td:nth-child(3){
-width: 40%;
-}
-tr th:nth-child(4),tr td:nth-child(4){
-width: 40%;
-}
-tr th:nth-child(5),tr td:nth-child(5){
-width: 8%;
-}
-</style>
+          html: `${getTableStyles(["6%", "6%", "40%", "40%", "8%"], "table { height: 400px; }")}
 <div><label>关键词/歌曲链接/歌曲ID:<input class="swal2-input" id="search-text" style="width: 400px;" placeholder="关键词/链接/ID"></label><button type="button" class="swal2-confirm swal2-styled" id="btn-search">搜索</button></div>
 <div class="table-wrapper">
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th></th><th>歌曲标题</th><th>歌手</th><th>时长</th></tr></thead><tbody></tbody></table>
@@ -7838,7 +7405,8 @@ width: 8%;
               if (searchWord.includes("song?")) {
                 try {
                   URLObj = new URL(searchWord);
-                } catch (e2) {
+                } catch (e) {
+                  logWarn("Failed to parse URL in musicTag", { searchWord, error: e });
                 }
               }
               if (URLObj && URLObj.hostname === "music.163.com") {
@@ -7896,15 +7464,14 @@ width: 8%;
                       resultSongs.forEach((resultSong) => {
                         let tablerow = document.createElement("tr");
                         let songName = resultSong.name;
-                        const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join();
+                        const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join();
                         const needHighLight = Math.abs(resultSong.dt - file.duration) < 1e3;
                         const dtstyle = needHighLight ? "color:SpringGreen;" : "";
-                        tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
+                        tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
                         let selectbtn = tablerow.querySelector(".selectbtn");
                         selectbtn.addEventListener("click", () => {
                           file.targetSong = resultSong;
                           file.mode = "netease";
-                          file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`;
                           this.openFilesDialog();
                         });
                         tbody.appendChild(tablerow);
@@ -7984,8 +7551,6 @@ width: 8%;
                 lyric: lyricInput.value
               };
               file.mode = "custom";
-              file.songDescription = file.customSong.cover ? `<img src="${file.customSong.cover.url}" height=50 title="${file.customSong.album}"></td><td>` : "";
-              file.songDescription += `${file.customSong.name}</td><td>${file.customSong.artist}`;
               this.openFilesDialog();
             });
           },
@@ -8016,11 +7581,22 @@ width: 8%;
       refreshSongListTable() {
         this.songListTbody.innerHTML = "";
         this.fileList.forEach((item) => {
+          let targetSongHtml = "";
+          if (item.mode === "netease" && item.targetSong) {
+            const resultSong = item.targetSong;
+            const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join();
+            targetSongHtml = `<td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(resultSong.name)}</a></td><td>${artists}</td>`;
+          } else if (item.mode === "custom" && item.customSong) {
+            const coverHtml = item.customSong.cover ? `<img src="${item.customSong.cover.url}" height=50 title="${escapeHtml(item.customSong.album)}">` : "";
+            targetSongHtml = `<td>${coverHtml}</td><td>${escapeHtml(item.customSong.name)}</td><td>${escapeHtml(item.customSong.artist)}</td>`;
+          } else {
+            targetSongHtml = `<td></td><td>未设置</td><td></td>`;
+          }
           const tr = document.createElement("tr");
           tr.innerHTML = `
                         <td><button type="button" class="swal2-styled"><i class="fa-solid fa-gear"></i></button></td>
-                        <td>${item.fileName}</td>
-                        <td class="target-song">${item.songDescription}</td>
+                        <td>${escapeHtml(item.fileName)}</td>
+                        ${targetSongHtml}
                     `;
           const selectButton = tr.querySelector(".swal2-styled");
           selectButton.addEventListener("click", () => {
@@ -8056,11 +7632,10 @@ width: 8%;
             if (response && response.code == 200 && response.result.songCount > 0) {
               for (const resultSong of response.result.songs) {
                 if (Math.abs(resultSong.dt - file.duration) < 1e3 && searchWord.toLowerCase().includes(resultSong.name.toLowerCase())) {
-                  let songName = resultSong.name;
-                  const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${ar.name}</a>`).join();
+                  resultSong.name;
+                  resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join();
                   file.targetSong = resultSong;
                   file.mode = "netease";
-                  file.songDescription = `<a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${resultSong.al.name}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${songName}</a></td><td>${artists}`;
                   this.refreshSongListTable();
                   break;
                 }
@@ -8075,8 +7650,171 @@ width: 8%;
       unsetSong(file) {
         file.targetSong = null;
         file.customSong = null;
-        file.songDescription = "</td><td>未设置</td><td>";
         file.mode = "unfill";
+      }
+      async readSongFileBuffer(song) {
+        const fileData = new File([song.file], song.file.name, { type: song.file.type });
+        const fileBuffer = await fileData.arrayBuffer();
+        const fileFormat = detectAudioFormat(fileBuffer);
+        if (fileFormat !== "unknown") {
+          song.ext = fileFormat;
+          return fileBuffer;
+        } else {
+          song.progressDOM.innerHTML = "不支持该文件格式";
+          return null;
+        }
+      }
+      async fetchSongMetadata(song) {
+        let title = song.mode === "netease" ? song.targetSong.name : song.customSong.name;
+        let artist = song.mode === "netease" ? song.targetSong.ar.map((ar) => ar.name).join() : song.customSong.artist;
+        const album = song.mode === "netease" ? song.targetSong.al.name : song.customSong.album;
+        if (this.rename) {
+          const nameWithoutExt = nameFileWithoutExt(title, artist, "artist-title");
+          if (nameWithoutExt && nameWithoutExt.length > 0) song.fileName = `${nameWithoutExt}.${song.ext}`;
+        }
+        if (song.mode === "netease") {
+          artist = song.targetSong.ar.map((ar) => ar.name).join("; ");
+        }
+        let coverBuffer = null;
+        let coverFormat = "image/jpeg";
+        if (song.mode === "netease") {
+          if (song.targetSong.al.pic > 0) {
+            coverBuffer = await new Promise((resolve, reject) => {
+              GM_xmlhttpRequest({
+                method: "GET",
+                url: song.targetSong.al.picUrl,
+                responseType: "arraybuffer",
+                onload: (res) => resolve(res.response),
+                onerror: (err) => reject(err)
+              });
+            });
+            coverBuffer = new Uint8Array(coverBuffer).buffer;
+            song.progressDOM.innerHTML = "已获取图片";
+          }
+        } else {
+          if (song.customSong.cover) {
+            let imgext = song.customSong.cover.file.name.split(".").pop().toLowerCase();
+            if (imgext === "jpg") {
+              imgext = "jpeg";
+            }
+            coverFormat = `image/${imgext}`;
+            coverBuffer = await song.customSong.cover.file.arrayBuffer();
+            coverBuffer = new Uint8Array(coverBuffer).buffer;
+            URL.revokeObjectURL(song.customSong.cover.url);
+          }
+        }
+        let lyricText = "";
+        if (song.mode === "netease") {
+          const requestData = {
+            "/api/song/lyric/v1": JSON.stringify({ id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 })
+          };
+          if (song.targetSong.al.id > 0) {
+            if (this.albumDetailCache[song.targetSong.al.id]) {
+              song.albumDetail = this.albumDetailCache[song.targetSong.al.id];
+            } else {
+              requestData[`/api/v1/album/${song.targetSong.al.id}`] = "{}";
+            }
+          }
+          const res = await weapiRequestSync("/api/batch", {
+            data: requestData
+          });
+          const lyricRes = res["/api/song/lyric/v1"];
+          if (lyricRes && !lyricRes.pureMusic) {
+            const LyricObj = handleLyric(lyricRes);
+            if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
+              lyricText = LyricObj.oritlrc.lyric;
+              song.progressDOM.innerHTML = "已获取歌词";
+            } else if (LyricObj && LyricObj.orilrc && LyricObj.orilrc.parsedLyric.length > 0) {
+              lyricText = LyricObj.orilrc.lyric;
+              song.progressDOM.innerHTML = "已获取歌词";
+            }
+          }
+          const albumRes = res[`/api/v1/album/${song.targetSong.al.id}`];
+          if (albumRes) {
+            song.albumDetail = {
+              publisher: albumRes.album.company.length > 0 ? albumRes.album.company : null,
+              artists: albumRes.album.artists ? albumRes.album.artists.map((artist2) => artist2.name).join("; ") : null,
+              publishTime: albumRes.album.publishTime > 0 ? dateDesc(albumRes.album.publishTime) : null
+            };
+            this.albumDetailCache[song.targetSong.al.id] = song.albumDetail;
+          }
+        } else {
+          lyricText = song.customSong.lyric.trim();
+        }
+        return { title, artist, album, coverBuffer, coverFormat, lyricText };
+      }
+      async processMP3Tag(song, fileBuffer, metadata) {
+        const { title, artist, album, coverBuffer, coverFormat, lyricText } = metadata;
+        const mp3tag = new MP3Tag(fileBuffer);
+        mp3tag.read();
+        if (mp3tag.error !== "") {
+          return `无法解析该文件：${mp3tag.error}`;
+        }
+        if (!mp3tag.tags || !mp3tag.tags.v2) {
+          return "不支持该文件格式";
+        }
+        mp3tag.tags.title = title;
+        mp3tag.tags.artist = artist;
+        if (song.mode === "netease") {
+          if (song.targetSong.no && song.targetSong.no > 0) mp3tag.tags.v2.TRCK = String(song.targetSong.no).padStart(2, "0");
+          if (song.targetSong.cd && song.targetSong.cd.length > 0) mp3tag.tags.v2.TPOS = song.targetSong.cd;
+          if (song.albumDetail) {
+            if (song.albumDetail.publisher) mp3tag.tags.v2.TPUB = song.albumDetail.publisher;
+            if (song.albumDetail.artists) mp3tag.tags.v2.TPE2 = song.albumDetail.artists;
+            if (song.albumDetail.publishTime) mp3tag.tags.v2.TDRC = song.albumDetail.publishTime;
+          }
+        }
+        if (album.length > 0) mp3tag.tags.album = album;
+        if (coverBuffer) {
+          mp3tag.tags.v2.APIC = [{
+            description: "",
+            data: coverBuffer,
+            type: 3,
+            format: coverFormat
+          }];
+        }
+        if (lyricText && lyricText.length > 0) {
+          mp3tag.tags.v2.TXXX = [{
+            description: "LYRICS",
+            text: lyricText
+          }];
+        }
+        mp3tag.save();
+        if (mp3tag.error) {
+          console.error("mp3tag.error", mp3tag.error);
+          return `标记时出错：${mp3tag.error}`;
+        }
+        const blob = new Blob([mp3tag.buffer], { type: "audio/mp3" });
+        const url2 = URL.createObjectURL(blob);
+        const downloadRes = await downloadFileSync(url2, sanitizeFilename(song.fileName));
+        URL.revokeObjectURL(url2);
+        return downloadRes;
+      }
+      async processFLACTag(song, fileBuffer, metadata) {
+        const { title, artist, album, coverBuffer, coverFormat, lyricText } = metadata;
+        const flac = new MetaFlac(fileBuffer);
+        flac.removeAllTags();
+        flac.removeAllPictures();
+        flac.setTag(`TITLE=${title}`);
+        flac.setTag(`ARTIST=${artist}`);
+        if (song.mode === "netease") {
+          if (song.targetSong.no && song.targetSong.no > 0) flac.setTag(`TRACKNUMBER=${String(song.targetSong.no).padStart(2, "0")}`);
+          if (song.targetSong.cd && song.targetSong.cd.length > 0) flac.setTag(`DISCNUMBER=${song.targetSong.cd}`);
+          if (song.albumDetail) {
+            if (song.albumDetail.publisher) flac.setTag(`PUBLISHER=${song.albumDetail.publisher}`);
+            if (song.albumDetail.artists) flac.setTag(`ALBUMARTIST=${song.albumDetail.artists}`);
+            if (song.albumDetail.publishTime) flac.setTag(`DATE=${song.albumDetail.publishTime}`);
+          }
+        }
+        if (album.length > 0) flac.setTag(`ALBUM=${album}`);
+        if (lyricText.length > 0) flac.setTag(`LYRICS=${lyricText}`);
+        if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, coverFormat);
+        const newBuffer = flac.save();
+        const blob = new Blob([newBuffer], { type: "audio/flac" });
+        const url2 = URL.createObjectURL(blob);
+        const downloadRes = await downloadFileSync(url2, sanitizeFilename(song.fileName));
+        URL.revokeObjectURL(url2);
+        return downloadRes;
       }
       handleSongTag() {
         Swal.fire({
@@ -8085,40 +7823,7 @@ width: 8%;
           allowEscapeKey: false,
           showCloseButton: false,
           showConfirmButton: false,
-          html: `<style>
-table {
-    width: 100%;
-    border-spacing: 0px;
-    border-collapse: collapse;
-    border: 2px solid #f0f0f0;
-}
-table th, table td {
-    text-align: left;
-    text-overflow: ellipsis;
-}
-table tbody {
-    display: block;
-    width: 100%;
-    max-height: 400px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-table thead tr, table tbody tr, table tfoot tr {
-    box-sizing: border-box;
-    table-layout: fixed;
-    display: table;
-    width: 100%;
-}
-table tbody tr td{
-    border-bottom: none;
-}
-tr th:nth-child(1),tr td:nth-child(1){
-width: 50%;
-}
-tr th:nth-child(2),tr td:nth-child(2){
-width: 50%;
-}
-</style>
+          html: `${getTableStyles(["50%", "50%"])}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>文件名</th><th>进度</th></tr></thead><tbody></tbody></table>
 `,
           didOpen: async () => {
@@ -8131,180 +7836,20 @@ width: 50%;
             this.songListTbody = container.querySelector("tbody");
             this.selectedSongs.forEach((song) => {
               const tr = document.createElement("tr");
-              tr.innerHTML = `<td>${song.fileName}</td><td>未开始</td>`;
+              tr.innerHTML = `<td>${escapeHtml(song.fileName)}</td><td>未开始</td>`;
               this.songListTbody.appendChild(tr);
               song.progressDOM = tr.querySelector("td:nth-child(2)");
             });
             let finishCount = 0;
             for (const song of this.selectedSongs) {
               song.progressDOM.innerHTML = "开始处理";
-              const fileData = new File([song.file], song.file.name, { type: song.file.type });
-              const fileBuffer = await fileData.arrayBuffer();
-              const fileFormat = detectAudioFormat(fileBuffer);
-              if (fileFormat !== "unknown") {
-                song.ext = fileFormat;
-              } else {
-                song.progressDOM.innerHTML = "不支持该文件格式";
-                continue;
-              }
-              const songTitle = song.mode === "netease" ? song.targetSong.name : song.customSong.name;
-              let songArtist = song.mode === "netease" ? song.targetSong.ar.map((ar) => ar.name).join() : song.customSong.artist;
-              const songAlbum = song.mode === "netease" ? song.targetSong.al.name : song.customSong.album;
-              if (this.rename) {
-                const nameWithoutExt = nameFileWithoutExt(songTitle, songArtist, "artist-title");
-                if (nameWithoutExt && nameWithoutExt.length > 0) song.fileName = `${nameWithoutExt}.${song.ext}`;
-              }
-              if (song.mode === "netease") {
-                songArtist = song.targetSong.ar.map((ar) => ar.name).join("; ");
-              }
-              let coverBuffer = null;
-              let coverFormat = "image/jpeg";
-              if (song.mode === "netease") {
-                if (song.targetSong.al.pic > 0) {
-                  coverBuffer = await new Promise((resolve, reject) => {
-                    GM_xmlhttpRequest({
-                      method: "GET",
-                      url: song.targetSong.al.picUrl,
-                      responseType: "arraybuffer",
-                      onload: (res) => resolve(res.response),
-                      onerror: (err) => reject(err)
-                    });
-                  });
-                  coverBuffer = new Uint8Array(coverBuffer).buffer;
-                  song.progressDOM.innerHTML = "已获取图片";
-                }
-              } else {
-                if (song.customSong.cover) {
-                  let imgext = song.customSong.cover.file.name.split(".").pop().toLowerCase();
-                  if (imgext === "jpg") {
-                    imgext = "jpeg";
-                  }
-                  coverFormat = `image/${imgext}`;
-                  coverBuffer = await song.customSong.cover.file.arrayBuffer();
-                  coverBuffer = new Uint8Array(coverBuffer).buffer;
-                  URL.revokeObjectURL(song.customSong.cover.url);
-                }
-              }
-              let lyricText = "";
-              if (song.mode === "netease") {
-                const requestData = {
-                  "/api/song/lyric/v1": JSON.stringify({ id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 })
-                };
-                if (song.targetSong.al.id > 0) {
-                  if (this.albumDetailCache[song.targetSong.al.id]) {
-                    song.albumDetail = this.albumDetailCache[song.targetSong.al.id];
-                  } else {
-                    requestData[`/api/v1/album/${song.targetSong.al.id}`] = "{}";
-                  }
-                }
-                const res = await weapiRequestSync("/api/batch", {
-                  data: requestData
-                });
-                const lyricRes = res["/api/song/lyric/v1"];
-                if (lyricRes && !lyricRes.pureMusic) {
-                  const LyricObj = handleLyric(lyricRes);
-                  if (LyricObj && LyricObj.oritlrc && LyricObj.oritlrc.lyric) {
-                    lyricText = LyricObj.oritlrc.lyric;
-                    song.progressDOM.innerHTML = "已获取歌词";
-                  } else if (LyricObj && LyricObj.orilrc && LyricObj.orilrc.parsedLyric.length > 0) {
-                    lyricText = LyricObj.orilrc.lyric;
-                    song.progressDOM.innerHTML = "已获取歌词";
-                  }
-                }
-                const albumRes = res[`/api/v1/album/${song.targetSong.al.id}`];
-                if (albumRes) {
-                  song.albumDetail = {
-                    publisher: albumRes.album.company.length > 0 ? albumRes.album.company : null,
-                    artists: albumRes.album.artists ? albumRes.album.artists.map((artist) => artist.name).join("; ") : null,
-                    publishTime: albumRes.album.publishTime > 0 ? dateDesc(albumRes.album.publishTime) : null
-                  };
-                  this.albumDetailCache[song.targetSong.al.id] = song.albumDetail;
-                }
-              } else {
-                lyricText = song.customSong.lyric.trim();
-              }
-              if (song.ext === "mp3") {
-                const mp3tag = new MP3Tag(fileBuffer);
-                mp3tag.read();
-                mp3tag.tags.title = songTitle;
-                mp3tag.tags.artist = songArtist;
-                if (song.mode === "netease") {
-                  if (song.targetSong.no && song.targetSong.no > 0) mp3tag.tags.v2.TRCK = String(song.targetSong.no).padStart(2, "0");
-                  if (song.targetSong.cd && song.targetSong.cd.length > 0) mp3tag.tags.v2.TPOS = song.targetSong.cd;
-                  if (song.albumDetail) {
-                    if (song.albumDetail.publisher) {
-                      mp3tag.tags.v2.TPUB = song.albumDetail.publisher;
-                    }
-                    if (song.albumDetail.artists) {
-                      mp3tag.tags.v2.TPE2 = song.albumDetail.artists;
-                    }
-                    if (song.albumDetail.publishTime) {
-                      mp3tag.tags.v2.TDRC = song.albumDetail.publishTime;
-                    }
-                  }
-                }
-                if (songAlbum.length > 0) mp3tag.tags.album = songAlbum;
-                if (coverBuffer) {
-                  mp3tag.tags.v2.APIC = [{
-                    description: "",
-                    data: coverBuffer,
-                    type: 3,
-                    format: coverFormat
-                  }];
-                }
-                if (lyricText && lyricText.length > 0) {
-                  mp3tag.tags.v2.TXXX = [{
-                    description: "LYRICS",
-                    text: lyricText
-                  }];
-                }
-                mp3tag.save();
-                if (mp3tag.error) {
-                  console.error("mp3tag.error", mp3tag.error);
-                  song.progressDOM.innerHTML = `标记时出错：${mp3tag.error}`;
-                  continue;
-                }
-                const blob = new Blob([mp3tag.buffer], { type: "audio/mp3" });
-                const url2 = URL.createObjectURL(blob);
-                const downloadRes = await downloadFileSync(url2, sanitizeFilename(song.fileName));
-                song.progressDOM.innerHTML = downloadRes;
-                URL.revokeObjectURL(url2);
-                if (downloadRes.endsWith("完成")) {
-                  finishCount += 1;
-                }
-              } else if (song.ext === "flac") {
-                const flac = new MetaFlac(fileBuffer);
-                flac.removeAllTags();
-                flac.removeAllPictures();
-                flac.setTag(`TITLE=${songTitle}`);
-                flac.setTag(`ARTIST=${songArtist}`);
-                if (song.mode === "netease") {
-                  if (song.targetSong.no && song.targetSong.no > 0) flac.setTag(`TRACKNUMBER=${String(song.targetSong.no).padStart(2, "0")}`);
-                  if (song.targetSong.cd && song.targetSong.cd.length > 0) flac.setTag(`DISCNUMBER=${song.targetSong.cd}`);
-                  if (song.albumDetail) {
-                    if (song.albumDetail.publisher) {
-                      flac.setTag(`PUBLISHER=${song.albumDetail.publisher}`);
-                    }
-                    if (song.albumDetail.artists) {
-                      flac.setTag(`ALBUMARTIST=${song.albumDetail.artists}`);
-                    }
-                    if (song.albumDetail.publishTime) {
-                      flac.setTag(`DATE=${song.albumDetail.publishTime}`);
-                    }
-                  }
-                }
-                if (songAlbum.length > 0) flac.setTag(`ALBUM=${songAlbum}`);
-                if (lyricText.length > 0) flac.setTag(`LYRICS=${lyricText}`);
-                if (coverBuffer) await flac.importPictureFromBuffer(coverBuffer, coverFormat);
-                const newBuffer = flac.save();
-                const blob = new Blob([newBuffer], { type: "audio/flac" });
-                const url2 = URL.createObjectURL(blob);
-                const downloadRes = await downloadFileSync(url2, sanitizeFilename(song.fileName));
-                song.progressDOM.innerHTML = downloadRes;
-                URL.revokeObjectURL(url2);
-                if (downloadRes.endsWith("完成")) {
-                  finishCount += 1;
-                }
+              const fileBuffer = await this.readSongFileBuffer(song);
+              if (!fileBuffer) continue;
+              const metadata = await this.fetchSongMetadata(song);
+              const downloadRes = song.ext === "mp3" ? await this.processMP3Tag(song, fileBuffer, metadata) : await this.processFLACTag(song, fileBuffer, metadata);
+              song.progressDOM.innerHTML = downloadRes;
+              if (downloadRes.endsWith("完成")) {
+                finishCount += 1;
               }
             }
             this.showFinishBox(finishCount);
@@ -8371,7 +7916,7 @@ durationThreshold: 1,
             threshold = parseFloat(durationThresholdEl.value);
             if (isNaN(threshold) || threshold < 0) threshold = 1;
             threshold = Math.round(threshold * 10) / 10;
-          } catch (e2) {
+          } catch (e) {
             threshold = 1;
           }
           return {
@@ -8570,14 +8115,14 @@ durationThreshold: 1,
               row.style = "display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #f5f5f5;width:100%;box-sizing:border-box;min-width:0;";
               const coverHtml = `
                               <div style="flex: 0 0 72px; display:flex;align-items:center;justify-content:center;">
-                                <a href="https://music.163.com/#/song?id=${song.id}" target="_blank" title="${song.album && song.album.name ? song.album.name : ""}" style="display:block;">
+                                <a href="https://music.163.com/#/song?id=${song.id}" target="_blank" title="${escapeHtml(song.album && song.album.name ? song.album.name : "")}" style="display:block;">
                                   <img src="${song.album && song.album.picUrl ? song.album.picUrl + "?param=50y50&quality=100" : ""}" alt="cover" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5;">
                                 </a>
                               </div>`;
               const albumHtml = `
                               <div style="flex:1 1 160px;min-width:0;overflow:hidden;">
                                 <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                                  <a href="https://music.163.com/#/album?id=${song.album && song.album.id ? song.album.id : ""}" target="_blank" style="color:#000;text-decoration:none">${song.album && song.album.name ? song.album.name : ""}</a>
+                                  <a href="https://music.163.com/#/album?id=${song.album && song.album.id ? song.album.id : ""}" target="_blank" style="color:#000;text-decoration:none">${escapeHtml(song.album && song.album.name ? song.album.name : "")}</a>
                                 </div>
                               </div>`;
               const publishHtml = `<div style="flex:0 0 90px;color:#666;font-size:13px;">${dateDesc(song.publishTime)}</div>`;
@@ -8615,8 +8160,8 @@ durationThreshold: 1,
                         const msg = deleteRes.message || "删除失败";
                         showTips(msg);
                       }
-                    } catch (e2) {
-                      showTips(`删除出错: ${e2.message}`);
+                    } catch (e) {
+                      showTips(`删除出错: ${e.message}`);
                     }
                   }
                 });
@@ -8649,30 +8194,10 @@ durationThreshold: 1,
               pageArea.style.cssText = "display:flex;gap:6px;justify-content:center;flex-wrap:wrap;";
               footerEl.insertBefore(pageArea, footerEl.firstChild);
             }
-            pageArea.innerHTML = "";
-            const pageIndexs = [1];
-            const floor = Math.max(2, currentPage - 2);
-            const ceil = Math.min(pageMax - 1, currentPage + 2);
-            for (let i = floor; i <= ceil; i++) pageIndexs.push(i);
-            if (pageMax > 1) pageIndexs.push(pageMax);
-            pageIndexs.forEach((pageIndex) => {
-              const pageBtn = document.createElement("button");
-              pageBtn.setAttribute("type", "button");
-              pageBtn.className = "swal2-styled";
-              pageBtn.innerHTML = pageIndex;
-              pageBtn.style.padding = "6px 12px";
-              pageBtn.style.minWidth = "40px";
-              if (pageIndex !== currentPage) {
-                pageBtn.addEventListener("click", () => {
-                  currentPage = pageIndex;
-                  renderPage();
-                });
-              } else {
-                pageBtn.style.background = "#cccccc";
-                pageBtn.disabled = true;
-              }
-              pageArea.appendChild(pageBtn);
-            });
+            createPagination(pageArea, currentPage, pageMax, (page) => {
+              currentPage = page;
+              renderPage();
+            }, this.working);
           };
           renderPage();
           const headerBar = document.createElement("div");
@@ -8797,11 +8322,11 @@ durationThreshold: 1,
                   if (countRes.code === 200 && countRes.data) {
                     song.redCount = countRes.data.count || 0;
                   } else {
-                    showTips(`获取歌曲 ${song.name} 收藏量出错: ${e.message}`, 2);
+                    showTips(`获取歌曲 ${song.name} 收藏量出错。${countRes.message || countRes.msg || ""}`, 2);
                     errorOccurred = true;
                   }
-                } catch (e2) {
-                  showTips(`获取歌曲 ${song.name} 收藏量出错: ${e2.message}`, 2);
+                } catch (e) {
+                  showTips(`获取歌曲 ${song.name} 收藏量出错: ${e.message}`, 2);
                   errorOccurred = true;
                 }
               }
@@ -8833,8 +8358,8 @@ durationThreshold: 1,
                   song.deleted = true;
                   updateDeleteButtonState(song.id);
                 });
-              } catch (e2) {
-                showTips(`删除歌曲 ${toDelete[0].name} 出错: ${e2.message}`, 2);
+              } catch (e) {
+                showTips(`删除歌曲 ${toDelete[0].name} 出错: ${e.message}`, 2);
                 return;
               }
             }
@@ -8869,6 +8394,11 @@ durationThreshold: 1,
       cloudImport(editArea);
       musicTag(editArea);
       scriptSettings(editArea);
+      const editSelfProfile = editArea.querySelector("#edit-self-profile");
+      if (editSelfProfile) {
+        editSelfProfile.style.setProperty("margin-right", "6px");
+        editSelfProfile.style.setProperty("margin-top", "6px");
+      }
     }
   };
   class SongDetail {
@@ -9150,7 +8680,7 @@ durationThreshold: 1,
       h3.style.alignItems = "center";
       h3.style.justifyContent = "space-between";
       h3.style.width = "100%";
-      h3.innerHTML = `<span style="margin-top: 10px;margin-bottom: 10px;">${title}</span>`;
+      h3.innerHTML = `<span style="margin-top: 10px;margin-bottom: 10px;">${escapeHtml(title)}</span>`;
       this.maindDiv.appendChild(h3);
       return h3;
     }
@@ -9166,7 +8696,7 @@ durationThreshold: 1,
       const row = document.createElement("tr");
       if (tbody.children.length % 2 === 0) row.className = "even";
       if (needHide && tbody.children.length > 0) row.style.display = "none";
-      row.innerHTML = `<td><div><span>${title || ""}</span></div></td><td><div></div></td>`;
+      row.innerHTML = `<td><div><span>${escapeHtml(title) || ""}</span></div></td><td><div></div></td>`;
       tbody.appendChild(row);
       return row.querySelector("tr > td:nth-child(2) > div");
     }
@@ -9174,7 +8704,7 @@ durationThreshold: 1,
       const row = document.createElement("tr");
       if (tbody.children.length % 2 === 0) row.className = "even";
       if (needHide && tbody.children.length > 0) row.style.display = "none";
-      row.innerHTML = `<td ${desc ? 'style="width: 23%;"' : ""}><div></div></td><td><div><span>${desc || ""}</span></div></td>`;
+      row.innerHTML = `<td ${desc ? 'style="width: 23%;"' : ""}><div></div></td><td><div><span>${escapeHtml(desc) || ""}</span></div></td>`;
       const firstArea = row.querySelector("tr > td:nth-child(1) > div");
       firstArea.appendChild(btn);
       tbody.appendChild(row);
@@ -9212,7 +8742,7 @@ durationThreshold: 1,
     }
     createText(desc) {
       let btn = document.createElement("span");
-      btn.innerHTML = desc;
+      btn.innerHTML = escapeHtml(desc);
       btn.style.marginRight = "10px";
       return btn;
     }
@@ -9312,7 +8842,7 @@ durationThreshold: 1,
     });
   };
   const setWebPlayerStyle = () => {
-    const webPlayerFontSetting = JSON.parse(GM_getValue("webPlayerFontSetting", "{}"));
+    const webPlayerFontSetting = safeJsonParse(GM_getValue("webPlayerFontSetting", "{}"), {});
     const defaultFont = webPlayerFontSetting.default || "";
     const lyricFont = webPlayerFontSetting.lyric || "";
     if (defaultFont.length > 0) {
@@ -9328,8 +8858,12 @@ durationThreshold: 1,
         }`);
     }
   };
+  let webPlayerObserver = null;
   const observerWebPlayer = () => {
-    let observer = new MutationObserver((mutations, observer2) => {
+    if (webPlayerObserver) {
+      webPlayerObserver.disconnect();
+    }
+    webPlayerObserver = new MutationObserver((mutations, observer) => {
       mutations.forEach((mutation) => {
         if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
           for (let node of mutation.addedNodes) {
@@ -9343,7 +8877,7 @@ durationThreshold: 1,
         }
       });
     });
-    observer.observe(document.body, {
+    webPlayerObserver.observe(document.body, {
       childList: true,
       subtree: true
     });
@@ -9365,7 +8899,8 @@ durationThreshold: 1,
     if (existContainer) {
       try {
         ReactDOM.unmountComponentAtNode(existContainer);
-      } catch (e2) {
+      } catch (e) {
+        logWarn("ReactDOM unmount error (QualitySetting)", e);
       }
       existContainer.remove();
     }
@@ -9379,7 +8914,8 @@ durationThreshold: 1,
         setLevel(key);
         try {
           GM_setValue("DEFAULT_LEVEL", key);
-        } catch (e2) {
+        } catch (e) {
+          logWarn("Failed to set DEFAULT_LEVEL", e);
         }
       };
       const items = Object.keys(levelOptions).map((key) => {
@@ -9442,7 +8978,8 @@ durationThreshold: 1,
     if (existContainer) {
       try {
         ReactDOM.unmountComponentAtNode(existContainer);
-      } catch (e2) {
+      } catch (e) {
+        logWarn("ReactDOM unmount error (FontSetting)", e);
       }
       existContainer.remove();
     }
@@ -9462,7 +8999,7 @@ durationThreshold: 1,
           focusConfirm: false,
           didOpen: () => {
             const container2 = Swal.getHtmlContainer();
-            const webPlayerFontSetting = JSON.parse(GM_getValue("webPlayerFontSetting", "{}"));
+            const webPlayerFontSetting = safeJsonParse(GM_getValue("webPlayerFontSetting", "{}"), {});
             container2.querySelector("#ncm-font-default").value = webPlayerFontSetting.default || "";
             container2.querySelector("#ncm-font-lyric").value = webPlayerFontSetting.lyric || "";
           },
@@ -9486,12 +9023,13 @@ durationThreshold: 1,
   };
   const HandleCloudButton = (node) => {
     const button = node.querySelector("div > div > button:nth-child(2)");
-    if (button) {
+    if (button && !button.__ncmExtendHasHooked) {
       button.addEventListener("click", function(event) {
         event.stopPropagation();
         event.preventDefault();
         showConfirmBox("新版网页端没有实现上传功能，估计网易云因此隐藏“我的音乐云盘”的。脚本在原版网页端的个人主页提供了上传功能。欢迎前去使用。");
       }, true);
+      button.__ncmExtendHasHooked = true;
     }
   };
   const registerMenuCommand = () => {
