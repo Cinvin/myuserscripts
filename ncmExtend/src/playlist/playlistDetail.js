@@ -135,10 +135,12 @@ class PlaylistDetail {
     this.operationArea.children[1].addEventListener('click', () => {
       unsafeWindow.top.player.addTo(this.playableSongList, false, false);
     });
-    this.operationArea.children[0].style.display = '';
-    this.operationArea.children[1].style.display = '';
-    this.operationArea.children[2].style.display = 'none';
-    this.operationArea.children[3].style.display = 'none';
+    for (let index = 0; index < this.operationArea.children.length; index++) {
+      const item = this.operationArea.children[index];
+      item.style.setProperty('margin-top', '6px');
+      if (index <= 1) item.style.removeProperty('display');
+      else if (index <= 3) item.style.setProperty('display', 'none');
+    }
   }
   appendBtns() {
     songsDownUpLoad(this.playlistId, this.operationArea);
