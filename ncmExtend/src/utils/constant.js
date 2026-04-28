@@ -1,62 +1,91 @@
-import { safeJsonParse } from "./common";
+import { safeJsonParse } from './common';
 
-export const levelOptions = { jymaster: '超清母带', dolby: '杜比全景声', sky: '沉浸环绕声', jyeffect: '高清臻音', hires: '高解析度无损', lossless: '无损', exhigh: '极高', higher: '较高', standard: '标准' }
-export const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 5, lossless: 4, exhigh: 3, higher: 2, standard: 1, none: 0 }
-export const defaultOfDEFAULT_LEVEL = 'jymaster'
+export const levelOptions = {
+  jymaster: '超清母带',
+  dolby: '杜比全景声',
+  sky: '沉浸环绕声',
+  jyeffect: '高清臻音',
+  hires: '高解析度无损',
+  lossless: '无损',
+  exhigh: '极高',
+  higher: '较高',
+  standard: '标准',
+};
+export const levelWeight = {
+  jymaster: 9,
+  dolby: 8,
+  sky: 7,
+  jyeffect: 6,
+  hires: 5,
+  lossless: 4,
+  exhigh: 3,
+  higher: 2,
+  standard: 1,
+  none: 0,
+};
+export const defaultOfDEFAULT_LEVEL = 'jymaster';
 // 默认的批量操作的歌曲过滤条件
 const defaultOfBatchFilter = {
-    free: true, // 极高音质试听+HiRes音质下载
-    vip: true, // VIP
-    pay: true, // 付费
-    lowfree: true, // 极高音质试听
-    instrumental: true, // 纯音乐
-    live: true, // 现场版
-    cloud: false, // 云盘歌曲
-}
+  free: true, // 极高音质试听+HiRes音质下载
+  vip: true, // VIP
+  pay: true, // 付费
+  lowfree: true, // 极高音质试听
+  instrumental: true, // 纯音乐
+  live: true, // 现场版
+  cloud: false, // 云盘歌曲
+};
 export const getBatchFilter = () => {
-    return Object.assign({}, defaultOfBatchFilter, safeJsonParse(GM_getValue('batchFilter', '{}'), {}))
-}
+  return Object.assign({}, defaultOfBatchFilter, safeJsonParse(GM_getValue('batchFilter', '{}'), {}));
+};
 export const setBatchFilter = (value) => {
-    GM_setValue('batchFilter', JSON.stringify(Object.assign({}, defaultOfBatchFilter, value)))
-}
+  GM_setValue('batchFilter', JSON.stringify(Object.assign({}, defaultOfBatchFilter, value)));
+};
 // 默认的通用下载设置
 const defaultOfDownloadSettings = {
-    appendMeta: 'notAppend',  // 是否附加元数据
-    out: 'artist-title',  // 输出文件名格式
-    folder: 'none',  // 输出文件夹
-}
+  appendMeta: 'notAppend', // 是否附加元数据
+  out: 'artist-title', // 输出文件名格式
+  folder: 'none', // 输出文件夹
+};
 export const getDownloadSettings = () => {
-    return Object.assign({}, defaultOfDownloadSettings, safeJsonParse(GM_getValue('downloadSettings', '{}'), {}))
-}
+  return Object.assign({}, defaultOfDownloadSettings, safeJsonParse(GM_getValue('downloadSettings', '{}'), {}));
+};
 export const setDownloadSettings = (value) => {
-    GM_setValue('downloadSettings', JSON.stringify(Object.assign({}, defaultOfDownloadSettings, value)))
-}
+  GM_setValue('downloadSettings', JSON.stringify(Object.assign({}, defaultOfDownloadSettings, value)));
+};
 // 默认的批量下载设置
 const defaultOfBatchDownloadSettings = {
-    concurrent: 4, // 并发下载数
-    level: 'jymaster', // 下载音质
-    dllrc: false, // 下载.lrc歌词文件
-    levelonly: false, // 仅获取到目标音质时下载
-}
+  concurrent: 4, // 并发下载数
+  level: 'jymaster', // 下载音质
+  dllrc: false, // 下载.lrc歌词文件
+  levelonly: false, // 仅获取到目标音质时下载
+};
 export const getBatchDownloadSettings = () => {
-    return Object.assign({}, defaultOfBatchDownloadSettings, safeJsonParse(GM_getValue('batchDownloadSettings', '{}'), {}))
-}
+  return Object.assign(
+    {},
+    defaultOfBatchDownloadSettings,
+    safeJsonParse(GM_getValue('batchDownloadSettings', '{}'), {})
+  );
+};
 export const setBatchDownloadSettings = (value) => {
-    GM_setValue('batchDownloadSettings', JSON.stringify(Object.assign({}, defaultOfBatchDownloadSettings, value)))
-}
+  GM_setValue('batchDownloadSettings', JSON.stringify(Object.assign({}, defaultOfBatchDownloadSettings, value)));
+};
 // 默认的批量转存设置
 const defaultOfBatchTransUploadSettings = {
-    level: 'jymaster', // 转存音质
-    levelonly: false, // 仅获取到目标音质时下载
-}
+  level: 'jymaster', // 转存音质
+  levelonly: false, // 仅获取到目标音质时下载
+};
 export const getBatchTransUploadSettings = () => {
-    return Object.assign({}, defaultOfBatchTransUploadSettings, safeJsonParse(GM_getValue('batchTransUploadSettings', '{}'), {}))
-}
+  return Object.assign(
+    {},
+    defaultOfBatchTransUploadSettings,
+    safeJsonParse(GM_getValue('batchTransUploadSettings', '{}'), {})
+  );
+};
 export const setBatchTransUploadSettings = (value) => {
-    GM_setValue('batchTransUploadSettings', JSON.stringify(Object.assign({}, defaultOfBatchTransUploadSettings, value)))
-}
-export const uploadChunkSize = 8 * 1024 * 1024
-export const songMark = { explicit: 1048576 }
+  GM_setValue('batchTransUploadSettings', JSON.stringify(Object.assign({}, defaultOfBatchTransUploadSettings, value)));
+};
+export const uploadChunkSize = 8 * 1024 * 1024;
+export const songMark = { explicit: 1048576 };
 
-export const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
-export const DEFAULT_ALBUM_PIC_URL = 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg'
+export const liveRegex = /(?:\(|（)[^)）]*\blive\b[^)）]*(?:\)|）)$/;
+export const DEFAULT_ALBUM_PIC_URL = 'http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg';

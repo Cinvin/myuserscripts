@@ -1,89 +1,77 @@
-
-import { levelOptions } from './constant'
+import { levelOptions } from './constant';
 export const fileSizeDesc = (fileSize) => {
-    if (fileSize < 1024) {
-        return fileSize + 'B'
-    } else if (fileSize >= 1024 && fileSize < Math.pow(1024, 2)) {
-        return (fileSize / 1024)
-            .toFixed(1)
-            .toString() + 'K'
-    } else if (fileSize >= Math.pow(1024, 2) && fileSize < Math.pow(1024, 3)) {
-        return (fileSize / Math.pow(1024, 2))
-            .toFixed(1)
-            .toString() + 'M';
-    } else if (fileSize > Math.pow(1024, 3) && fileSize < Math.pow(1024, 4)) {
-        return (fileSize / Math.pow(1024, 3))
-            .toFixed(2)
-            .toString() + 'G';
-    } else if (fileSize > Math.pow(1024, 4)) {
-        return (fileSize / Math.pow(1024, 4))
-            .toFixed(2)
-            .toString() + 'T';
-    }
+  if (fileSize < 1024) {
+    return fileSize + 'B';
+  } else if (fileSize >= 1024 && fileSize < Math.pow(1024, 2)) {
+    return (fileSize / 1024).toFixed(1).toString() + 'K';
+  } else if (fileSize >= Math.pow(1024, 2) && fileSize < Math.pow(1024, 3)) {
+    return (fileSize / Math.pow(1024, 2)).toFixed(1).toString() + 'M';
+  } else if (fileSize > Math.pow(1024, 3) && fileSize < Math.pow(1024, 4)) {
+    return (fileSize / Math.pow(1024, 3)).toFixed(2).toString() + 'G';
+  } else if (fileSize > Math.pow(1024, 4)) {
+    return (fileSize / Math.pow(1024, 4)).toFixed(2).toString() + 'T';
+  }
 };
 export const duringTimeDesc = (dt) => {
-    const secondTotal = Math.floor(dt / 1000)
-    const min = Math.floor(secondTotal / 60)
-    const sec = secondTotal % 60
-    return min.toString().padStart(2, '0') + ':' + sec.toString().padStart(2, '0')
+  const secondTotal = Math.floor(dt / 1000);
+  const min = Math.floor(secondTotal / 60);
+  const sec = secondTotal % 60;
+  return min.toString().padStart(2, '0') + ':' + sec.toString().padStart(2, '0');
 };
 export const dateDesc = (timestamp) => {
-    if (!timestamp) return ''
-    try {
-        const d = new Date(timestamp)
-        const year = d.getFullYear()
-        const month = String(d.getMonth() + 1).padStart(2, '0')
-        const day = String(d.getDate()).padStart(2, '0')
-        return `${year}-${month}-${day}`
-    } catch (e) {
-        return ''
-    }
+  if (!timestamp) return '';
+  try {
+    const d = new Date(timestamp);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return '';
+  }
 };
 export const levelDesc = (level) => {
-    return levelOptions[level] || level
+  return levelOptions[level] || level;
 };
 
 export const getArtistTextInSongDetail = (song) => {
-    let artist = ''
-    if (song.ar && song.ar[0].name && song.ar[0].name.length > 0) {
-        artist = song.ar.map(ar => ar.name).join()
-    }
-    else if (song.pc && song.pc.ar && song.pc.ar.length > 0) {
-        artist = song.pc.ar
-    }
-    return artist
-}
+  let artist = '';
+  if (song.ar && song.ar[0].name && song.ar[0].name.length > 0) {
+    artist = song.ar.map((ar) => ar.name).join();
+  } else if (song.pc && song.pc.ar && song.pc.ar.length > 0) {
+    artist = song.pc.ar;
+  }
+  return artist;
+};
 export const getAlbumTextInSongDetail = (song) => {
-    let album = ''
-    if (song.al && song.al.name && song.al.name.length > 0) {
-        album = song.al.name
-    }
-    else if (song.pc && song.pc.alb && song.pc.alb.length > 0) {
-        album = song.pc.alb
-    }
-    return album
-}
+  let album = '';
+  if (song.al && song.al.name && song.al.name.length > 0) {
+    album = song.al.name;
+  } else if (song.pc && song.pc.alb && song.pc.alb.length > 0) {
+    album = song.pc.alb;
+  }
+  return album;
+};
 export const nameFileWithoutExt = (title, artist, out) => {
-    if (out === 'title' || !artist || artist.length === 0) {
-        return title
-    }
-    if (out === 'artist-title') {
-        return `${artist} - ${title}`
-    }
-    if (out === 'title-artist') {
-        return `${title} - ${artist}`
-    }
-}
-export const escapeHTML = string => (
-    string.replace(
-        /[&<>'"]/g,
-        word =>
-            ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                "'": '&#39;',
-                '"': '&quot;',
-            })[word] || word
-    )
-)
+  if (out === 'title' || !artist || artist.length === 0) {
+    return title;
+  }
+  if (out === 'artist-title') {
+    return `${artist} - ${title}`;
+  }
+  if (out === 'title-artist') {
+    return `${title} - ${artist}`;
+  }
+};
+export const escapeHTML = (string) =>
+  string.replace(
+    /[&<>'"]/g,
+    (word) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;',
+      })[word] || word
+  );

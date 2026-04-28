@@ -1,163 +1,162 @@
-import { weapiRequest } from "../utils/request"
-import { songsDownUpLoad } from "./songsDownUpLoad"
-import { sortSongs } from "./sortSongs"
-import { getAlbumTextInSongDetail, getArtistTextInSongDetail, escapeHTML, duringTimeDesc } from "../utils/descHelper"
-import { songItemAddToFormat } from "../utils/common"
+import { weapiRequest } from '../utils/request';
+import { songsDownUpLoad } from './songsDownUpLoad';
+import { sortSongs } from './sortSongs';
+import { getAlbumTextInSongDetail, getArtistTextInSongDetail, escapeHTML, duringTimeDesc } from '../utils/descHelper';
+import { songItemAddToFormat } from '../utils/common';
 
 class PlaylistDetail {
-    constructor() {
-        this.domReady = false
-        this.dataFetched = false
-        this.flag = true
-        const params = new URLSearchParams(unsafeWindow.location.search)
-        this.playlistId = Number(params.get('id'))
-        this._hash = params.get('_hash')
-        this.playlist = null
-        this.playlistSongList = []
-        this.playableSongList = []
-        this.rowHTMLList = []
-    };
-    fetchPlaylistFullData(playlistId) {
-        weapiRequest("/api/v6/playlist/detail", {
-            data: {
-                id: playlistId,
-                n: 100000,
-                s: 8,
-            },
-            onload: (content) => {
-                this.playlist = content.playlist
-                if (content.playlist.trackCount > content.playlist.tracks.length) {
-                    const trackIds = content.playlist.trackIds.map(item => {
-                        return {
-                            'id': item.id
-                        }
-                    })
-                    this.getPlaylistAllSongsSub(trackIds, 0)
-                }
-                else {
-                    this.addSongInToSongList(content)
-                    this.onFetchDatafinnsh()
-                }
-            }
-        })
-    }
-    getPlaylistAllSongsSub(trackIds, startIndex) {
-        if (startIndex >= trackIds.length) {
-            this.onFetchDatafinnsh()
-            return
+  constructor() {
+    this.domReady = false;
+    this.dataFetched = false;
+    this.flag = true;
+    const params = new URLSearchParams(unsafeWindow.location.search);
+    this.playlistId = Number(params.get('id'));
+    this._hash = params.get('_hash');
+    this.playlist = null;
+    this.playlistSongList = [];
+    this.playableSongList = [];
+    this.rowHTMLList = [];
+  }
+  fetchPlaylistFullData(playlistId) {
+    weapiRequest('/api/v6/playlist/detail', {
+      data: {
+        id: playlistId,
+        n: 100000,
+        s: 8,
+      },
+      onload: (content) => {
+        this.playlist = content.playlist;
+        if (content.playlist.trackCount > content.playlist.tracks.length) {
+          const trackIds = content.playlist.trackIds.map((item) => {
+            return {
+              id: item.id,
+            };
+          });
+          this.getPlaylistAllSongsSub(trackIds, 0);
+        } else {
+          this.addSongInToSongList(content);
+          this.onFetchDatafinnsh();
         }
-        weapiRequest("/api/v3/song/detail", {
-            data: {
-                c: JSON.stringify(trackIds.slice(startIndex, startIndex + 1000))
-            },
-            onload: (content) => {
-                this.addSongInToSongList(content)
-                this.getPlaylistAllSongsSub(trackIds, startIndex + content.songs.length)
-            }
-        })
+      },
+    });
+  }
+  getPlaylistAllSongsSub(trackIds, startIndex) {
+    if (startIndex >= trackIds.length) {
+      this.onFetchDatafinnsh();
+      return;
     }
-    addSongInToSongList(content) {
-        const songs = content.songs || content.playlist.tracks
-        const privileges = content.privileges
-        const songlen = songs.length
-        const privilegelen = privileges.length
-        for (let i = 0; i < songlen; i++) {
-            for (let j = 0; j < privilegelen; j++) {
-                if (songs[i].id === privileges[j].id) {
-                    const songItem = {
-                        id: songs[i].id,
-                        title: songs[i].name,
-                        artist: getArtistTextInSongDetail(songs[i]),
-                        album: getAlbumTextInSongDetail(songs[i]),
-                        song: songs[i],
-                        privilege: privileges[j],
-
-                    }
-                    this.playlistSongList.push(songItem)
-                    break
-                }
-            }
+    weapiRequest('/api/v3/song/detail', {
+      data: {
+        c: JSON.stringify(trackIds.slice(startIndex, startIndex + 1000)),
+      },
+      onload: (content) => {
+        this.addSongInToSongList(content);
+        this.getPlaylistAllSongsSub(trackIds, startIndex + content.songs.length);
+      },
+    });
+  }
+  addSongInToSongList(content) {
+    const songs = content.songs || content.playlist.tracks;
+    const privileges = content.privileges;
+    const songlen = songs.length;
+    const privilegelen = privileges.length;
+    for (let i = 0; i < songlen; i++) {
+      for (let j = 0; j < privilegelen; j++) {
+        if (songs[i].id === privileges[j].id) {
+          const songItem = {
+            id: songs[i].id,
+            title: songs[i].name,
+            artist: getArtistTextInSongDetail(songs[i]),
+            album: getAlbumTextInSongDetail(songs[i]),
+            song: songs[i],
+            privilege: privileges[j],
+          };
+          this.playlistSongList.push(songItem);
+          break;
         }
+      }
     }
-    onFetchDatafinnsh() {
-        this.playlistSongList.forEach((songItem) => {
-            this.createFormatAddToData(songItem)
-        })
-        this.dataFetched = true
-        this.checkStartInitBtn()
+  }
+  onFetchDatafinnsh() {
+    this.playlistSongList.forEach((songItem) => {
+      this.createFormatAddToData(songItem);
+    });
+    this.dataFetched = true;
+    this.checkStartInitBtn();
+  }
+  createFormatAddToData(songItem) {
+    if (songItem.privilege.plLevel !== 'none') {
+      const addToFormat = songItemAddToFormat(songItem.song);
+      addToFormat.source = {
+        fdata: String(this.playlistId),
+        fid: 13,
+        link: `playlist?id=${this.playlistId}&_hash=songlist-${songItem.song.id}`,
+        title: '歌单',
+      };
+      this.playableSongList.push(addToFormat);
     }
-    createFormatAddToData(songItem) {
-        if (songItem.privilege.plLevel !== 'none') {
-            const addToFormat = songItemAddToFormat(songItem.song)
-            addToFormat.source = {
-                fdata: String(this.playlistId),
-                fid: 13,
-                link: `playlist?id=${this.playlistId}&_hash=songlist-${songItem.song.id}`,
-                title: '歌单',
-            }
-            this.playableSongList.push(addToFormat)
-        }
+  }
+  onDomReady() {
+    this.operationArea = document.querySelector('#content-operation');
+    this.songListTextDom = document.querySelector('div.u-title.u-title-1.f-cb > h3 > span');
+    this.playCount = document.querySelector('#play-count');
+    this.songListTextDom.innerHTML = '获取歌单数据中...';
+    this.domReady = true;
+    this.checkStartInitBtn();
+  }
+  checkStartInitBtn() {
+    if (this.domReady && this.dataFetched && this.flag) {
+      this.flag = false;
+      this.renderPlayAllBtn();
+      this.appendBtns();
+      this.fillTableSong();
+      const playlistTrackCount = document.querySelector('#playlist-track-count');
+      if (playlistTrackCount) playlistTrackCount.innerHTML = this.playlistSongList.length;
+      this.songListTextDom.innerHTML = '歌曲列表';
     }
-    onDomReady() {
-        this.operationArea = document.querySelector('#content-operation')
-        this.songListTextDom = document.querySelector('div.u-title.u-title-1.f-cb > h3 > span')
-        this.playCount = document.querySelector('#play-count')
-        this.songListTextDom.innerHTML = '获取歌单数据中...'
-        this.domReady = true
-        this.checkStartInitBtn()
-    }
-    checkStartInitBtn() {
-        if (this.domReady && this.dataFetched && this.flag) {
-            this.flag = false
-            this.renderPlayAllBtn()
-            this.appendBtns()
-            this.fillTableSong()
-            const playlistTrackCount = document.querySelector('#playlist-track-count')
-            if (playlistTrackCount) playlistTrackCount.innerHTML = this.playlistSongList.length
-            this.songListTextDom.innerHTML = '歌曲列表'
-        }
-    }
-    renderPlayAllBtn() {
-        this.operationArea.innerHTML = `
+  }
+  renderPlayAllBtn() {
+    this.operationArea.innerHTML =
+      `
         <a style="display:none" class="u-btn2 u-btn2-2 u-btni-addply f-fl" hidefocus="true" title="播放"><i><em class="ply"></em>播放(${this.playableSongList.length})</i></a>
         <a style="display:none" class="u-btni u-btni-add" hidefocus="true" title="添加到播放列表"></a>
-        `+ this.operationArea.innerHTML
-        this.operationArea.children[0].addEventListener('click', () => {
-            unsafeWindow.top.player.addTo(this.playableSongList, true, true)
-            weapiRequest('/api/playlist/update/playcount', {
-                data: {
-                    id: this.playlistId,
-                },
-                onload: (content) => {
-                    if (content.code === 200) this.playCount.innerHTML = Number(this.playCount.innerHTML) + 1
-                },
-            })
-        })
-        this.operationArea.children[1].addEventListener('click', () => {
-            unsafeWindow.top.player.addTo(this.playableSongList, false, false)
-        })
-        this.operationArea.children[0].style.display = ''
-        this.operationArea.children[1].style.display = ''
-        this.operationArea.children[2].style.display = 'none'
-        this.operationArea.children[3].style.display = 'none'
+        ` + this.operationArea.innerHTML;
+    this.operationArea.children[0].addEventListener('click', () => {
+      unsafeWindow.top.player.addTo(this.playableSongList, true, true);
+      weapiRequest('/api/playlist/update/playcount', {
+        data: {
+          id: this.playlistId,
+        },
+        onload: (content) => {
+          if (content.code === 200) this.playCount.innerHTML = Number(this.playCount.innerHTML) + 1;
+        },
+      });
+    });
+    this.operationArea.children[1].addEventListener('click', () => {
+      unsafeWindow.top.player.addTo(this.playableSongList, false, false);
+    });
+    this.operationArea.children[0].style.display = '';
+    this.operationArea.children[1].style.display = '';
+    this.operationArea.children[2].style.display = 'none';
+    this.operationArea.children[3].style.display = 'none';
+  }
+  appendBtns() {
+    songsDownUpLoad(this.playlistId, this.operationArea);
+    const creatorhomeURL = document.head.querySelector("[property~='music:creator'][content]")?.content;
+    const creatorId = new URLSearchParams(new URL(creatorhomeURL).search).get('id');
+    if (Number(creatorId) === unsafeWindow.GUser.userId) {
+      sortSongs(this.playlistId, this.operationArea);
     }
-    appendBtns() {
-        songsDownUpLoad(this.playlistId, this.operationArea)
-        const creatorhomeURL = document.head.querySelector("[property~='music:creator'][content]")?.content
-        const creatorId = new URLSearchParams(new URL(creatorhomeURL).search).get('id')
-        if (Number(creatorId) === unsafeWindow.GUser.userId) {
-            sortSongs(this.playlistId, this.operationArea)
-        }
-    }
-    fillTableSong() {
-        const timestamp = document.querySelector('.m-table > tbody > tr').id.slice(-13)
-        const isLargePlaylist = this.playlistSongList.length > 1000
-        this.playlistSongList.forEach((songItem, index) => {
-            this.createRowHTML(songItem, index, timestamp, isLargePlaylist)
-        })
-        const table = document.querySelector('.m-table')
-        if (table) {
-            const tableStyles = `
+  }
+  fillTableSong() {
+    const timestamp = document.querySelector('.m-table > tbody > tr').id.slice(-13);
+    const isLargePlaylist = this.playlistSongList.length > 1000;
+    this.playlistSongList.forEach((songItem, index) => {
+      this.createRowHTML(songItem, index, timestamp, isLargePlaylist);
+    });
+    const table = document.querySelector('.m-table');
+    if (table) {
+      const tableStyles = `
             .m-table .ncmextend-playlist-playbtn {
                 display: none;
             }
@@ -205,88 +204,99 @@ class PlaylistDetail {
                 overflow: hidden;
                 text-overflow: ellipsis;
             }
-            `
-            GM_addStyle(tableStyles)
-            table.className = 'm-table m-table-rank'
-            const headerHTML = isLargePlaylist
-                ? `<thead><tr>
+            `;
+      GM_addStyle(tableStyles);
+      table.className = 'm-table m-table-rank';
+      const headerHTML = isLargePlaylist
+        ? `<thead><tr>
                     <th style="width:40px;"><div class="wp">&nbsp;</div></th>
                     <th><div class="wp">歌曲</div></th>
                     <th style="width:150px;"><div class="wp">歌手</div></th>
                     <th class="w4"><div class="wp af3"></div></th>
                     <th style="width:90px;"><div class="wp af1"></div></th>
                 </tr></thead>`
-                : `<thead><tr>
+        : `<thead><tr>
                     <th style="width:40px;"><div class="wp">&nbsp;</div></th>
                     <th><div class="wp">歌名/歌手</div></th>
                     <th class="w4"><div class="wp af3"></div></th>
                     <th style="width:90px;"><div class="wp af1"></div></th>
-                </tr></thead>`
-            table.innerHTML = `
+                </tr></thead>`;
+      table.innerHTML = `
             ${headerHTML}
             <tbody>${this.rowHTMLList.join('')}</tbody>
-            `
-            //设置当前播放的歌曲
-            const playing = unsafeWindow.top.player.getPlaying()
-            if (playing.track) {
-                const plybtn = document.querySelector(`[id="${playing.track.id}${timestamp}"] > td:nth-child(1) > div > div.ncmextend-playlist-playbtn > span`)
-                if (plybtn) {
-                    plybtn.className = plybtn.className.trimEnd() + ' ply-z-slt'
-                }
-            }
-            //定位到url中的目标歌曲
-            if (/^songlist-(\d+)$/.test(this._hash)) {
-                const tr = document.querySelector(`[id="${this._hash.slice(9)}${timestamp}"]`)
-                if (tr) tr.scrollIntoView();
-            }
-            this.deleteMoreInfoUI()
+            `;
+      //设置当前播放的歌曲
+      const playing = unsafeWindow.top.player.getPlaying();
+      if (playing.track) {
+        const plybtn = document.querySelector(
+          `[id="${playing.track.id}${timestamp}"] > td:nth-child(1) > div > div.ncmextend-playlist-playbtn > span`
+        );
+        if (plybtn) {
+          plybtn.className = plybtn.className.trimEnd() + ' ply-z-slt';
         }
+      }
+      //定位到url中的目标歌曲
+      if (/^songlist-(\d+)$/.test(this._hash)) {
+        const tr = document.querySelector(`[id="${this._hash.slice(9)}${timestamp}"]`);
+        if (tr) tr.scrollIntoView();
+      }
+      this.deleteMoreInfoUI();
     }
-    createRowHTML(songItem, index, timestamp, isLargePlaylist) {
-        this.bodyId = document.body.className.replace(/\D/g, "")
-        const status = songItem.privilege.st < 0
-        const deletable = this.playlist.creator.userId === unsafeWindow.GUser.userId
-        const needVIP = songItem.privilege.plLevel === 'none' && !status
-        const durationText = duringTimeDesc(songItem.song.dt)
-        const artistText = escapeHTML(songItem.artist)
-        const annotation = escapeHTML(songItem.song.tns ? songItem.song.tns[0] : null || songItem.song.alias ? songItem.song.alias[0] : '')
-        const albumName = escapeHTML(songItem.album)
-        const songName = escapeHTML(songItem.title)
-        let playBtnHTML = `<span data-res-id="${songItem.id}" data-res-type="18" data-res-action="play" data-res-from="13" data-res-data="${this.playlist.id}" class="ply "></span>`
-        if (needVIP) playBtnHTML = `<span class='ncmextend-playlist-viponly'>需要VIP</span>`
-        let artistContent = ''
-        songItem.song.ar.forEach((ar) => {
-            if (ar.name) {
-                if (ar.id > 0) artistContent += `<a href="#/artist?id=${ar.id}" hidefocus="true">${escapeHTML(ar.name)}</a>/`
-                else artistContent += escapeHTML(ar.name) + '/'
-            }
-        })
-        if (artistContent.length > 0) artistContent = artistContent.slice(0, -1)
-        else artistContent = artistText
-        let albumContent = albumName
-        if (songItem.song.al.id > 0) albumContent = `<a href="#/album?id=${songItem.song.al.id}" title="${albumName}">${albumName}</a>`
+  }
+  createRowHTML(songItem, index, timestamp, isLargePlaylist) {
+    this.bodyId = document.body.className.replace(/\D/g, '');
+    const status = songItem.privilege.st < 0;
+    const deletable = this.playlist.creator.userId === unsafeWindow.GUser.userId;
+    const needVIP = songItem.privilege.plLevel === 'none' && !status;
+    const durationText = duringTimeDesc(songItem.song.dt);
+    const artistText = escapeHTML(songItem.artist);
+    const annotation = escapeHTML(
+      songItem.song.tns ? songItem.song.tns[0] : songItem.song.alias ? songItem.song.alias[0] : ''
+    );
+    const albumName = escapeHTML(songItem.album);
+    const songName = escapeHTML(songItem.title);
+    let playBtnHTML = `<span data-res-id="${songItem.id}" data-res-type="18" data-res-action="play" data-res-from="13" data-res-data="${this.playlist.id}" class="ply "></span>`;
+    if (needVIP) playBtnHTML = `<span class='ncmextend-playlist-viponly'>需要VIP</span>`;
+    let artistContent = '';
+    songItem.song.ar.forEach((ar) => {
+      if (ar.name) {
+        if (ar.id > 0) artistContent += `<a href="#/artist?id=${ar.id}" hidefocus="true">${escapeHTML(ar.name)}</a>/`;
+        else artistContent += escapeHTML(ar.name) + '/';
+      }
+    });
+    if (artistContent.length > 0) artistContent = artistContent.slice(0, -1);
+    else artistContent = artistText;
+    let albumContent = albumName;
+    if (songItem.song.al.id > 0)
+      albumContent = `<a href="#/album?id=${songItem.song.al.id}" title="${albumName}">${albumName}</a>`;
 
-        // 大歌单模式：不显示专辑图片，歌名和歌手分两列
-        const albumImgHTML = isLargePlaylist ? '' : `
+    // 大歌单模式：不显示专辑图片，歌名和歌手分两列
+    const albumImgHTML = isLargePlaylist
+      ? ''
+      : `
                                 <a href="#/song?id=${songItem.id}" title="${songName}">
                                     <img class="rpic" src="${songItem.song.al.picUrl}?param=50y50&amp;quality=100" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5">
-                                </a>`
+                                </a>`;
 
-        const artistTdHTML = isLargePlaylist ? `
+    const artistTdHTML = isLargePlaylist
+      ? `
                     <td>
                         <div title="${artistText}" class="ncmextend-playlist-songalbum">
                             ${artistContent}
                         </div>
-                    </td>` : ''
+                    </td>`
+      : '';
 
-        const artistInSongTdHTML = isLargePlaylist ? '' : `
+    const artistInSongTdHTML = isLargePlaylist
+      ? ''
+      : `
                                 <div title="${artistText}" class="ncmextend-playlist-songartist">
 							        <span title="${artistText}" class="txt" style="max-width: 78%;">
 								        ${artistContent}
 							        </span>
-						        </div>`
+						        </div>`;
 
-        const rowHTML = `
+    const rowHTML = `
 				<tr id="${songItem.id}${timestamp}" class="${index % 2 ? '' : 'even'} ${status ? 'js-dis' : ''}">
 					<td>
 						<div class="hd ">
@@ -326,22 +336,22 @@ class PlaylistDetail {
 						</div>
 					</td>
 				</tr>
-			`
-        this.rowHTMLList.push(rowHTML)
-    }
-    deleteMoreInfoUI() {
-        const seeMore = document.querySelector('.m-playlist-see-more')
-        if (seeMore) seeMore.parentNode.removeChild(seeMore)
-    }
-    updateSongsCloudStatus(songIds) {
-        songIds.forEach(songId => {
-            for (let i = 0; i < this.playlistSongList.length; i++) {
-                if (this.playlistSongList[i].id === songId) {
-                    this.playlistSongList[i].privilege.cs = true
-                    break
-                }
-            }
-        })
-    }
+			`;
+    this.rowHTMLList.push(rowHTML);
+  }
+  deleteMoreInfoUI() {
+    const seeMore = document.querySelector('.m-playlist-see-more');
+    if (seeMore) seeMore.parentNode.removeChild(seeMore);
+  }
+  updateSongsCloudStatus(songIds) {
+    songIds.forEach((songId) => {
+      for (let i = 0; i < this.playlistSongList.length; i++) {
+        if (this.playlistSongList[i].id === songId) {
+          this.playlistSongList[i].privilege.cs = true;
+          break;
+        }
+      }
+    });
+  }
 }
-export const playlistDetailObj = new PlaylistDetail()
+export const playlistDetailObj = new PlaylistDetail();

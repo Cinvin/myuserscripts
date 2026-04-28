@@ -17,7 +17,7 @@ export const downloadCleanupManager = {
    * @param {Object} songItem - 歌曲对象
    * @param {string} blobUrl - Blob URL
    */
-  addPendingCleanup: function(songItem, blobUrl) {
+  addPendingCleanup: function (songItem, blobUrl) {
     this.pendingCleanup.push({ songItem, blobUrl });
     // 如果超过最大数量，清理最旧的项目以防止内存溢出
     while (this.pendingCleanup.length > this.MAX_PENDING_ITEMS) {
@@ -30,14 +30,14 @@ export const downloadCleanupManager = {
    * 清理单个项目的内存资源
    * @param {Object} item - { songItem, blobUrl }
    */
-  cleanupItem: function(item) {
+  cleanupItem: function (item) {
     if (!item) return;
 
     // 释放 Blob URL
     if (item.blobUrl) {
       try {
         URL.revokeObjectURL(item.blobUrl);
-      } catch (e) {
+      } catch {
         // 忽略释放失败的错误
       }
     }
@@ -60,9 +60,9 @@ export const downloadCleanupManager = {
    * 注意：不清理缓存，让页面刷新后自然清除
    * 这样可以避免文件写入磁盘时删除 Blob URL 导致下载失败
    */
-  cleanupAll: function() {
+  cleanupAll: function () {
     // 不执行任何清理操作
     // 缓存会在页面刷新后自动清除
     // 下载过程中已通过 addPendingCleanup 中的 LRU 机制防止内存无限增长
-  }
+  },
 };

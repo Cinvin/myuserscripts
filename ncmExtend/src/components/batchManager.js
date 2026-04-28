@@ -1,65 +1,85 @@
-import { showTips, createPagination, isLiveSong, escapeHtml } from "../utils/common"
-import { getBatchFilter, setBatchFilter, getBatchDownloadSettings, getBatchTransUploadSettings, getDownloadSettings, setBatchDownloadSettings, setBatchTransUploadSettings, setDownloadSettings } from "../utils/constant"
-import { ncmDownUploadBatch } from "../components/ncmDownUploadBatch"
-import { batchDownloadSongs } from "../components/batchDownloadSongs"
-
+import { showTips, createPagination, isLiveSong, escapeHtml } from '../utils/common';
+import {
+  getBatchFilter,
+  setBatchFilter,
+  getBatchDownloadSettings,
+  getBatchTransUploadSettings,
+  getDownloadSettings,
+  setBatchDownloadSettings,
+  setBatchTransUploadSettings,
+  setDownloadSettings,
+} from '../utils/constant';
+import { ncmDownUploadBatch } from '../components/ncmDownUploadBatch';
+import { batchDownloadSongs } from '../components/batchDownloadSongs';
 
 // 每页显示数量
-const PAGE_SIZE = 50
+const PAGE_SIZE = 50;
 export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
-    const songPlayableList = fullSongList.filter(item => item.privilege.plLevel !== 'none');
-    if (!songPlayableList || songPlayableList.length === 0) {
-        showTips('没有可操作的歌曲', 2)
-        return
-    }
-    //console.log(songPlayableList, defaultConfig)
+  const songPlayableList = fullSongList.filter((item) => item.privilege.plLevel !== 'none');
+  if (!songPlayableList || songPlayableList.length === 0) {
+    showTips('没有可操作的歌曲', 2);
+    return;
+  }
+  //console.log(songPlayableList, defaultConfig)
 
-    // 读取油猴中保存的设置并合并到默认配置（在 state 初始化时完成）
-    let _savedBatchDl = {}
-    let _savedBatchUp = {}
-    let _savedDl = {}
-    try {
-        _savedBatchDl = getBatchDownloadSettings() || {}
-    } catch (e) { console.warn('getBatchDownloadSettings error', e) }
-    try {
-        _savedBatchUp = getBatchTransUploadSettings() || {}
-    } catch (e) { console.warn('getBatchTransUploadSettings error', e) }
-    try {
-        _savedDl = getDownloadSettings() || {}
-    } catch (e) { console.warn('getDownloadSettings error', e) }
+  // 读取油猴中保存的设置并合并到默认配置（在 state 初始化时完成）
+  let _savedBatchDl = {};
+  let _savedBatchUp = {};
+  let _savedDl = {};
+  try {
+    _savedBatchDl = getBatchDownloadSettings() || {};
+  } catch (e) {
+    console.warn('getBatchDownloadSettings error', e);
+  }
+  try {
+    _savedBatchUp = getBatchTransUploadSettings() || {};
+  } catch (e) {
+    console.warn('getBatchTransUploadSettings error', e);
+  }
+  try {
+    _savedDl = getDownloadSettings() || {};
+  } catch (e) {
+    console.warn('getDownloadSettings error', e);
+  }
 
-    // state
-    let state = {
-        songs: songPlayableList.map((s, idx) => {
-            return Object.assign({ _index: idx, downloadStatus: '', uploadStatus: '', selected: false }, s)
-        }),
-        filterText: '',
-        filterOptions: getBatchFilter(),
-        page: 1,
-        pageMax: Math.ceil(songPlayableList.length / PAGE_SIZE),
-        view: 'songs', // 当前视图：songs / filter / dl / up
-        downloadConfig: Object.assign({
-            threadCount: (_savedBatchDl.concurrent !== undefined) ? _savedBatchDl.concurrent : 4,
-            downloadLyric: !!_savedBatchDl.dllrc || false,
-            folder: _savedDl.folder || 'none',
-            out: _savedDl.out || 'artist-title',
-            level: _savedBatchDl.level || 'jymaster',
-            targetLevelOnly: !!_savedBatchUp.levelonly || false,
-            appendMeta: _savedDl.appendMeta || 'notAppend',
-            // 转存相关设置占位
-        }, defaultConfig),
-        uploadConfig: Object.assign({
-            level: _savedBatchUp.level || 'jymaster',
-            targetLevelOnly: !!_savedBatchUp.levelonly || false,
-            // 转存相关设置占位
-        }, defaultConfig)
-    }
+  // state
+  let state = {
+    songs: songPlayableList.map((s, idx) => {
+      return Object.assign({ _index: idx, downloadStatus: '', uploadStatus: '', selected: false }, s);
+    }),
+    filterText: '',
+    filterOptions: getBatchFilter(),
+    page: 1,
+    pageMax: Math.ceil(songPlayableList.length / PAGE_SIZE),
+    view: 'songs', // 当前视图：songs / filter / dl / up
+    downloadConfig: Object.assign(
+      {
+        threadCount: _savedBatchDl.concurrent !== undefined ? _savedBatchDl.concurrent : 4,
+        downloadLyric: !!_savedBatchDl.dllrc || false,
+        folder: _savedDl.folder || 'none',
+        out: _savedDl.out || 'artist-title',
+        level: _savedBatchDl.level || 'jymaster',
+        targetLevelOnly: !!_savedBatchUp.levelonly || false,
+        appendMeta: _savedDl.appendMeta || 'notAppend',
+        // 转存相关设置占位
+      },
+      defaultConfig
+    ),
+    uploadConfig: Object.assign(
+      {
+        level: _savedBatchUp.level || 'jymaster',
+        targetLevelOnly: !!_savedBatchUp.levelonly || false,
+        // 转存相关设置占位
+      },
+      defaultConfig
+    ),
+  };
 
-    Swal.fire({
-        width: '980px',
-        showConfirmButton: false,
-        showCloseButton: true,
-        html: `<div style="display:flex;gap:12px;">
+  Swal.fire({
+    width: '980px',
+    showConfirmButton: false,
+    showCloseButton: true,
+    html: `<div style="display:flex;gap:12px;">
     <div style="width:150px;border-right:1px solid #eee;padding-right:8px;box-sizing:border-box;">
       <ul id="bm-nav" style="list-style:none;padding:0;margin:0;">
         <li><button data-view="songs" class="swal2-styled bm-nav-item" style="width:100%;text-align:left">歌曲列表</button></li>
@@ -83,158 +103,153 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
       <div id="bm-pager" style="margin-top:8px;text-align:center"></div>
     </div>
   </div>`,
-        didOpen: () => {
-            const container = Swal.getHtmlContainer()
-            const btnSelectPageAll = container.querySelector('#bm-select-page-all')
-            const btnClearPageAll = container.querySelector('#bm-clear-page-all')
-            const btnSelectAll = container.querySelector('#bm-select-all')
-            const btnClearSelect = container.querySelector('#bm-clear-select')
-            const btnDownloadAll = container.querySelector('#bm-download-all')
-            const btnUploadAll = container.querySelector('#bm-upload-all')
-            const mainContent = container.querySelector('#bm-main-content')
-            const pager = container.querySelector('#bm-pager')
-            const nav = container.querySelector('#bm-nav')
-            const navDesc = container.querySelector('#bm-nav-desc')
-            const toolbar = container.querySelector('#bm-toolbar') // 新增 toolbar 引用
+    didOpen: () => {
+      const container = Swal.getHtmlContainer();
+      const btnSelectPageAll = container.querySelector('#bm-select-page-all');
+      const btnClearPageAll = container.querySelector('#bm-clear-page-all');
+      const btnSelectAll = container.querySelector('#bm-select-all');
+      const btnClearSelect = container.querySelector('#bm-clear-select');
+      const btnDownloadAll = container.querySelector('#bm-download-all');
+      const btnUploadAll = container.querySelector('#bm-upload-all');
+      const mainContent = container.querySelector('#bm-main-content');
+      const pager = container.querySelector('#bm-pager');
+      const nav = container.querySelector('#bm-nav');
+      const toolbar = container.querySelector('#bm-toolbar'); // 新增 toolbar 引用
 
+      // nav binding
+      nav.querySelectorAll('.bm-nav-item').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const view = e.currentTarget.getAttribute('data-view');
+          state.view = view;
+          renderView();
+        });
+      });
+      btnSelectPageAll.addEventListener('click', () => {
+        // 仅对当前页的歌曲进行全选
+        const filtered = filteredSongs();
+        const begin = (state.page - 1) * PAGE_SIZE;
+        //const pageSongs = filtered.slice(begin, begin + PAGE_SIZE)
+        for (let i = begin; i < begin + PAGE_SIZE && i < filtered.length; i++) {
+          filtered[i].selected = true;
+        }
+        renderView();
+      });
+      btnClearPageAll.addEventListener('click', () => {
+        // 仅对当前页的歌曲进行取消选择
+        const filtered = filteredSongs();
+        const begin = (state.page - 1) * PAGE_SIZE;
+        for (let i = begin; i < begin + PAGE_SIZE && i < filtered.length; i++) {
+          filtered[i].selected = false;
+        }
+        renderView();
+      });
+      btnSelectAll.addEventListener('click', () => {
+        // 仅对当前过滤条件匹配的歌曲进行全部选择（跨页）
+        const filtered = filteredSongs();
+        filtered.forEach((s) => (s.selected = true));
+        renderView();
+      });
+      btnClearSelect.addEventListener('click', () => {
+        // 仅对当前过滤条件匹配的歌曲取消选择（跨页）
+        const filtered = filteredSongs();
+        filtered.forEach((s) => (s.selected = false));
+        renderView();
+      });
 
-            // nav binding
-            nav.querySelectorAll('.bm-nav-item').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const view = e.currentTarget.getAttribute('data-view')
-                    state.view = view
-                    renderView()
-                })
-            })
-            btnSelectPageAll.addEventListener('click', () => {
-                // 仅对当前页的歌曲进行全选
-                const filtered = filteredSongs()
-                const begin = (state.page - 1) * PAGE_SIZE
-                //const pageSongs = filtered.slice(begin, begin + PAGE_SIZE)
-                for (let i = begin; i < begin + PAGE_SIZE && i < filtered.length; i++) {
-                    filtered[i].selected = true
-                }
-                renderView()
-            })
-            btnClearPageAll.addEventListener('click', () => {
-                // 仅对当前页的歌曲进行取消选择
-                const filtered = filteredSongs()
-                const begin = (state.page - 1) * PAGE_SIZE
-                for (let i = begin; i < begin + PAGE_SIZE && i < filtered.length; i++) {
-                    filtered[i].selected = false
-                }
-                renderView()
-            })
-            btnSelectAll.addEventListener('click', () => {
-                // 仅对当前过滤条件匹配的歌曲进行全部选择（跨页）
-                const filtered = filteredSongs()
-                filtered.forEach(s => s.selected = true)
-                renderView()
-            })
-            btnClearSelect.addEventListener('click', () => {
-                // 仅对当前过滤条件匹配的歌曲取消选择（跨页）
-                const filtered = filteredSongs()
-                filtered.forEach(s => s.selected = false)
-                renderView()
-            })
+      btnDownloadAll.addEventListener('click', () => {
+        const toDl = state.songs.filter((s) => s.selected);
+        if (toDl.length === 0) {
+          showTips('未选择歌曲', 2);
+          return;
+        }
+        batchDownloadSongs(toDl, state.downloadConfig);
+      });
+      btnUploadAll.addEventListener('click', () => {
+        const toUp = state.songs.filter((s) => s.selected && !s.privilege.cs);
+        if (toUp.length === 0) {
+          showTips('未选择歌曲或只选择了云盘歌曲', 2);
+          return;
+        }
+        const ULobj = new ncmDownUploadBatch(toUp, state.uploadConfig);
+        ULobj.startUpload();
+      });
 
-            btnDownloadAll.addEventListener('click', () => {
-                const toDl = state.songs.filter(s => s.selected)
-                if (toDl.length === 0) {
-                    showTips('未选择歌曲', 2)
-                    return
-                }
-                batchDownloadSongs(toDl, state.downloadConfig)
-            })
-            btnUploadAll.addEventListener('click', () => {
-                const toUp = state.songs.filter(s => s.selected && !s.privilege.cs)
-                if (toUp.length === 0) {
-                    showTips('未选择歌曲或只选择了云盘歌曲', 2)
-                    return
-                }
-                const ULobj = new ncmDownUploadBatch(toUp, state.uploadConfig)
-                ULobj.startUpload()
-            })
+      // helpers for filtering & paging
+      function currentPageSongs() {
+        const filtered = filteredSongs();
+        const begin = (state.page - 1) * PAGE_SIZE;
+        const pageSongs = filtered.slice(begin, begin + PAGE_SIZE);
+        state.pageMax = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        return pageSongs;
+      }
 
-            // helpers for filtering & paging
-            function currentPageSongs() {
-                const filtered = filteredSongs()
-                const begin = (state.page - 1) * PAGE_SIZE
-                const pageSongs = filtered.slice(begin, begin + PAGE_SIZE)
-                state.pageMax = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-                return pageSongs
+      function filteredSongs() {
+        return state.songs.filter((s) => {
+          if (s.privilege.fee === 0) {
+            if (!state.filterOptions.free) return false;
+          } else if (s.privilege.fee === 1) {
+            if (!state.filterOptions.vip) return false;
+          } else if (s.privilege.fee === 4) {
+            if (!state.filterOptions.pay) return false;
+          } else if (s.privilege.fee === 8) {
+            if (!state.filterOptions.lowfree) return false;
+          }
+          // 纯音乐
+          if (!state.filterOptions.instrumental) {
+            if ((s.song.mark & 131072) === 131072) return false;
+            if (s.song.additionalTitle) {
+              if (s.song.additionalTitle.toLowerCase().includes('instrumental')) return false;
+              if (s.song.additionalTitle.includes('伴奏')) return false;
+            } else {
+              if (s.title.toLowerCase().includes('instrumental')) return false;
+              if (s.title.includes('伴奏')) return false;
             }
+          }
+          // 现场版
+          if (!state.filterOptions.live) {
+            if (isLiveSong(s)) return false;
+          }
+          if (s.privilege.cs && !state.filterOptions.cloud) return false;
+          if (!state.filterText) return true;
+          const t = state.filterText.toLowerCase();
+          return (
+            s.title.toLowerCase().includes(t) || s.artist.toLowerCase().includes(t) || s.album.toLowerCase().includes(t)
+          );
+        });
+      }
 
-            function filteredSongs() {
-                return state.songs.filter(s => {
-                    if (s.privilege.fee === 0) {
-                        if (!state.filterOptions.free) return false
-                    }
-                    else if (s.privilege.fee === 1) {
-                        if (!state.filterOptions.vip) return false
-                    }
-                    else if (s.privilege.fee === 4) {
-                        if (!state.filterOptions.pay) return false
-                    }
-                    else if (s.privilege.fee === 8) {
-                        if (!state.filterOptions.lowfree) return false
-                    }
-                    // 纯音乐
-                    if (!state.filterOptions.instrumental) {
-                        if((s.song.mark & 131072) === 131072) return false
-                        if(s.song.additionalTitle){
-                            if(s.song.additionalTitle.toLowerCase().includes('instrumental')) return false
-                            if(s.song.additionalTitle.includes('伴奏')) return false
-                        }
-                        else{
-                            if(s.title.toLowerCase().includes('instrumental')) return false
-                            if(s.title.includes('伴奏')) return false
-                        }
-                    }
-                    // 现场版
-                    if (!state.filterOptions.live) {
-                        if (isLiveSong(s)) return false;
-                    }
-                    if (s.privilege.cs && !state.filterOptions.cloud) return false
-                    if (!state.filterText) return true
-                    const t = state.filterText.toLowerCase()
-                    return s.title.toLowerCase().includes(t)
-                        || s.artist.toLowerCase().includes(t)
-                        || s.album.toLowerCase().includes(t)
-                })
-            }
+      // render view based on state.view
+      function renderView() {
+        // 显示/隐藏右侧工具栏（按钮）与页码：只有在 songs 视图时显示
+        toolbar.style.display = state.view === 'songs' ? '' : 'none';
 
-            // render view based on state.view
-            function renderView() {
-                // 显示/隐藏右侧工具栏（按钮）与页码：只有在 songs 视图时显示
-                toolbar.style.display = (state.view === 'songs') ? '' : 'none'
+        if (state.view === 'songs') {
+          renderSongsView();
+          renderPager();
+        } else if (state.view === 'filter') {
+          renderFilterView();
+          pager.innerHTML = ''; // 隐藏页码
+        } else if (state.view === 'dl') {
+          renderDownloadSettingsView();
+          pager.innerHTML = '';
+        } else if (state.view === 'up') {
+          renderUploadSettingsView();
+          pager.innerHTML = '';
+        }
+      }
 
-                if (state.view === 'songs') {
-                    renderSongsView()
-                    renderPager()
-                } else if (state.view === 'filter') {
-                    renderFilterView()
-                    pager.innerHTML = '' // 隐藏页码
-                } else if (state.view === 'dl') {
-                    renderDownloadSettingsView()
-                    pager.innerHTML = ''
-                } else if (state.view === 'up') {
-                    renderUploadSettingsView()
-                    pager.innerHTML = ''
-                }
-            }
-
-            function renderSongsView() {
-                // 强制 mainContent 固定宽度为 735px（与请求保持一致）
-                mainContent.style.width = '735px'
-                mainContent.style.boxSizing = 'border-box'
-                const pageSongs = currentPageSongs()
-                mainContent.innerHTML = ''
-                pageSongs.forEach(s => {
-                    const row = document.createElement('div')
-                    // 容器为 mainContent 的宽度（735px），各列使用固定/弹性宽度并保证文本溢出省略
-                    row.style = 'display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #f0f0f0;width:100%;box-sizing:border-box;min-width:0;'
-                    row.innerHTML = ` 
+      function renderSongsView() {
+        // 强制 mainContent 固定宽度为 735px（与请求保持一致）
+        mainContent.style.width = '735px';
+        mainContent.style.boxSizing = 'border-box';
+        const pageSongs = currentPageSongs();
+        mainContent.innerHTML = '';
+        pageSongs.forEach((s) => {
+          const row = document.createElement('div');
+          // 容器为 mainContent 的宽度（735px），各列使用固定/弹性宽度并保证文本溢出省略
+          row.style =
+            'display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid #f0f0f0;width:100%;box-sizing:border-box;min-width:0;';
+          row.innerHTML = ` 
   <!-- 复选框：固定宽度，居中 -->
   <div style="flex: 0 0 36px; display: flex; align-items: center; justify-content: center;">
     <input type="checkbox" style="width: 25px; height: 25px; " ${s.selected ? 'checked' : ''}>
@@ -256,7 +271,7 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
     </div>
     <div style="font-size: 12px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; line-height: 1.2;">
     ${(s.song.mark & 1048576) === 1048576 ? '🅴 ' : ''}
-    ${s.privilege.cs ? '<i class="fa-regular fa-cloud"></i> ': ''}
+    ${s.privilege.cs ? '<i class="fa-regular fa-cloud"></i> ' : ''}
       ${escapeHtml(s.artist)}
     </div>
   </div>
@@ -267,17 +282,17 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
       <a href="https://music.163.com/#/album?id=${s.song.al.id}" target="_blank" style="color: #000; text-decoration: none; transition: color 0.2s ease;">${escapeHtml(s.album)}</a>
     </div>
   </div>
-                    `
-                    const chk = row.querySelector('input[type=checkbox]')
-                    chk.addEventListener('change', () => {
-                        s.selected = chk.checked
-                    })
-                    mainContent.appendChild(row)
-                })
-            }
+                    `;
+          const chk = row.querySelector('input[type=checkbox]');
+          chk.addEventListener('change', () => {
+            s.selected = chk.checked;
+          });
+          mainContent.appendChild(row);
+        });
+      }
 
-            function renderFilterView() {
-                mainContent.innerHTML = `
+      function renderFilterView() {
+        mainContent.innerHTML = `
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <input id="bm-filter-input" class="swal2-input" placeholder="过滤：标题/歌手/专辑" value="${state.filterText}">
                     <div>
@@ -299,25 +314,25 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     <div style="margin-top:16px;color:#666;font-size:13px;">专辑页面无法识别纯音乐</div>
                     <div style="margin-top:16px;color:#666;font-size:13px;">”歌曲的专辑类型是现场版“仅在歌手页面能识别</div>
                   </div>
-                `
-                const input = mainContent.querySelector('#bm-filter-input')
-                input.addEventListener('input', (e) => {
-                    state.filterText = e.target.value.trim()
-                    state.page = 1
-                })
+                `;
+        const input = mainContent.querySelector('#bm-filter-input');
+        input.addEventListener('input', (e) => {
+          state.filterText = e.target.value.trim();
+          state.page = 1;
+        });
 
-                const checkboxes = mainContent.querySelectorAll('input[type="checkbox"]')
-                checkboxes.forEach(checkbox => {
-                    checkbox.addEventListener('change', () => {
-                        state.filterOptions[checkbox.id.split('-').pop()] = checkbox.checked
-                        setBatchFilter(state.filterOptions)
-                        state.page = 1
-                    })
-                })
-            }
+        const checkboxes = mainContent.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach((checkbox) => {
+          checkbox.addEventListener('change', () => {
+            state.filterOptions[checkbox.id.split('-').pop()] = checkbox.checked;
+            setBatchFilter(state.filterOptions);
+            state.page = 1;
+          });
+        });
+      }
 
-            function renderDownloadSettingsView() {
-                mainContent.innerHTML = `
+      function renderDownloadSettingsView() {
+        mainContent.innerHTML = `
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <label>同时下载的歌曲数
                         <select id="bm-dl-concurrent" class="swal2-select">
@@ -344,60 +359,92 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     <label><input id="bm-dl-levelonly" type="checkbox"> 仅获取到目标音质时下载</label>
                     <div style="margin-top:16px;color:#666;font-size:13px;">建立文件夹功能篡改猴下载模式设置为浏览器API可以生效，其他脚本管理器可能导致文件名乱码的问题。</div>
                   </div>
-                `
+                `;
 
-                // 取控件并初始化为 state.config 的值
-                const selConcurrent = mainContent.querySelector('#bm-dl-concurrent')
-                const selLevel = mainContent.querySelector('#bm-dl-level')
-                const selOut = mainContent.querySelector('#bm-dl-out')
-                const selFolder = mainContent.querySelector('#bm-dl-folder')
-                const selAppend = mainContent.querySelector('#bm-dl-appendMeta')
-                const cbLyric = mainContent.querySelector('#bm-dl-dllrc')
-                const cbLevelOnly = mainContent.querySelector('#bm-dl-levelonly')
+        // 取控件并初始化为 state.config 的值
+        const selConcurrent = mainContent.querySelector('#bm-dl-concurrent');
+        const selLevel = mainContent.querySelector('#bm-dl-level');
+        const selOut = mainContent.querySelector('#bm-dl-out');
+        const selFolder = mainContent.querySelector('#bm-dl-folder');
+        const selAppend = mainContent.querySelector('#bm-dl-appendMeta');
+        const cbLyric = mainContent.querySelector('#bm-dl-dllrc');
+        const cbLevelOnly = mainContent.querySelector('#bm-dl-levelonly');
 
-                selConcurrent.value = state.downloadConfig.threadCount || state.downloadConfig.concurrent || 4
-                selLevel.value = state.downloadConfig.level || 'jymaster'
-                selOut.value = state.downloadConfig.out || 'artist-title'
-                selFolder.value = state.downloadConfig.folder || 'none'
-                selAppend.value = state.downloadConfig.appendMeta || 'notAppend'
-                cbLyric.checked = !!state.downloadConfig.downloadLyric
-                cbLevelOnly.checked = !!state.downloadConfig.levelonly
+        selConcurrent.value = state.downloadConfig.threadCount || state.downloadConfig.concurrent || 4;
+        selLevel.value = state.downloadConfig.level || 'jymaster';
+        selOut.value = state.downloadConfig.out || 'artist-title';
+        selFolder.value = state.downloadConfig.folder || 'none';
+        selAppend.value = state.downloadConfig.appendMeta || 'notAppend';
+        cbLyric.checked = !!state.downloadConfig.downloadLyric;
+        cbLevelOnly.checked = !!state.downloadConfig.levelonly;
 
-                // 事件：更新 state 并持久化
-                selConcurrent.addEventListener('change', (e) => {
-                    const v = parseInt(e.target.value || '4')
-                    state.downloadConfig.threadCount = v
-                    // 保存批量下载相关设置
-                    setBatchDownloadSettings({ concurrent: v, level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly })
-                })
-                selLevel.addEventListener('change', (e) => {
-                    state.downloadConfig.level = e.target.value
-                    setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || '4'), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly })
-                })
-                selOut.addEventListener('change', (e) => {
-                    state.downloadConfig.out = e.target.value
-                    setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta })
-                })
-                selFolder.addEventListener('change', (e) => {
-                    state.downloadConfig.folder = e.target.value
-                    setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta })
-                })
-                selAppend.addEventListener('change', (e) => {
-                    state.downloadConfig.appendMeta = e.target.value
-                    setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta })
-                })
-                cbLyric.addEventListener('change', (e) => {
-                    state.downloadConfig.downloadLyric = e.target.checked
-                    setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || '4'), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly })
-                })
-                cbLevelOnly.addEventListener('change', (e) => {
-                    state.downloadConfig.targetLevelOnly = e.target.checked
-                    setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || '4'), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly })
-                })
-            }
+        // 事件：更新 state 并持久化
+        selConcurrent.addEventListener('change', (e) => {
+          const v = parseInt(e.target.value || '4');
+          state.downloadConfig.threadCount = v;
+          // 保存批量下载相关设置
+          setBatchDownloadSettings({
+            concurrent: v,
+            level: state.downloadConfig.level,
+            dllrc: !!state.downloadConfig.downloadLyric,
+            levelonly: !!state.downloadConfig.levelonly,
+          });
+        });
+        selLevel.addEventListener('change', (e) => {
+          state.downloadConfig.level = e.target.value;
+          setBatchDownloadSettings({
+            concurrent: parseInt(selConcurrent.value || '4'),
+            level: state.downloadConfig.level,
+            dllrc: !!state.downloadConfig.downloadLyric,
+            levelonly: !!state.downloadConfig.levelonly,
+          });
+        });
+        selOut.addEventListener('change', (e) => {
+          state.downloadConfig.out = e.target.value;
+          setDownloadSettings({
+            out: state.downloadConfig.out,
+            folder: state.downloadConfig.folder,
+            appendMeta: state.downloadConfig.appendMeta,
+          });
+        });
+        selFolder.addEventListener('change', (e) => {
+          state.downloadConfig.folder = e.target.value;
+          setDownloadSettings({
+            out: state.downloadConfig.out,
+            folder: state.downloadConfig.folder,
+            appendMeta: state.downloadConfig.appendMeta,
+          });
+        });
+        selAppend.addEventListener('change', (e) => {
+          state.downloadConfig.appendMeta = e.target.value;
+          setDownloadSettings({
+            out: state.downloadConfig.out,
+            folder: state.downloadConfig.folder,
+            appendMeta: state.downloadConfig.appendMeta,
+          });
+        });
+        cbLyric.addEventListener('change', (e) => {
+          state.downloadConfig.downloadLyric = e.target.checked;
+          setBatchDownloadSettings({
+            concurrent: parseInt(selConcurrent.value || '4'),
+            level: state.downloadConfig.level,
+            dllrc: !!state.downloadConfig.downloadLyric,
+            levelonly: !!state.downloadConfig.levelonly,
+          });
+        });
+        cbLevelOnly.addEventListener('change', (e) => {
+          state.downloadConfig.targetLevelOnly = e.target.checked;
+          setBatchDownloadSettings({
+            concurrent: parseInt(selConcurrent.value || '4'),
+            level: state.downloadConfig.level,
+            dllrc: !!state.downloadConfig.downloadLyric,
+            levelonly: !!state.downloadConfig.levelonly,
+          });
+        });
+      }
 
-            function renderUploadSettingsView() {
-                mainContent.innerHTML = `
+      function renderUploadSettingsView() {
+        mainContent.innerHTML = `
                   <div style="display:flex;flex-direction:column;gap:8px;">
                     <label>优先转存音质
                     <select id="bm-up-level" class="swal2-select">
@@ -405,31 +452,37 @@ export const showBatchManager = (fullSongList = [], defaultConfig = {}) => {
                     </select></label>
                     <label><input id="bm-up-target-only" type="checkbox" ${state.uploadConfig.targetLevelOnly ? 'checked' : ''}> 仅获取到目标音质时转存</label>
                   </div>
-                `
-                const selUpLevel = mainContent.querySelector('#bm-up-level')
-                const cbUpLevelOnly = mainContent.querySelector('#bm-up-target-only')
-                selUpLevel.value = state.uploadConfig.level || 'jymaster'
-                cbUpLevelOnly.checked = !!state.uploadConfig.targetLevelOnly
+                `;
+        const selUpLevel = mainContent.querySelector('#bm-up-level');
+        const cbUpLevelOnly = mainContent.querySelector('#bm-up-target-only');
+        selUpLevel.value = state.uploadConfig.level || 'jymaster';
+        cbUpLevelOnly.checked = !!state.uploadConfig.targetLevelOnly;
 
-                selUpLevel.addEventListener('change', (e) => {
-                    state.uploadConfig.level = e.target.value
-                    setBatchTransUploadSettings({ level: state.uploadConfig.level, levelonly: !!state.uploadConfig.targetLevelOnly })
-                })
-                cbUpLevelOnly.addEventListener('change', (e) => {
-                    state.uploadConfig.targetLevelOnly = e.target.checked
-                    setBatchTransUploadSettings({ level: state.uploadConfig.level, levelonly: !!state.uploadConfig.targetLevelOnly })
-                })
-            }
+        selUpLevel.addEventListener('change', (e) => {
+          state.uploadConfig.level = e.target.value;
+          setBatchTransUploadSettings({
+            level: state.uploadConfig.level,
+            levelonly: !!state.uploadConfig.targetLevelOnly,
+          });
+        });
+        cbUpLevelOnly.addEventListener('change', (e) => {
+          state.uploadConfig.targetLevelOnly = e.target.checked;
+          setBatchTransUploadSettings({
+            level: state.uploadConfig.level,
+            levelonly: !!state.uploadConfig.targetLevelOnly,
+          });
+        });
+      }
 
-            function renderPager() {
-                createPagination(pager, state.page, state.pageMax, (page) => {
-                    state.page = page;
-                    renderView();
-                });
-            }
+      function renderPager() {
+        createPagination(pager, state.page, state.pageMax, (page) => {
+          state.page = page;
+          renderView();
+        });
+      }
 
-            // 初始化为歌曲列表视图
-            renderView()
-        }
-    })
-}
+      // 初始化为歌曲列表视图
+      renderView();
+    },
+  });
+};
