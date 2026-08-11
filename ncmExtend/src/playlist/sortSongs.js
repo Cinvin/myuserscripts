@@ -23,17 +23,17 @@ const ShowPLSortPopUp = (playlistId) => {
     },
   }).then((res) => {
     if (!res.isConfirmed) return;
-    if (res.value === 0) {
+    if (res.value === '0') {
       PlaylistTimeSort(playlistId, true);
-    } else if (res.value === 1) {
+    } else if (res.value === '1') {
       PlaylistTimeSort(playlistId, false);
-    } else if (res.value === 2) {
+    } else if (res.value === '2') {
       PlaylistCountSort(playlistId, true, 'Red');
-    } else if (res.value === 3) {
+    } else if (res.value === '3') {
       PlaylistCountSort(playlistId, false, 'Red');
-    } else if (res.value === 4) {
+    } else if (res.value === '4') {
       PlaylistCountSort(playlistId, true, 'Comment');
-    } else if (res.value === 5) {
+    } else if (res.value === '5') {
       PlaylistCountSort(playlistId, false, 'Comment');
     }
   });
