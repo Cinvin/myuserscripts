@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         网易云音乐:歌曲下载&转存云盘|云盘快传|云盘匹配纠正|高音质试听
 // @namespace    https://github.com/Cinvin/myuserscripts
-// @version      4.4.5
+// @version      4.4.6
 // @author       cinvin
 // @description  歌曲下载&转存云盘(可批量)、无需文件云盘快传歌曲、云盘匹配纠正、高音质试听、完整歌单列表、评论区显示IP属地、使用指定的IP地址发送评论、歌单歌曲排序(时间、红心数、评论数)、云盘音质提升、本地文件添加音乐元数据等功能。
 // @license      MIT
@@ -290,8 +290,29 @@ ${extraStyles}
       container.appendChild(jumpToPageInput);
     }
   };
-  const levelOptions = { jymaster: "超清母带", dolby: "杜比全景声", sky: "沉浸环绕声", jyeffect: "高清臻音", hires: "高解析度无损", lossless: "无损", exhigh: "极高", higher: "较高", standard: "标准" };
-  const levelWeight = { jymaster: 9, dolby: 8, sky: 7, jyeffect: 6, hires: 5, lossless: 4, exhigh: 3, higher: 2, standard: 1, none: 0 };
+  const levelOptions = {
+    jymaster: "超清母带",
+    dolby: "杜比全景声",
+    sky: "沉浸环绕声",
+    jyeffect: "高清臻音",
+    hires: "高解析度无损",
+    lossless: "无损",
+    exhigh: "极高",
+    higher: "较高",
+    standard: "标准"
+  };
+  const levelWeight = {
+    jymaster: 9,
+    dolby: 8,
+    sky: 7,
+    jyeffect: 6,
+    hires: 5,
+    lossless: 4,
+    exhigh: 3,
+    higher: 2,
+    standard: 1,
+    none: 0
+  };
   const defaultOfDEFAULT_LEVEL = "jymaster";
   const defaultOfBatchFilter = {
     free: true,
@@ -326,7 +347,11 @@ dllrc: false,
 levelonly: false
 };
   const getBatchDownloadSettings = () => {
-    return Object.assign({}, defaultOfBatchDownloadSettings, safeJsonParse(GM_getValue("batchDownloadSettings", "{}"), {}));
+    return Object.assign(
+      {},
+      defaultOfBatchDownloadSettings,
+      safeJsonParse(GM_getValue("batchDownloadSettings", "{}"), {})
+    );
   };
   const setBatchDownloadSettings = (value) => {
     GM_setValue("batchDownloadSettings", JSON.stringify(Object.assign({}, defaultOfBatchDownloadSettings, value)));
@@ -336,14 +361,18 @@ levelonly: false
 levelonly: false
 };
   const getBatchTransUploadSettings = () => {
-    return Object.assign({}, defaultOfBatchTransUploadSettings, safeJsonParse(GM_getValue("batchTransUploadSettings", "{}"), {}));
+    return Object.assign(
+      {},
+      defaultOfBatchTransUploadSettings,
+      safeJsonParse(GM_getValue("batchTransUploadSettings", "{}"), {})
+    );
   };
   const setBatchTransUploadSettings = (value) => {
     GM_setValue("batchTransUploadSettings", JSON.stringify(Object.assign({}, defaultOfBatchTransUploadSettings, value)));
   };
   const uploadChunkSize = 8 * 1024 * 1024;
   const songMark = { explicit: 1048576 };
-  const liveRegex = /(?:\(|（)[^）\)]*\blive\b[^\)]*(?:\)|）)$/;
+  const liveRegex = /(?:\(|（)[^)）]*\blive\b[^)）]*(?:\)|）)$/;
   const DEFAULT_ALBUM_PIC_URL = "http://p4.music.126.net/UeTuwE7pvjBpypWLudqukA==/3132508627578625.jpg";
   const iv = "0102030405060708";
   const presetKey = "0CoJUm6Qyw8W8jud";
@@ -371,11 +400,7 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       secretKey += base62.charAt(Math.round(Math.random() * 61));
     }
     return {
-      params: aesEncrypt(
-        aesEncrypt(text, presetKey, iv),
-        secretKey,
-        iv
-      ),
+      params: aesEncrypt(aesEncrypt(text, presetKey, iv), secretKey, iv),
       encSecKey: rsaEncrypt(secretKey.split("").reverse().join(""), publicKey)
     };
   };
@@ -513,11 +538,14 @@ MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDgtQn2JZ34ZC28NWYpAUd98iZ37BUrX/aKzmFbt7cl
       for (const key in cookieObject) {
         cookieString += `${key}=${cookieObject[key]}; `;
       }
-      GM_setValue("requestHeader", JSON.stringify({
-        originalCookie: config.cookie,
+      GM_setValue(
+        "requestHeader",
+        JSON.stringify({
+          originalCookie: config.cookie,
 coverCookie: cookieString,
-        userAgent: config.userAgent
-      }));
+          userAgent: config.userAgent
+        })
+      );
       showConfirmBox("设置完成，刷新网页生效。");
     }
     function removeHeader() {
@@ -617,7 +645,7 @@ coverCookie: cookieString,
     const headers = {
       "content-type": "application/x-www-form-urlencoded",
       "user-agent": UserAgentMap[clientType],
-      "cookie": CookieMap[clientType]
+      cookie: CookieMap[clientType]
     };
     if (config.ip) {
       headers["X-Real-IP"] = config.ip;
@@ -729,7 +757,7 @@ coverCookie: cookieString,
       const month = String(d.getMonth() + 1).padStart(2, "0");
       const day = String(d.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
-    } catch (e) {
+    } catch {
       return "";
     }
   };
@@ -777,7 +805,8 @@ coverCookie: cookieString,
   );
   const storageCommentInfo = (CommentRes) => {
     var _a, _b, _c;
-    if (!unsafeWindow.top.GUserScriptObjects.storageCommentInfos) unsafeWindow.top.GUserScriptObjects.storageCommentInfos = {};
+    if (!unsafeWindow.top.GUserScriptObjects.storageCommentInfos)
+      unsafeWindow.top.GUserScriptObjects.storageCommentInfos = {};
     const comments = CommentRes.data.comments.concat(CommentRes.data.hotComments);
     for (let comment of comments) {
       if (!(comment == null ? void 0 : comment.commentId)) continue;
@@ -792,7 +821,7 @@ coverCookie: cookieString,
     if (commentObserver) {
       commentObserver.disconnect();
     }
-    commentObserver = new MutationObserver((mutations, observer) => {
+    commentObserver = new MutationObserver((mutations, _observer) => {
       mutations.forEach((mutation) => {
         if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
           for (let node of mutation.addedNodes) {
@@ -836,7 +865,6 @@ coverCookie: cookieString,
         showConfirmBox("评论内容不能为空");
         return;
       }
-      GM_getValue("lastIPValue", "");
       Swal.fire({
         input: "text",
         inputLabel: "IP地址",
@@ -1019,7 +1047,8 @@ coverCookie: cookieString,
         _unsafeWindow.top.player.tipPlay(desc);
         return;
       }
-    } catch (e) {
+    } catch {
+      return;
     }
   };
   const extractLrcRegex = /^(?<lyricTimestamps>(?:\[.+?\])+)(?!\[)(?<content>.+)$/gm;
@@ -1094,12 +1123,13 @@ coverCookie: cookieString,
   };
   const handleLyric = (lyricRes) => {
     var _a, _b, _c;
-    if (lyricRes.pureMusic || lyricRes.needDesc) return {
-      orilrc: {
-        lyric: "",
-        parsedLyric: []
-      }
-    };
+    if (lyricRes.pureMusic || lyricRes.needDesc)
+      return {
+        orilrc: {
+          lyric: "",
+          parsedLyric: []
+        }
+      };
     const lrc = ((_a = lyricRes == null ? void 0 : lyricRes.lrc) == null ? void 0 : _a.lyric) || "";
     const rlrc = ((_b = lyricRes == null ? void 0 : lyricRes.romalrc) == null ? void 0 : _b.lyric) || "";
     const tlrc = ((_c = lyricRes == null ? void 0 : lyricRes.tlyric) == null ? void 0 : _c.lyric) || "";
@@ -1261,7 +1291,7 @@ toUint8Array() {
         URL.revokeObjectURL(url2);
         resolve({ width: w, height: h, type: "image" });
       };
-      img.onerror = function(e) {
+      img.onerror = function(_e) {
         URL.revokeObjectURL(url2);
         reject(new Error("imageSizeFromBuffer: failed to decode image"));
       };
@@ -1331,10 +1361,9 @@ toUint8Array() {
       if (marker !== "fLaC") {
         throw new Error("The file does not appear to be a FLAC file.");
       }
-      let blockType = 0;
       let isLastBlock = false;
       while (!isLastBlock) {
-        blockType = this.buffer.readUInt8(offset++);
+        let blockType = this.buffer.readUInt8(offset++);
         isLastBlock = blockType > 128;
         blockType = blockType % 128;
         const blockLength = this.buffer.readUIntBE(offset, 3);
@@ -1364,7 +1393,6 @@ toUint8Array() {
       const vc = this.vorbisComment;
       const vendorLength = vc.readUInt32LE(0);
       this.vendorString = vc.slice(4, vendorLength + 4).toString("utf8");
-      vc.readUInt32LE(4 + vendorLength);
       const userCommentListBuffer = vc.slice(4 + vendorLength + 4);
       for (let off = 0; off < userCommentListBuffer.length; ) {
         const length = userCommentListBuffer.readUInt32LE(off);
@@ -1398,15 +1426,17 @@ toUint8Array() {
         const pictureDataLength = picture.readUInt32BE(offset);
         offset += 4;
         this.picturesDatas.push(picture.slice(offset, offset + pictureDataLength).toUint8Array());
-        this.picturesSpecs.push(this.buildSpecification({
-          type,
-          mime,
-          description,
-          width,
-          height,
-          depth,
-          colors
-        }));
+        this.picturesSpecs.push(
+          this.buildSpecification({
+            type,
+            mime,
+            description,
+            width,
+            height,
+            depth,
+            colors
+          })
+        );
       });
     }
     getPicturesSpecs() {
@@ -1469,17 +1499,23 @@ toUint8Array() {
       }
       this.tags.push(field);
     }
-setTagFromFile(field) {
-      throw new Error('setTagFromFile is not supported in browser build. Use setTag("NAME=VALUE") directly or fetch file yourself.');
+setTagFromFile(_field) {
+      throw new Error(
+        'setTagFromFile is not supported in browser build. Use setTag("NAME=VALUE") directly or fetch file yourself.'
+      );
     }
-    importTagsFrom(filename) {
-      throw new Error("importTagsFrom(filename) is not supported in browser build. Provide tags array or fetch file yourself and call setTag for each line.");
+    importTagsFrom(_filename) {
+      throw new Error(
+        "importTagsFrom(filename) is not supported in browser build. Provide tags array or fetch file yourself and call setTag for each line."
+      );
     }
-    exportTagsTo(filename) {
+    exportTagsTo(_filename) {
       throw new Error("exportTagsTo is not supported in browser build.");
     }
-importPictureFrom(filename) {
-      throw new Error("importPictureFrom(filename) is not supported in browser build. Use importPictureFromBuffer(buffer).");
+importPictureFrom(_filename) {
+      throw new Error(
+        "importPictureFrom(filename) is not supported in browser build. Use importPictureFromBuffer(buffer)."
+      );
     }
     importPictureFromBuffer(picture) {
       const arr = picture instanceof BrowserBuffer ? picture.toUint8Array() : picture instanceof Uint8Array ? picture : new Uint8Array(picture);
@@ -1501,8 +1537,10 @@ importPictureFrom(filename) {
         return true;
       });
     }
-    exportPictureTo(filename) {
-      throw new Error("exportPictureTo is not supported in browser build. Use getPicturesSpecs()/picturesDatas and then create Blob.");
+    exportPictureTo(_filename) {
+      throw new Error(
+        "exportPictureTo is not supported in browser build. Use getPicturesSpecs()/picturesDatas and then create Blob."
+      );
     }
     getAllTags() {
       return this.tags;
@@ -1621,7 +1659,7 @@ cleanupItem: function(item) {
       if (item.blobUrl) {
         try {
           URL.revokeObjectURL(item.blobUrl);
-        } catch (e) {
+        } catch {
         }
       }
       if (item.songItem && item.songItem.download) {
@@ -1733,7 +1771,10 @@ cleanupAll: function() {
     let sizeText = tableRowDOM.querySelector(".my-size");
     let prText = tableRowDOM.querySelector(".my-pr");
     if (!song.api) {
-      song.api = song.privilege.fee === 0 && (levelWeight[song.privilege.plLevel] || 99) < (levelWeight[song.privilege.dlLevel] || -1) ? { url: "/api/song/enhance/download/url/v1", data: { id: song.id, level: config.level, encodeType: "mp3" } } : { url: "/api/song/enhance/player/url/v1", data: { ids: JSON.stringify([song.id]), level: config.level, encodeType: "mp3" } };
+      song.api = song.privilege.fee === 0 && (levelWeight[song.privilege.plLevel] || 99) < (levelWeight[song.privilege.dlLevel] || -1) ? { url: "/api/song/enhance/download/url/v1", data: { id: song.id, level: config.level, encodeType: "mp3" } } : {
+        url: "/api/song/enhance/player/url/v1",
+        data: { ids: JSON.stringify([song.id]), level: config.level, encodeType: "mp3" }
+      };
     }
     try {
       weapiRequest(song.api.url, {
@@ -1828,7 +1869,7 @@ cleanupAll: function() {
       onprogress: function(progress) {
         songItem.download.prText.innerHTML = fileSizeDesc(progress.loaded);
       },
-      onerror: function(error) {
+      onerror: function(_error) {
         songItem.download.finnnsh.music = true;
         comcombineFile(songItem, threadIndex, songList, config);
       }
@@ -1851,7 +1892,7 @@ cleanupAll: function() {
           songItem.download.finnnsh.cover = true;
           comcombineFile(songItem, threadIndex, songList, config);
         },
-        onerror: function(error) {
+        onerror: function(_error) {
           songItem.download.finnnsh.cover = true;
           comcombineFile(songItem, threadIndex, songList, config);
         }
@@ -1868,7 +1909,17 @@ cleanupAll: function() {
       return;
     }
     const requestData = {
-      "/api/song/lyric/v1": JSON.stringify({ id: songItem.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 })
+      "/api/song/lyric/v1": JSON.stringify({
+        id: songItem.id,
+        cp: false,
+        tv: 0,
+        lv: 0,
+        rv: 0,
+        kv: 0,
+        yv: 0,
+        ytv: 0,
+        yrv: 0
+      })
     };
     if (songItem.song.al.id > 0) {
       if (config.albumDetailCache[songItem.song.al.id]) {
@@ -1945,18 +1996,22 @@ cleanupAll: function() {
               }
             }
             if (songItem.download.coverData) {
-              mp3tag.tags.v2.APIC = [{
-                description: "",
-                data: songItem.download.coverData,
-                type: 3,
-                format: "image/jpeg"
-              }];
+              mp3tag.tags.v2.APIC = [
+                {
+                  description: "",
+                  data: songItem.download.coverData,
+                  type: 3,
+                  format: "image/jpeg"
+                }
+              ];
             }
             if (songItem.download.lyricText.length > 0) {
-              mp3tag.tags.v2.TXXX = [{
-                description: "LYRICS",
-                text: songItem.download.lyricText
-              }];
+              mp3tag.tags.v2.TXXX = [
+                {
+                  description: "LYRICS",
+                  text: songItem.download.lyricText
+                }
+              ];
             }
             mp3tag.save();
             if (mp3tag.error) {
@@ -1985,7 +2040,8 @@ cleanupAll: function() {
             flac.setTag(`TITLE=${songItem.title}`);
             flac.setTag(`ARTIST=${songItem.artist}`);
             if (songItem.album.length > 0) flac.setTag(`ALBUM=${songItem.album}`);
-            if (songItem.song.no && songItem.song.no > 0) flac.setTag(`TRACKNUMBER=${String(songItem.song.no).padStart(2, "0")}`);
+            if (songItem.song.no && songItem.song.no > 0)
+              flac.setTag(`TRACKNUMBER=${String(songItem.song.no).padStart(2, "0")}`);
             if (songItem.song.cd && songItem.song.cd.length > 0) flac.setTag(`DISCNUMBER=${songItem.song.cd}`);
             if (songItem.albumDetail) {
               if (songItem.albumDetail.publisher) {
@@ -1999,7 +2055,8 @@ cleanupAll: function() {
               }
             }
             if (songItem.download.lyricText.length > 0) flac.setTag(`LYRICS=${songItem.download.lyricText}`);
-            if (songItem.download.coverData) await flac.importPictureFromBuffer(songItem.download.coverData, "image/jpeg");
+            if (songItem.download.coverData)
+              await flac.importPictureFromBuffer(songItem.download.coverData, "image/jpeg");
             const newBuffer = flac.save();
             const blob = new Blob([newBuffer], { type: "audio/flac" });
             const url2 = URL.createObjectURL(blob);
@@ -2076,19 +2133,25 @@ cleanupAll: function() {
       page: 1,
       pageMax: Math.ceil(songPlayableList.length / PAGE_SIZE),
       view: "songs",
-downloadConfig: Object.assign({
-        threadCount: _savedBatchDl.concurrent !== void 0 ? _savedBatchDl.concurrent : 4,
-        downloadLyric: !!_savedBatchDl.dllrc || false,
-        folder: _savedDl.folder || "none",
-        out: _savedDl.out || "artist-title",
-        level: _savedBatchDl.level || "jymaster",
-        targetLevelOnly: !!_savedBatchUp.levelonly || false,
-        appendMeta: _savedDl.appendMeta || "notAppend"
-}, defaultConfig),
-      uploadConfig: Object.assign({
-        level: _savedBatchUp.level || "jymaster",
-        targetLevelOnly: !!_savedBatchUp.levelonly || false
-}, defaultConfig)
+downloadConfig: Object.assign(
+        {
+          threadCount: _savedBatchDl.concurrent !== void 0 ? _savedBatchDl.concurrent : 4,
+          downloadLyric: !!_savedBatchDl.dllrc || false,
+          folder: _savedDl.folder || "none",
+          out: _savedDl.out || "artist-title",
+          level: _savedBatchDl.level || "jymaster",
+          targetLevelOnly: !!_savedBatchUp.levelonly || false,
+          appendMeta: _savedDl.appendMeta || "notAppend"
+},
+        defaultConfig
+      ),
+      uploadConfig: Object.assign(
+        {
+          level: _savedBatchUp.level || "jymaster",
+          targetLevelOnly: !!_savedBatchUp.levelonly || false
+},
+        defaultConfig
+      )
     };
     Swal.fire({
       width: "980px",
@@ -2129,7 +2192,6 @@ downloadConfig: Object.assign({
         const mainContent = container.querySelector("#bm-main-content");
         const pager = container.querySelector("#bm-pager");
         const nav = container.querySelector("#bm-nav");
-        container.querySelector("#bm-nav-desc");
         const toolbar = container.querySelector("#bm-toolbar");
         nav.querySelectorAll(".bm-nav-item").forEach((btn) => {
           btn.addEventListener("click", (e) => {
@@ -2367,31 +2429,63 @@ downloadConfig: Object.assign({
           selConcurrent.addEventListener("change", (e) => {
             const v = parseInt(e.target.value || "4");
             state.downloadConfig.threadCount = v;
-            setBatchDownloadSettings({ concurrent: v, level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
+            setBatchDownloadSettings({
+              concurrent: v,
+              level: state.downloadConfig.level,
+              dllrc: !!state.downloadConfig.downloadLyric,
+              levelonly: !!state.downloadConfig.levelonly
+            });
           });
           selLevel.addEventListener("change", (e) => {
             state.downloadConfig.level = e.target.value;
-            setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
+            setBatchDownloadSettings({
+              concurrent: parseInt(selConcurrent.value || "4"),
+              level: state.downloadConfig.level,
+              dllrc: !!state.downloadConfig.downloadLyric,
+              levelonly: !!state.downloadConfig.levelonly
+            });
           });
           selOut.addEventListener("change", (e) => {
             state.downloadConfig.out = e.target.value;
-            setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta });
+            setDownloadSettings({
+              out: state.downloadConfig.out,
+              folder: state.downloadConfig.folder,
+              appendMeta: state.downloadConfig.appendMeta
+            });
           });
           selFolder.addEventListener("change", (e) => {
             state.downloadConfig.folder = e.target.value;
-            setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta });
+            setDownloadSettings({
+              out: state.downloadConfig.out,
+              folder: state.downloadConfig.folder,
+              appendMeta: state.downloadConfig.appendMeta
+            });
           });
           selAppend.addEventListener("change", (e) => {
             state.downloadConfig.appendMeta = e.target.value;
-            setDownloadSettings({ out: state.downloadConfig.out, folder: state.downloadConfig.folder, appendMeta: state.downloadConfig.appendMeta });
+            setDownloadSettings({
+              out: state.downloadConfig.out,
+              folder: state.downloadConfig.folder,
+              appendMeta: state.downloadConfig.appendMeta
+            });
           });
           cbLyric.addEventListener("change", (e) => {
             state.downloadConfig.downloadLyric = e.target.checked;
-            setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
+            setBatchDownloadSettings({
+              concurrent: parseInt(selConcurrent.value || "4"),
+              level: state.downloadConfig.level,
+              dllrc: !!state.downloadConfig.downloadLyric,
+              levelonly: !!state.downloadConfig.levelonly
+            });
           });
           cbLevelOnly.addEventListener("change", (e) => {
             state.downloadConfig.targetLevelOnly = e.target.checked;
-            setBatchDownloadSettings({ concurrent: parseInt(selConcurrent.value || "4"), level: state.downloadConfig.level, dllrc: !!state.downloadConfig.downloadLyric, levelonly: !!state.downloadConfig.levelonly });
+            setBatchDownloadSettings({
+              concurrent: parseInt(selConcurrent.value || "4"),
+              level: state.downloadConfig.level,
+              dllrc: !!state.downloadConfig.downloadLyric,
+              levelonly: !!state.downloadConfig.levelonly
+            });
           });
         }
         function renderUploadSettingsView() {
@@ -2410,11 +2504,17 @@ downloadConfig: Object.assign({
           cbUpLevelOnly.checked = !!state.uploadConfig.targetLevelOnly;
           selUpLevel.addEventListener("change", (e) => {
             state.uploadConfig.level = e.target.value;
-            setBatchTransUploadSettings({ level: state.uploadConfig.level, levelonly: !!state.uploadConfig.targetLevelOnly });
+            setBatchTransUploadSettings({
+              level: state.uploadConfig.level,
+              levelonly: !!state.uploadConfig.targetLevelOnly
+            });
           });
           cbUpLevelOnly.addEventListener("change", (e) => {
             state.uploadConfig.targetLevelOnly = e.target.checked;
-            setBatchTransUploadSettings({ level: state.uploadConfig.level, levelonly: !!state.uploadConfig.targetLevelOnly });
+            setBatchTransUploadSettings({
+              level: state.uploadConfig.level,
+              levelonly: !!state.uploadConfig.targetLevelOnly
+            });
           });
         }
         function renderPager() {
@@ -2567,6 +2667,16 @@ downloadConfig: Object.assign({
       ShowPLSortPopUp(playlistId);
     });
   };
+  class SortLogger {
+    constructor() {
+      this.log = "";
+    }
+    addLog(log) {
+      this.log += log + "\n";
+      this.textarea.value = this.log;
+      this.textarea.scrollTop = this.textarea.scrollHeight;
+    }
+  }
   const ShowPLSortPopUp = (playlistId) => {
     Swal.fire({
       title: "歌单内歌曲排序",
@@ -2583,23 +2693,42 @@ downloadConfig: Object.assign({
       }
     }).then((res) => {
       if (!res.isConfirmed) return;
-      if (res.value === 0) {
-        PlaylistTimeSort(playlistId, true);
-      } else if (res.value === 1) {
-        PlaylistTimeSort(playlistId, false);
-      } else if (res.value === 2) {
-        PlaylistCountSort(playlistId, true, "Red");
-      } else if (res.value === 3) {
-        PlaylistCountSort(playlistId, false, "Red");
-      } else if (res.value === 4) {
-        PlaylistCountSort(playlistId, true, "Comment");
-      } else if (res.value === 5) {
-        PlaylistCountSort(playlistId, false, "Comment");
-      }
+      const logger = new SortLogger();
+      Swal.fire({
+        input: "textarea",
+        inputLabel: "歌单排序",
+        confirmButtonText: "关闭",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showCloseButton: false,
+        showConfirmButton: true,
+        inputAttributes: {
+          readonly: true
+        },
+        didOpen: () => {
+          logger.textarea = Swal.getInput();
+          logger.textarea.style = "height: 300px;";
+          logger.comfirmBtn = Swal.getConfirmButton();
+          logger.comfirmBtn.style = "display: none;";
+          if (res.value === "0") {
+            PlaylistTimeSort(playlistId, true, logger);
+          } else if (res.value === "1") {
+            PlaylistTimeSort(playlistId, false, logger);
+          } else if (res.value === "2") {
+            PlaylistCountSort(playlistId, true, "Red", logger);
+          } else if (res.value === "3") {
+            PlaylistCountSort(playlistId, false, "Red", logger);
+          } else if (res.value === "4") {
+            PlaylistCountSort(playlistId, true, "Comment", logger);
+          } else if (res.value === "5") {
+            PlaylistCountSort(playlistId, false, "Comment", logger);
+          }
+        }
+      });
     });
   };
-  const PlaylistTimeSort = (playlistId, descending) => {
-    showTips(`正在获取歌单内歌曲信息`, 1);
+  const PlaylistTimeSort = (playlistId, descending, logger) => {
+    logger.addLog("正在获取歌单内歌曲信息");
     weapiRequest("/api/v6/playlist/detail", {
       data: {
         id: playlistId,
@@ -2610,26 +2739,32 @@ downloadConfig: Object.assign({
         const songList = [];
         const tracklen = content.playlist.tracks.length;
         for (let i = 0; i < tracklen; i++) {
-          const songItem = { id: content.playlist.tracks[i].id, publishTime: content.playlist.tracks[i].publishTime, albumId: content.playlist.tracks[i].al.id, cd: content.playlist.tracks[i].cd ? Number(content.playlist.tracks[i].cd.split(" ")[0]) : 0, no: content.playlist.tracks[i].no };
+          const songItem = {
+            id: content.playlist.tracks[i].id,
+            publishTime: content.playlist.tracks[i].publishTime,
+            albumId: content.playlist.tracks[i].al.id,
+            cd: content.playlist.tracks[i].cd ? Number(content.playlist.tracks[i].cd.split(" ")[0]) : 0,
+            no: content.playlist.tracks[i].no
+          };
           songList.push(songItem);
         }
         if (content.playlist.trackCount > content.playlist.tracks.length) {
-          showTips(`大歌单,开始分批获取${content.playlist.trackCount}首歌信息`, 1);
+          logger.addLog(`大歌单,开始分批获取${content.playlist.trackCount}首歌信息`);
           const trackIds = content.playlist.trackIds.map((item) => {
             return {
-              "id": item.id
+              id: item.id
             };
           });
-          PlaylistTimeSortFetchAll(playlistId, descending, trackIds, 0, songList);
+          PlaylistTimeSortFetchAll(playlistId, descending, trackIds, 0, songList, logger);
         } else {
-          PlaylistTimeSortFetchAllPublishTime(playlistId, descending, 0, songList, {});
+          PlaylistTimeSortFetchAllPublishTime(playlistId, descending, 0, songList, {}, logger);
         }
       }
     });
   };
-  const PlaylistTimeSortFetchAll = (playlistId, descending, trackIds, startIndex, songList) => {
+  const PlaylistTimeSortFetchAll = (playlistId, descending, trackIds, startIndex, songList, logger) => {
     if (startIndex >= trackIds.length) {
-      PlaylistTimeSortFetchAllPublishTime(playlistId, descending, 0, songList, {});
+      PlaylistTimeSortFetchAllPublishTime(playlistId, descending, 0, songList, {}, logger);
       return;
     }
     weapiRequest("/api/v3/song/detail", {
@@ -2639,28 +2774,34 @@ downloadConfig: Object.assign({
       onload: function(content) {
         const songlen = content.songs.length;
         for (let i = 0; i < songlen; i++) {
-          const songItem = { id: content.songs[i].id, publishTime: content.songs[i].publishTime, albumId: content.songs[i].al.id, cd: content.songs[i].cd ? Number(content.songs[i].cd.split(" ")[0]) : 0, no: content.songs[i].no };
+          const songItem = {
+            id: content.songs[i].id,
+            publishTime: content.songs[i].publishTime,
+            albumId: content.songs[i].al.id,
+            cd: content.songs[i].cd ? Number(content.songs[i].cd.split(" ")[0]) : 0,
+            no: content.songs[i].no
+          };
           songList.push(songItem);
         }
-        PlaylistTimeSortFetchAll(playlistId, descending, trackIds, startIndex + content.songs.length, songList);
+        PlaylistTimeSortFetchAll(playlistId, descending, trackIds, startIndex + content.songs.length, songList, logger);
       }
     });
   };
-  const PlaylistTimeSortFetchAllPublishTime = (playlistId, descending, index, songList, aldict) => {
+  const PlaylistTimeSortFetchAllPublishTime = (playlistId, descending, index, songList, aldict, logger) => {
     if (index >= songList.length) {
-      PlaylistTimeSortSongs(playlistId, descending, songList);
+      PlaylistTimeSortSongs(playlistId, descending, songList, logger);
       return;
     }
-    if (index === 0) showTips("开始获取歌曲专辑发行时间");
-    if (index % 10 === 9) showTips(`正在获取歌曲专辑发行时间(${index + 1}/${songList.length})`);
+    if (index === 0) logger.addLog("开始获取歌曲专辑发行时间");
+    if (index % 10 === 9) logger.addLog(`正在获取歌曲专辑发行时间(${index + 1}/${songList.length})`);
     const albumId = songList[index].albumId;
     if (albumId <= 0) {
-      PlaylistTimeSortFetchAllPublishTime(playlistId, descending, index + 1, songList, aldict);
+      PlaylistTimeSortFetchAllPublishTime(playlistId, descending, index + 1, songList, aldict, logger);
       return;
     }
     if (aldict[albumId]) {
       songList[index].publishTime = aldict[albumId];
-      PlaylistTimeSortFetchAllPublishTime(playlistId, descending, index + 1, songList, aldict);
+      PlaylistTimeSortFetchAllPublishTime(playlistId, descending, index + 1, songList, aldict, logger);
       return;
     }
     weapiRequest(`/api/v1/album/${albumId}`, {
@@ -2668,11 +2809,11 @@ downloadConfig: Object.assign({
         const publishTime = content.album.publishTime;
         aldict[albumId] = publishTime;
         songList[index].publishTime = publishTime;
-        PlaylistTimeSortFetchAllPublishTime(playlistId, descending, index + 1, songList, aldict);
+        PlaylistTimeSortFetchAllPublishTime(playlistId, descending, index + 1, songList, aldict, logger);
       }
     });
   };
-  const PlaylistTimeSortSongs = (playlistId, descending, songList) => {
+  const PlaylistTimeSortSongs = (playlistId, descending, songList, logger) => {
     songList.sort((a, b) => {
       if (a.publishTime !== b.publishTime) {
         if (descending) {
@@ -2693,6 +2834,7 @@ downloadConfig: Object.assign({
       }
       return a.id - b.id;
     });
+    logger.addLog("排序完成，正在提交...");
     let trackIds = songList.map((song) => song.id);
     weapiRequest("/api/playlist/manipulate/tracks", {
       data: {
@@ -2702,15 +2844,16 @@ downloadConfig: Object.assign({
       },
       onload: function(content) {
         if (content.code === 200) {
-          showConfirmBox("排序完成");
+          logger.addLog("排序完成");
         } else {
-          showConfirmBox("排序失败," + content);
+          logger.addLog("排序失败," + content);
         }
+        logger.comfirmBtn.style = "display: inline-block;";
       }
     });
   };
-  const PlaylistCountSort = (playlistId, descending, way) => {
-    showTips(`正在获取歌单内歌曲信息`, 1);
+  const PlaylistCountSort = (playlistId, descending, way, logger) => {
+    logger.addLog("正在获取歌单内歌曲信息");
     weapiRequest("/api/v6/playlist/detail", {
       data: {
         id: playlistId,
@@ -2720,45 +2863,45 @@ downloadConfig: Object.assign({
       onload: (content) => {
         const songList = content.playlist.trackIds.map((item) => {
           return {
-            "id": item.id,
-            "count": 0
+            id: item.id,
+            count: 0
           };
         });
         const trackIds = content.playlist.trackIds.map((item) => {
           return item.id;
         });
         if (way === "Red") {
-          PlaylistCountSortFetchRedCount(playlistId, songList, 0, descending);
+          PlaylistCountSortFetchRedCount(playlistId, songList, 0, descending, logger);
         } else if (way === "Comment") {
-          PlaylistCountSortFetchCommentCount(playlistId, songList, trackIds, 0, descending);
+          PlaylistCountSortFetchCommentCount(playlistId, songList, trackIds, 0, descending, logger);
         }
       }
     });
   };
-  const PlaylistCountSortFetchRedCount = (playlistId, songList, index, descending) => {
+  const PlaylistCountSortFetchRedCount = (playlistId, songList, index, descending, logger) => {
     if (index >= songList.length) {
-      PlaylistCountSortSongs(playlistId, descending, songList);
+      PlaylistCountSortSongs(playlistId, descending, songList, logger);
       return;
     }
-    if (index === 0) showTips("开始获取歌曲红心数量");
-    if (index % 10 === 9) showTips(`正在获取歌曲红心数量(${index + 1}/${songList.length})`);
+    if (index === 0) logger.addLog("开始获取歌曲红心数量");
+    if (index % 10 === 9) logger.addLog(`正在获取歌曲红心数量(${index + 1}/${songList.length})`);
     weapiRequest("/api/song/red/count", {
       data: {
         songId: songList[index].id
       },
       onload: function(content) {
         songList[index].count = content.data.count;
-        PlaylistCountSortFetchRedCount(playlistId, songList, index + 1, descending);
+        PlaylistCountSortFetchRedCount(playlistId, songList, index + 1, descending, logger);
       }
     });
   };
-  const PlaylistCountSortFetchCommentCount = (playlistId, songList, trackIds, index, descending) => {
+  const PlaylistCountSortFetchCommentCount = (playlistId, songList, trackIds, index, descending, logger) => {
     if (index >= songList.length) {
-      PlaylistCountSortSongs(playlistId, descending, songList);
+      PlaylistCountSortSongs(playlistId, descending, songList, logger);
       return;
     }
-    if (index === 0) showTips("开始获取歌曲评论数量");
-    else showTips(`正在获取歌曲评论数量(${index + 1}/${songList.length})`);
+    if (index === 0) logger.addLog("开始获取歌曲评论数量");
+    else logger.addLog(`正在获取歌曲评论数量(${index + 1}/${songList.length})`);
     weapiRequest("/api/resource/commentInfo/list", {
       data: {
         resourceType: "4",
@@ -2774,11 +2917,11 @@ downloadConfig: Object.assign({
             }
           }
         });
-        PlaylistCountSortFetchCommentCount(playlistId, songList, trackIds, index + 1e3, descending);
+        PlaylistCountSortFetchCommentCount(playlistId, songList, trackIds, index + 1e3, descending, logger);
       }
     });
   };
-  const PlaylistCountSortSongs = (playlistId, descending, songList) => {
+  const PlaylistCountSortSongs = (playlistId, descending, songList, logger) => {
     songList.sort((a, b) => {
       if (a.count !== b.count) {
         if (descending) {
@@ -2789,6 +2932,7 @@ downloadConfig: Object.assign({
       }
       return a.id - b.id;
     });
+    logger.addLog("排序完成，正在提交...");
     let trackIds = songList.map((song) => song.id);
     weapiRequest("/api/playlist/manipulate/tracks", {
       data: {
@@ -2798,10 +2942,11 @@ downloadConfig: Object.assign({
       },
       onload: function(content) {
         if (content.code === 200) {
-          showConfirmBox("排序完成");
+          logger.addLog("排序完成");
         } else {
-          showConfirmBox("排序失败");
+          logger.addLog("排序失败");
         }
+        logger.comfirmBtn.style = "display: inline-block;";
       }
     });
   };
@@ -2830,7 +2975,7 @@ downloadConfig: Object.assign({
           if (content.playlist.trackCount > content.playlist.tracks.length) {
             const trackIds = content.playlist.trackIds.map((item) => {
               return {
-                "id": item.id
+                id: item.id
               };
             });
             this.getPlaylistAllSongsSub(trackIds, 0);
@@ -2935,10 +3080,12 @@ downloadConfig: Object.assign({
       this.operationArea.children[1].addEventListener("click", () => {
         unsafeWindow.top.player.addTo(this.playableSongList, false, false);
       });
-      this.operationArea.children[0].style.display = "";
-      this.operationArea.children[1].style.display = "";
-      this.operationArea.children[2].style.display = "none";
-      this.operationArea.children[3].style.display = "none";
+      for (let index = 0; index < this.operationArea.children.length; index++) {
+        const item = this.operationArea.children[index];
+        item.style.setProperty("margin-top", "6px");
+        if (index <= 1) item.style.removeProperty("display");
+        else if (index <= 3) item.style.setProperty("display", "none");
+      }
     }
     appendBtns() {
       var _a;
@@ -3026,7 +3173,9 @@ downloadConfig: Object.assign({
             `;
         const playing = unsafeWindow.top.player.getPlaying();
         if (playing.track) {
-          const plybtn = document.querySelector(`[id="${playing.track.id}${timestamp}"] > td:nth-child(1) > div > div.ncmextend-playlist-playbtn > span`);
+          const plybtn = document.querySelector(
+            `[id="${playing.track.id}${timestamp}"] > td:nth-child(1) > div > div.ncmextend-playlist-playbtn > span`
+          );
           if (plybtn) {
             plybtn.className = plybtn.className.trimEnd() + " ply-z-slt";
           }
@@ -3045,7 +3194,9 @@ downloadConfig: Object.assign({
       const needVIP = songItem.privilege.plLevel === "none" && !status;
       const durationText = duringTimeDesc(songItem.song.dt);
       const artistText = escapeHTML(songItem.artist);
-      const annotation = escapeHTML(songItem.song.tns ? songItem.song.tns[0] : songItem.song.alias ? songItem.song.alias[0] : "");
+      const annotation = escapeHTML(
+        songItem.song.tns ? songItem.song.tns[0] : songItem.song.alias ? songItem.song.alias[0] : ""
+      );
       const albumName = escapeHTML(songItem.album);
       const songName = escapeHTML(songItem.title);
       let playBtnHTML = `<span data-res-id="${songItem.id}" data-res-type="18" data-res-action="play" data-res-from="13" data-res-data="${this.playlist.id}" class="ply "></span>`;
@@ -3060,7 +3211,8 @@ downloadConfig: Object.assign({
       if (artistContent.length > 0) artistContent = artistContent.slice(0, -1);
       else artistContent = artistText;
       let albumContent = albumName;
-      if (songItem.song.al.id > 0) albumContent = `<a href="#/album?id=${songItem.song.al.id}" title="${albumName}">${albumName}</a>`;
+      if (songItem.song.al.id > 0)
+        albumContent = `<a href="#/album?id=${songItem.song.al.id}" title="${albumName}">${albumName}</a>`;
       const albumImgHTML = isLargePlaylist ? "" : `
                                 <a href="#/song?id=${songItem.id}" title="${songName}">
                                     <img class="rpic" src="${songItem.song.al.picUrl}?param=50y50&amp;quality=100" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5">
@@ -3173,7 +3325,7 @@ downloadConfig: Object.assign({
         showConfirmButton: false,
         footer: `<div>将根据标题歌手时长进行一定的去重处理</div>`,
         inputAttributes: {
-          "readonly": true
+          readonly: true
         },
         didOpen: async () => {
           const textarea = Swal.getInput();
@@ -3290,7 +3442,13 @@ downloadConfig: Object.assign({
         const songId = songs[i].id;
         this.songIdIndexsMap[songId] = i;
         if (!songs[i].api) {
-          songs[i].api = songs[i].privilege.fee === 0 && (levelWeight[songs[i].privilege.plLevel] || 99) < (levelWeight[songs[i].privilege.dlLevel] || -1) ? { url: "/api/song/enhance/download/url/v1", data: { id: songs[i].id, level: config.level, encodeType: "mp3" } } : { url: "/api/song/enhance/player/url/v1", data: { ids: JSON.stringify([songs[i].id]), level: config.level, encodeType: "mp3" } };
+          songs[i].api = songs[i].privilege.fee === 0 && (levelWeight[songs[i].privilege.plLevel] || 99) < (levelWeight[songs[i].privilege.dlLevel] || -1) ? {
+            url: "/api/song/enhance/download/url/v1",
+            data: { id: songs[i].id, level: config.level, encodeType: "mp3" }
+          } : {
+            url: "/api/song/enhance/player/url/v1",
+            data: { ids: JSON.stringify([songs[i].id]), level: config.level, encodeType: "mp3" }
+          };
         }
         if (songs[i].api.url === "/api/song/enhance/player/url/v1") {
           this.playerApiSongIds.push(songId);
@@ -3314,7 +3472,7 @@ downloadConfig: Object.assign({
         showCloseButton: false,
         showConfirmButton: true,
         inputAttributes: {
-          "readonly": true
+          readonly: true
         },
         footer: "<div>建议先在个人主页先设置好请求头，以避免上传失败</div><div>浏览器F12控制台中可查看所有的接口返回内容，出错时可进行检查。</div>",
         didOpen: () => {
@@ -3342,7 +3500,9 @@ downloadConfig: Object.assign({
         this.fetchFileDetailByDownloadApi();
         return;
       }
-      this.addLog(`正在获取第 ${offset + 1} 到 第 ${Math.min(offset + PlayAPIDataLimit, this.playerApiSongIds.length)} 首歌曲`);
+      this.addLog(
+        `正在获取第 ${offset + 1} 到 第 ${Math.min(offset + PlayAPIDataLimit, this.playerApiSongIds.length)} 首歌曲`
+      );
       const ids = this.playerApiSongIds.slice(offset, offset + PlayAPIDataLimit);
       weapiRequest("/api/song/enhance/player/url/v1", {
         data: {
@@ -3421,48 +3581,13 @@ downloadConfig: Object.assign({
       }
       const songId = this.downloadApiSongIds[offset];
       const songIndex = this.songIdIndexsMap[songId];
-      weapiRequest(
-        "/api/song/enhance/download/url/v1",
-        {
-          data: this.songs[songIndex].api.data,
-          onload: (content) => {
-            if (content.code !== 200) {
-              console.error("下载接口", content);
-              if (!retry) {
-                this.addLog("接口调用失败，1秒后重试");
-                sleep(1e3).then(() => {
-                  this.fetchFileDetailByDownloadApiSub(offset, retry = true);
-                });
-              } else {
-                this.addLog(`歌曲 ${this.songs[songIndex].title} 下载接口调用失败，跳过`);
-                this.failSongs.push(this.songs[songIndex].title + "：通过下载接口获取文件信息失败");
-                this.hasError = true;
-                sleep(1e3).then(() => {
-                  this.fetchFileDetailByDownloadApiSub(offset + 1);
-                });
-              }
-              return;
-            }
-            console.log("下载接口", content);
-            if (this.config.targetLevelOnly && this.config.level !== content.data.level) {
-              this.skipSongs.push(this.songs[songIndex].title);
-            } else if (content.data.md5) {
-              this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, "artist-title") + "." + content.data.type.toLowerCase();
-              this.songs[songIndex].md5 = content.data.md5;
-              this.songs[songIndex].size = content.data.size;
-              this.songs[songIndex].level = content.data.level;
-              this.songs[songIndex].ext = content.data.type.toLowerCase();
-              this.songs[songIndex].bitrate = Math.floor(content.data.br / 1e3);
-              this.addLog(`${this.songs[songIndex].title} 通过下载接口获取到 ${levelDesc(content.data.level)} 音质文件信息`);
-            } else {
-              this.failSongs.push(this.songs[songIndex].title + "：通过下载接口获取文件信息失败");
-            }
-            this.fetchFileDetailByDownloadApiSub(offset + 1);
-          },
-          onerror: (content) => {
+      weapiRequest("/api/song/enhance/download/url/v1", {
+        data: this.songs[songIndex].api.data,
+        onload: (content) => {
+          if (content.code !== 200) {
             console.error("下载接口", content);
             if (!retry) {
-              this.addLog("下载接口调用时报错，1秒后重试");
+              this.addLog("接口调用失败，1秒后重试");
               sleep(1e3).then(() => {
                 this.fetchFileDetailByDownloadApiSub(offset, retry = true);
               });
@@ -3474,9 +3599,43 @@ downloadConfig: Object.assign({
                 this.fetchFileDetailByDownloadApiSub(offset + 1);
               });
             }
+            return;
+          }
+          console.log("下载接口", content);
+          if (this.config.targetLevelOnly && this.config.level !== content.data.level) {
+            this.skipSongs.push(this.songs[songIndex].title);
+          } else if (content.data.md5) {
+            this.songs[songIndex].fileFullName = nameFileWithoutExt(this.songs[songIndex].title, this.songs[songIndex].artist, "artist-title") + "." + content.data.type.toLowerCase();
+            this.songs[songIndex].md5 = content.data.md5;
+            this.songs[songIndex].size = content.data.size;
+            this.songs[songIndex].level = content.data.level;
+            this.songs[songIndex].ext = content.data.type.toLowerCase();
+            this.songs[songIndex].bitrate = Math.floor(content.data.br / 1e3);
+            this.addLog(
+              `${this.songs[songIndex].title} 通过下载接口获取到 ${levelDesc(content.data.level)} 音质文件信息`
+            );
+          } else {
+            this.failSongs.push(this.songs[songIndex].title + "：通过下载接口获取文件信息失败");
+          }
+          this.fetchFileDetailByDownloadApiSub(offset + 1);
+        },
+        onerror: (content) => {
+          console.error("下载接口", content);
+          if (!retry) {
+            this.addLog("下载接口调用时报错，1秒后重试");
+            sleep(1e3).then(() => {
+              this.fetchFileDetailByDownloadApiSub(offset, retry = true);
+            });
+          } else {
+            this.addLog(`歌曲 ${this.songs[songIndex].title} 下载接口调用失败，跳过`);
+            this.failSongs.push(this.songs[songIndex].title + "：通过下载接口获取文件信息失败");
+            this.hasError = true;
+            sleep(1e3).then(() => {
+              this.fetchFileDetailByDownloadApiSub(offset + 1);
+            });
           }
         }
-      );
+      });
     }
     fetchCloudId() {
       this.addLog("第二步：获取文件的云盘ID");
@@ -3781,7 +3940,7 @@ updateSongCloudStatus() {
     interfaceFail: "接口调用失败，1秒后重试"
   };
   class Uploader {
-    constructor(config, showAll = false) {
+    constructor(config, _showAll = false) {
       this.config = config;
       this.songs = [];
       this.popupObj = null;
@@ -4218,12 +4377,14 @@ uploadSong(songIndex) {
         return;
       }
       try {
-        const songCheckData = [{
-          md5: song.md5,
-          songId: song.id,
-          bitrate: song.bitrate,
-          fileSize: song.size
-        }];
+        const songCheckData = [
+          {
+            md5: song.md5,
+            songId: song.id,
+            bitrate: song.bitrate,
+            fileSize: song.size
+          }
+        ];
         weapiRequest(API_ENDPOINTS.uploadCheck, {
           data: {
             uploadType: 0,
@@ -4279,14 +4440,16 @@ uploadSong(songIndex) {
         this.uploadSongMatch(songIndex);
         return;
       }
-      const importSongData = [{
-        songId: song.cloudId,
-        bitrate: song.bitrate,
-        song: song.name,
-        artist: song.artists,
-        album: song.album,
-        fileName: song.filename
-      }];
+      const importSongData = [
+        {
+          songId: song.cloudId,
+          bitrate: song.bitrate,
+          song: song.name,
+          artist: song.artists,
+          album: song.album,
+          fileName: song.filename
+        }
+      ];
       try {
         weapiRequest(API_ENDPOINTS.songImport, {
           data: {
@@ -4671,19 +4834,19 @@ uploadSongBatch(retry = false) {
     let btnUploadDesc = btnUpload.firstChild;
     let toplist = [];
     let selectOptions = {
-      "热门": {},
-      "华语男歌手": {},
-      "华语女歌手": {},
-      "华语组合": {},
-      "欧美男歌手": {},
-      "欧美女歌手": {},
-      "欧美组合": {},
-      "日本男歌手": {},
-      "日本女歌手": {},
-      "日本组合": {},
-      "韩国男歌手": {},
-      "韩国女歌手": {},
-      "韩国组合": {}
+      热门: {},
+      华语男歌手: {},
+      华语女歌手: {},
+      华语组合: {},
+      欧美男歌手: {},
+      欧美女歌手: {},
+      欧美组合: {},
+      日本男歌手: {},
+      日本女歌手: {},
+      日本组合: {},
+      韩国男歌手: {},
+      韩国女歌手: {},
+      韩国组合: {}
     };
     let artistmap = {};
     fetch(`${baseCDNURL}top.json`).then((r) => r.json()).then((r) => {
@@ -4818,7 +4981,8 @@ fillCloudListTable(songs) {
             let arcount = 0;
             song.simpleSong.ar.forEach((ar) => {
               if (ar.name) {
-                if (ar.id > 0) artist2 += `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${escapeHtml(ar.name)}<a>,`;
+                if (ar.id > 0)
+                  artist2 += `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${escapeHtml(ar.name)}<a>,`;
                 else artist2 += escapeHtml(ar.name) + ",";
                 arcount += 1;
               }
@@ -4982,7 +5146,13 @@ separateFilterCloudListPage(currentPage) {
           html: this._getMatchPopupHTML(),
           footer: "",
           didOpen: () => {
-            this._handleMatchPopupOpen(song, Swal.getHtmlContainer(), Swal.getActions(), Swal.getFooter(), Swal.getTitle());
+            this._handleMatchPopupOpen(
+              song,
+              Swal.getHtmlContainer(),
+              Swal.getActions(),
+              Swal.getFooter(),
+              Swal.getTitle()
+            );
           },
           didClose: () => {
             this.openCloudList();
@@ -5039,10 +5209,8 @@ separateFilterCloudListPage(currentPage) {
           searchContent.result.songs.forEach((resultSong) => {
             if (matchId && resultSong.id == matchId) {
               if (!exactMatchSong) exactMatchSong = resultSong;
-            } else if (Math.abs(resultSong.dt - this.fileDuringTime) < 1e3)
-              timeMatchSongs.push(resultSong);
-            else
-              timeNoMatchSongs.push(resultSong);
+            } else if (Math.abs(resultSong.dt - this.fileDuringTime) < 1e3) timeMatchSongs.push(resultSong);
+            else timeNoMatchSongs.push(resultSong);
           });
           const resultSongs = timeMatchSongs.concat(timeNoMatchSongs);
           if (exactMatchSong) {
@@ -5051,7 +5219,9 @@ separateFilterCloudListPage(currentPage) {
           resultSongs.forEach((resultSong) => {
             const tablerow = document.createElement("tr");
             const songName = resultSong.name;
-            const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join();
+            const artists = resultSong.ar.map(
+              (ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`
+            ).join();
             const needHighLight = Math.abs(resultSong.dt - this.fileDuringTime) < 1e3;
             const dtstyle = needHighLight ? "color:SpringGreen;" : "";
             tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn"><i class="fa-solid fa-link"></i></button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}${resultSong.privilege.cs ? ' <i class="fa-regular fa-cloud"></i>' : ""}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
@@ -5619,7 +5789,7 @@ _handleMatchPopupOpen(song, container, actions, footer, title) {
             });
           }
           if (songId.length > 0) {
-            requestData["/api/v3/song/detail"] = JSON.stringify({ c: JSON.stringify([{ "id": songId }]) });
+            requestData["/api/v3/song/detail"] = JSON.stringify({ c: JSON.stringify([{ id: songId }]) });
           }
           if (requestData["/api/cloudsearch/get/web"] || requestData["/api/v3/song/detail"]) {
             this.controls.matchTbody.innerHTML = "正在搜索...";
@@ -5777,12 +5947,14 @@ async _handlePlaylistPopupOpen(song, container) {
               song.size = resData.size;
               song.ext = resData.type.toLowerCase();
               song.bitrate = Math.floor(resData.br / 1e3);
-              const songCheckData = [{
-                md5: song.md5,
-                songId: song.id,
-                bitrate: song.bitrate,
-                fileSize: song.size
-              }];
+              const songCheckData = [
+                {
+                  md5: song.md5,
+                  songId: song.id,
+                  bitrate: song.bitrate,
+                  fileSize: song.size
+                }
+              ];
               weapiRequest("/api/cloud/upload/check/v2", {
                 data: {
                   uploadType: 0,
@@ -5825,14 +5997,16 @@ async _handlePlaylistPopupOpen(song, container) {
       }
     }
     uploadSongWay1Part1(song) {
-      let importSongData = [{
-        songId: song.cloudId,
-        bitrate: song.bitrate,
-        song: song.title,
-        artist: song.artist,
-        album: song.album,
-        fileName: song.fileFullName
-      }];
+      let importSongData = [
+        {
+          songId: song.cloudId,
+          bitrate: song.bitrate,
+          song: song.title,
+          artist: song.artist,
+          album: song.album,
+          fileName: song.fileFullName
+        }
+      ];
       try {
         weapiRequest("/api/cloud/user/song/import", {
           data: {
@@ -6291,7 +6465,7 @@ async _handlePlaylistPopupOpen(song, container) {
               } else if (this.filterMode === "higher") {
                 if (cloudWeight <= this.targetWeight) return;
               }
-              songIds.push({ "id": song.simpleSong.id });
+              songIds.push({ id: song.simpleSong.id });
               const actionText = this.filterMode === "lower" ? "提升" : "降低";
               this.popupObj.tbody.innerHTML = `正在搜索第${offset + 1}到${Math.min(offset + 1e3, res.count)}云盘歌曲 找到${songIds.length}首可能可以${actionText}的歌曲`;
             });
@@ -6436,13 +6610,11 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
         });
       }
       renderFilterInfo() {
-        let sizeTotal = 0;
         let countCanUpgrade = 0;
         this.filter.songIndexs.forEach((idx) => {
           const song = this.songs[idx];
           if (!song.upgraded) {
             countCanUpgrade += 1;
-            sizeTotal += song.size;
           }
         });
         this.btnUpgradeBatch.innerHTML = "全部处理";
@@ -6462,8 +6634,23 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
               if (content.code == 200) {
                 showTips(`${song.name}删除成功`, 1);
               }
-              const songItem = { api: { url: "/api/song/enhance/player/url/v1", data: { ids: JSON.stringify([song.id]), level: this.targetLevel, encodeType: "mp3" } }, id: song.id, title: song.name, artist: song.artists, album: song.album, songIndex };
-              const ULobj = new ncmDownUpload([songItem], false, (s) => this.onUpgradeSuccess(s), (s) => this.onUpgradeFail(s));
+              const songItem = {
+                api: {
+                  url: "/api/song/enhance/player/url/v1",
+                  data: { ids: JSON.stringify([song.id]), level: this.targetLevel, encodeType: "mp3" }
+                },
+                id: song.id,
+                title: song.name,
+                artist: song.artists,
+                album: song.album,
+                songIndex
+              };
+              const ULobj = new ncmDownUpload(
+                [songItem],
+                false,
+                (s) => this.onUpgradeSuccess(s),
+                (s) => this.onUpgradeFail(s)
+              );
               ULobj.startUpload();
             }
           });
@@ -6547,6 +6734,7 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
         this.task = [];
         this.currentIndex = 0;
         this.failIndexs = [];
+        this.log = "";
         for (let i = 0; i < config.files.length; i++) {
           let file = config.files[i];
           let fileName = file.name;
@@ -6657,20 +6845,45 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
         });
       }
       localUploadPart1(songindex) {
+        if (songindex === 0) {
+          Swal.fire({
+            input: "textarea",
+            inputLabel: "云盘本地上传",
+            confirmButtonText: "关闭",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showCloseButton: false,
+            showConfirmButton: true,
+            inputAttributes: {
+              readonly: true
+            },
+            didOpen: () => {
+              this.textarea = Swal.getInput();
+              this.textarea.style = "height: 300px;";
+              this.comfirmBtn = Swal.getConfirmButton();
+              this.comfirmBtn.style = "display: none;";
+              this.doUpload(songindex);
+            }
+          });
+          return;
+        }
+        this.doUpload(songindex);
+      }
+      doUpload(songindex) {
         let self = this;
         let song = self.task[songindex];
         let reader = new FileReader();
         let chunkSize = 1024 * 1024;
         let loaded = 0;
         let md5sum = _unsafeWindow.CryptoJS.algo.MD5.create();
-        showTips(`(1/5)${song.title} 正在获取文件MD5值`, 1);
+        self.addLog(`(1/5)${song.title} 正在获取文件MD5值`);
         reader.onload = function(e) {
           md5sum.update(_unsafeWindow.CryptoJS.enc.Latin1.parse(reader.result));
           loaded += e.loaded;
           if (loaded < song.size) {
             readBlob(loaded);
           } else {
-            showTips(`(1/5)${song.title} 已计算文件MD5值`, 1);
+            self.addLog(`(1/5)${song.title} 已计算文件MD5值`);
             song.md5 = md5sum.finalize().toString();
             try {
               weapiRequest("/api/cloud/upload/check", {
@@ -6711,7 +6924,7 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
                       song.resourceId = res2.result.resourceId;
                       song.token = res2.result.token;
                       song.objectKey = res2.result.objectKey;
-                      showTips(`(3/5)${song.title} 开始上传文件`, 1);
+                      self.addLog(`(3/5)${song.title} 开始上传文件`);
                       console.log(song.title, "2.获取令牌", res2);
                       if (res1.needUpload) {
                         self.localUploadFile(songindex, 0);
@@ -6763,11 +6976,11 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
               let res = JSON.parse(response3.response);
               if (complete) {
                 console.log(song.title, "2.5.上传文件完成", res);
-                showTips(`(3.5/5)${song.title} 上传文件完成`, 1);
+                self.addLog(`(3.5/5)${song.title} 上传文件完成`);
                 song.expireTime = Date.now() + 6e4;
                 self.localUploadPart2(songindex);
               } else {
-                showTips(`(3.4/5)${song.title} 正在上传${fileSizeDesc(res.offset)}/${fileSizeDesc(song.size)}`, 1);
+                self.addLog(`(3.4/5)${song.title} 正在上传${fileSizeDesc(res.offset)}/${fileSizeDesc(song.size)}`);
                 self.localUploadFile(songindex, res.offset, res.context);
               }
             },
@@ -6803,33 +7016,17 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
                   self.uploadFail();
                 } else {
                   console.log(song.title, "3.正在转码", res3);
-                  showTips(`(4/5)${song.title} 正在转码...`, 1);
+                  self.addLog(`(4/5)${song.title} 正在转码...`);
                   sleep(1e3).then(() => {
                     self.localUploadPart2(songindex);
                   });
                 }
                 return;
               }
+              song.pubId = res3.songId;
               console.log(song.title, "3.提交文件", res3);
-              showTips(`(4/5)${song.title} 提交文件完成`, 1);
-              weapiRequest("/api/cloud/pub/v2", {
-                data: {
-                  songid: res3.songId
-                },
-                onload: (res4) => {
-                  if (res4.code !== 200 && res4.code !== 201) {
-                    console.error(song.title, "4.发布资源", res4);
-                    self.uploadFail();
-                    return;
-                  }
-                  showTips(`(5/5)${song.title} 上传完成`, 1);
-                  self.uploadSuccess();
-                },
-                onerror: (res) => {
-                  console.error(song.title, "4.发布资源", res);
-                  self.uploadFail();
-                }
-              });
+              self.addLog(`(4/5)${song.title} 提交文件完成`);
+              self.waitForMusicReady(songindex);
             },
             onerror: (res) => {
               console.error(song.title, "3.提交文件", res);
@@ -6841,9 +7038,67 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
           self.uploadFail();
         }
       }
+      waitForMusicReady(songindex) {
+        let self = this;
+        let song = self.task[songindex];
+        weapiRequest("/api/v1/cloud/music/status", {
+          data: {
+            songIds: [song.pubId]
+          },
+          onload: (res) => {
+            if (res.code !== 200) {
+              console.error(song.title, "4.5.查询状态失败", res);
+              self.uploadFail();
+              return;
+            }
+            let statusInfo = res.statuses && res.statuses[song.pubId];
+            if (statusInfo && statusInfo.status === 9) {
+              console.log(song.title, "4.5.文件处理完成", res);
+              self.addLog(`(4.5/5)${song.title} 文件处理完成`);
+              self.publishToCloud(songindex);
+            } else if (statusInfo && statusInfo.status === 1) {
+              let waitTime = statusInfo.waitTime || 1;
+              console.log(song.title, `4.5.文件未处理完成，${waitTime}秒后重新查询文件状态`, res);
+              self.addLog(`(4.5/5)${song.title} 文件未处理完成，${waitTime}秒后重新查询文件状态...`);
+              sleep(waitTime * 1e3).then(() => {
+                self.waitForMusicReady(songindex);
+              });
+            } else {
+              console.error(song.title, `4.5.文件状态异常`, res);
+              self.uploadFail();
+            }
+          },
+          onerror: (res) => {
+            console.error(song.title, "4.5.查询状态失败", res);
+            self.uploadFail();
+          }
+        });
+      }
+      publishToCloud(songindex) {
+        let self = this;
+        let song = self.task[songindex];
+        weapiRequest("/api/cloud/pub/v2", {
+          data: {
+            songid: song.pubId
+          },
+          onload: (res4) => {
+            if (res4.code !== 200 && res4.code !== 201) {
+              console.error(song.title, "4.发布资源", res4);
+              self.uploadFail();
+              return;
+            }
+            self.addLog(`(5/5)${song.title} 上传完成`);
+            self.uploadSuccess();
+          },
+          onerror: (res) => {
+            console.error(song.title, "4.发布资源", res);
+            self.uploadFail();
+          }
+        });
+      }
       uploadFail() {
         this.failIndexs.push(this.currentIndex);
-        showTips(`${this.task[this.currentIndex].title}上传失败`, 2);
+        this.addLog(`${this.task[this.currentIndex].title}上传失败`);
         this.uploadNext();
       }
       uploadSuccess() {
@@ -6858,12 +7113,16 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
         }
       }
       uploadFinnsh() {
-        let msg = "上传完成";
+        this.addLog("上传完成");
         if (this.failIndexs.length > 0) {
-          msg += ",以下文件上传失败：";
-          msg += this.failIndexs.map((idx) => this.task[idx].fileFullName).join();
+          this.addLog("以下文件上传失败：" + this.failIndexs.map((idx) => this.task[idx].fileFullName).join());
         }
-        showConfirmBox(msg);
+        this.comfirmBtn.style = "display: inline-block;";
+      }
+      addLog(log) {
+        this.log += log + "\n";
+        this.textarea.value = this.log;
+        this.textarea.scrollTop = this.textarea.scrollHeight;
       }
     }
   };
@@ -6880,10 +7139,14 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
         onload: (res) => {
           let songList = res.playlist.trackIds.map((item) => {
             return {
-              "id": Number(item.id)
+              id: Number(item.id)
             };
           });
-          openVIPDownLoadPopup(songList, '歌单<a href="https://music.163.com/#/playlist?id=8402996200" target="_blank">「会员雷达」</a>的内容', 22);
+          openVIPDownLoadPopup(
+            songList,
+            '歌单<a href="https://music.163.com/#/playlist?id=8402996200" target="_blank">「会员雷达」</a>的内容',
+            22
+          );
         }
       });
     }
@@ -6893,20 +7156,22 @@ dt: duringTimeDesc(content.songs[i].dt || 0),
         showCloseButton: true,
         showConfirmButton: false,
         width: "980px",
-        html: `${getTableStyles([], `
+        html: `${getTableStyles(
+        [],
+        `
 tr th:nth-child(1),tr td:nth-child(1){ width: 16%; }
 tr th:nth-child(2){ width: 48%; }
 tr td:nth-child(2){ width: 10%; }
 tr td:nth-child(3){ width: 38%; }
 tr th:nth-child(3),tr td:nth-child(4){ width: 28%; }
 tr th:nth-child(4),tr td:nth-child(5){ width: 8%; }
-tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
+tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`
+      )}
 <table border="1" frame="hsides" rules="rows"><thead><tr><th>操作</th><th>歌曲标题</th><th>歌手</th><th>时长</th><th>大小</th> </tr></thead><tbody></tbody></table>
 `,
         footer: footer + '，只有标准(128k)音质<a href="https://github.com/Cinvin/myuserscripts"  target="_blank"><img src="https://img.shields.io/github/stars/cinvin/myuserscripts?style=social" alt="Github"></a>',
         didOpen: () => {
           let container = Swal.getHtmlContainer();
-          Swal.getFooter();
           let tbody = container.querySelector("tbody");
           weapiRequest("/api/v3/song/detail", {
             data: {
@@ -6924,7 +7189,9 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                     let songArtist = getArtistTextInSongDetail(content.songs[i]);
                     let songTitle = content.songs[i].name;
                     let filename = nameFileWithoutExt(songTitle, songArtist, "artist-title");
-                    songArtist = content.songs[i].ar ? content.songs[i].ar.map((ar) => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${escapeHtml(ar.name)}<a>`).join() : "";
+                    songArtist = content.songs[i].ar ? content.songs[i].ar.map(
+                      (ar) => `<a target="_blank" href="https://music.163.com/artist?id=${ar.id}">${escapeHtml(ar.name)}<a>`
+                    ).join() : "";
                     let tablerow = document.createElement("tr");
                     tablerow.innerHTML = `<td><button type="button" class="swal2-styled mydl">下载</button><button type="button" class="swal2-styled myul">上传</button></td><td><a href="https://music.163.com/album?id=${content.songs[i].al.id}" target="_blank"><img src="${content.songs[i].al.picUrl}?param=50y50&quality=100" title="${escapeHtml(getAlbumTextInSongDetail(content.songs[i]))}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${content.songs[i].id}" target="_blank">${escapeHtml(content.songs[i].name)}</a></td><td>${songArtist}</td><td>${duringTimeDesc(content.songs[i].dt || 0)}</td><td>${fileSizeDesc(content.songs[i].l.size)}</td>`;
                     let btnDL = tablerow.querySelector(".mydl");
@@ -6933,7 +7200,21 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                     });
                     let btnUL = tablerow.querySelector(".myul");
                     btnUL.addEventListener("click", () => {
-                      let songItem = { api: { url: "/api/song/enhance/player/url/v1", data: { ids: JSON.stringify([content.songs[i].id]), trialMode, level: "exhigh", encodeType: "mp3" } }, id: content.songs[i].id, title: content.songs[i].name, artist: getArtistTextInSongDetail(content.songs[i]), album: getAlbumTextInSongDetail(content.songs[i]) };
+                      let songItem = {
+                        api: {
+                          url: "/api/song/enhance/player/url/v1",
+                          data: {
+                            ids: JSON.stringify([content.songs[i].id]),
+                            trialMode,
+                            level: "exhigh",
+                            encodeType: "mp3"
+                          }
+                        },
+                        id: content.songs[i].id,
+                        title: content.songs[i].name,
+                        artist: getArtistTextInSongDetail(content.songs[i]),
+                        album: getAlbumTextInSongDetail(content.songs[i])
+                      };
                       let ULobj = new ncmDownUpload([songItem], false);
                       ULobj.startUpload();
                     });
@@ -7019,9 +7300,13 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
       if (filter[3]) {
         exportCloudByPlaylist(filter);
       } else {
-        exportCloudSub(filter, {
-          data: []
-        }, 0);
+        exportCloudSub(
+          filter,
+          {
+            data: []
+          },
+          0
+        );
       }
     }
     function exportCloudSub(filter, config, offset) {
@@ -7058,11 +7343,11 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                 return;
               }
               let songItem = {
-                "id": song.songId,
-                "size": song.fileSize,
-                "ext": song.fileName.split(".").pop().toLowerCase(),
-                "bitrate": song.bitrate,
-                "md5": null
+                id: song.songId,
+                size: song.fileSize,
+                ext: song.fileName.split(".").pop().toLowerCase(),
+                bitrate: song.bitrate,
+                md5: null
               };
               matchSongs.push(songItem);
             } else {
@@ -7076,14 +7361,14 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                 return;
               }
               let songItem = {
-                "id": song.songId,
-                "size": song.fileSize,
-                "ext": song.fileName.split(".").pop().toLowerCase(),
-                "bitrate": song.bitrate,
-                "md5": null,
-                "name": song.songName,
-                "al": song.album,
-                "ar": song.artist
+                id: song.songId,
+                size: song.fileSize,
+                ext: song.fileName.split(".").pop().toLowerCase(),
+                bitrate: song.bitrate,
+                md5: null,
+                name: song.songName,
+                al: song.album,
+                ar: song.artist
               };
               matchSongs.push(songItem);
             }
@@ -7139,9 +7424,14 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
           let trackIds = res.playlist.trackIds.map((item) => {
             return item.id;
           });
-          exportCloudByPlaylistSub(filter, trackIds, {
-            data: []
-          }, 0);
+          exportCloudByPlaylistSub(
+            filter,
+            trackIds,
+            {
+              data: []
+            },
+            0
+          );
         }
       });
     }
@@ -7179,11 +7469,11 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                 return;
               }
               let songItem = {
-                "id": song.songId,
-                "size": song.fileSize,
-                "ext": song.fileName.split(".").pop().toLowerCase(),
-                "bitrate": song.bitrate,
-                "md5": null
+                id: song.songId,
+                size: song.fileSize,
+                ext: song.fileName.split(".").pop().toLowerCase(),
+                bitrate: song.bitrate,
+                md5: null
               };
               matchSongs.push(songItem);
             } else {
@@ -7197,14 +7487,14 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                 return;
               }
               let songItem = {
-                "id": song.songId,
-                "size": song.fileSize,
-                "ext": song.fileName.split(".").pop().toLowerCase(),
-                "bitrate": song.bitrate,
-                "md5": null,
-                "name": song.songName,
-                "al": song.album,
-                "ar": song.artist
+                id: song.songId,
+                size: song.fileSize,
+                ext: song.fileName.split(".").pop().toLowerCase(),
+                bitrate: song.bitrate,
+                md5: null,
+                name: song.songName,
+                al: song.album,
+                ar: song.artist
               };
               matchSongs.push(songItem);
             }
@@ -7263,7 +7553,7 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
         title: "云盘导入",
         input: "file",
         inputAttributes: {
-          "accept": "application/json",
+          accept: "application/json",
           "aria-label": "选择文件"
         },
         confirmButtonText: "导入",
@@ -7424,7 +7714,7 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                 });
               }
               if (songId.length > 0) {
-                requestData["/api/v3/song/detail"] = JSON.stringify({ c: JSON.stringify([{ "id": songId }]) });
+                requestData["/api/v3/song/detail"] = JSON.stringify({ c: JSON.stringify([{ id: songId }]) });
               }
               if (requestData["/api/cloudsearch/get/web"] || requestData["/api/v3/song/detail"]) {
                 tbody.innerHTML = "正在搜索...";
@@ -7452,10 +7742,8 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                       searchContent.result.songs.forEach((resultSong) => {
                         if (matchId && resultSong.id == matchId) {
                           if (!exactMatchSong) exactMatchSong = resultSong;
-                        } else if (Math.abs(resultSong.dt - file.duration) < 1e3)
-                          timeMatchSongs.push(resultSong);
-                        else
-                          timeNoMatchSongs.push(resultSong);
+                        } else if (Math.abs(resultSong.dt - file.duration) < 1e3) timeMatchSongs.push(resultSong);
+                        else timeNoMatchSongs.push(resultSong);
                       });
                       const resultSongs = timeMatchSongs.concat(timeNoMatchSongs);
                       if (exactMatchSong) {
@@ -7464,7 +7752,9 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                       resultSongs.forEach((resultSong) => {
                         let tablerow = document.createElement("tr");
                         let songName = resultSong.name;
-                        const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join();
+                        const artists = resultSong.ar.map(
+                          (ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`
+                        ).join();
                         const needHighLight = Math.abs(resultSong.dt - file.duration) < 1e3;
                         const dtstyle = needHighLight ? "color:SpringGreen;" : "";
                         tablerow.innerHTML = `<td><button type="button" class="swal2-styled selectbtn">选择</button></td><td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(songName)}</a></td><td>${artists}</td><td style="${dtstyle}">${duringTimeDesc(resultSong.dt)}</td>`;
@@ -7547,7 +7837,10 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
                 name: songInput.value,
                 artist: artistInput.value,
                 album: albumInput.value,
-                cover: coverInput.files.length > 0 ? { file: new File([coverInput.files[0]], coverInput.files[0].name), url: URL.createObjectURL(coverInput.files[0]) } : null,
+                cover: coverInput.files.length > 0 ? {
+                  file: new File([coverInput.files[0]], coverInput.files[0].name),
+                  url: URL.createObjectURL(coverInput.files[0])
+                } : null,
                 lyric: lyricInput.value
               };
               file.mode = "custom";
@@ -7581,10 +7874,12 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
       refreshSongListTable() {
         this.songListTbody.innerHTML = "";
         this.fileList.forEach((item) => {
-          let targetSongHtml = "";
+          let targetSongHtml;
           if (item.mode === "netease" && item.targetSong) {
             const resultSong = item.targetSong;
-            const artists = resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join();
+            const artists = resultSong.ar.map(
+              (ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`
+            ).join();
             targetSongHtml = `<td><a href="https://music.163.com/album?id=${resultSong.al.id}" target="_blank"><img src="${resultSong.al.picUrl}?param=50y50&quality=100" title="${escapeHtml(resultSong.al.name)}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;background:#f5f5f5"></a></td><td><a href="https://music.163.com/song?id=${resultSong.id}" target="_blank">${escapeHtml(resultSong.name)}</a></td><td>${artists}</td>`;
           } else if (item.mode === "custom" && item.customSong) {
             const coverHtml = item.customSong.cover ? `<img src="${item.customSong.cover.url}" height=50 title="${escapeHtml(item.customSong.album)}">` : "";
@@ -7632,8 +7927,6 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
             if (response && response.code == 200 && response.result.songCount > 0) {
               for (const resultSong of response.result.songs) {
                 if (Math.abs(resultSong.dt - file.duration) < 1e3 && searchWord.toLowerCase().includes(resultSong.name.toLowerCase())) {
-                  resultSong.name;
-                  resultSong.ar.map((ar) => `<a href="https://music.163.com/#/artist?id=${ar.id}" target="_blank">${escapeHtml(ar.name)}</a>`).join();
                   file.targetSong = resultSong;
                   file.mode = "netease";
                   this.refreshSongListTable();
@@ -7706,7 +7999,17 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
         let lyricText = "";
         if (song.mode === "netease") {
           const requestData = {
-            "/api/song/lyric/v1": JSON.stringify({ id: song.targetSong.id, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 })
+            "/api/song/lyric/v1": JSON.stringify({
+              id: song.targetSong.id,
+              cp: false,
+              tv: 0,
+              lv: 0,
+              rv: 0,
+              kv: 0,
+              yv: 0,
+              ytv: 0,
+              yrv: 0
+            })
           };
           if (song.targetSong.al.id > 0) {
             if (this.albumDetailCache[song.targetSong.al.id]) {
@@ -7756,7 +8059,8 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
         mp3tag.tags.title = title;
         mp3tag.tags.artist = artist;
         if (song.mode === "netease") {
-          if (song.targetSong.no && song.targetSong.no > 0) mp3tag.tags.v2.TRCK = String(song.targetSong.no).padStart(2, "0");
+          if (song.targetSong.no && song.targetSong.no > 0)
+            mp3tag.tags.v2.TRCK = String(song.targetSong.no).padStart(2, "0");
           if (song.targetSong.cd && song.targetSong.cd.length > 0) mp3tag.tags.v2.TPOS = song.targetSong.cd;
           if (song.albumDetail) {
             if (song.albumDetail.publisher) mp3tag.tags.v2.TPUB = song.albumDetail.publisher;
@@ -7766,18 +8070,22 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
         }
         if (album.length > 0) mp3tag.tags.album = album;
         if (coverBuffer) {
-          mp3tag.tags.v2.APIC = [{
-            description: "",
-            data: coverBuffer,
-            type: 3,
-            format: coverFormat
-          }];
+          mp3tag.tags.v2.APIC = [
+            {
+              description: "",
+              data: coverBuffer,
+              type: 3,
+              format: coverFormat
+            }
+          ];
         }
         if (lyricText && lyricText.length > 0) {
-          mp3tag.tags.v2.TXXX = [{
-            description: "LYRICS",
-            text: lyricText
-          }];
+          mp3tag.tags.v2.TXXX = [
+            {
+              description: "LYRICS",
+              text: lyricText
+            }
+          ];
         }
         mp3tag.save();
         if (mp3tag.error) {
@@ -7798,7 +8106,8 @@ tr th:nth-child(5),tr td:nth-child(6){ width: 8%; }`)}
         flac.setTag(`TITLE=${title}`);
         flac.setTag(`ARTIST=${artist}`);
         if (song.mode === "netease") {
-          if (song.targetSong.no && song.targetSong.no > 0) flac.setTag(`TRACKNUMBER=${String(song.targetSong.no).padStart(2, "0")}`);
+          if (song.targetSong.no && song.targetSong.no > 0)
+            flac.setTag(`TRACKNUMBER=${String(song.targetSong.no).padStart(2, "0")}`);
           if (song.targetSong.cd && song.targetSong.cd.length > 0) flac.setTag(`DISCNUMBER=${song.targetSong.cd}`);
           if (song.albumDetail) {
             if (song.albumDetail.publisher) flac.setTag(`PUBLISHER=${song.albumDetail.publisher}`);
@@ -7911,19 +8220,23 @@ durationThreshold: 1,
           const container = Swal.getHtmlContainer();
           const durationEnabledEl = container.querySelector("#cd-duration-group-enabled");
           const durationThresholdEl = container.querySelector("#cd-duration-threshold");
-          let threshold = 1;
+          const rawThreshold = parseFloat(durationThresholdEl.value);
           try {
-            threshold = parseFloat(durationThresholdEl.value);
+            let threshold = rawThreshold;
             if (isNaN(threshold) || threshold < 0) threshold = 1;
             threshold = Math.round(threshold * 10) / 10;
-          } catch (e) {
-            threshold = 1;
+            return {
+              durationGroupEnabled: !!(durationEnabledEl && durationEnabledEl.checked),
+              durationThreshold: threshold,
+              explicitDedup: container.querySelector("#cd-deduplication-explicit").checked
+            };
+          } catch {
+            return {
+              durationGroupEnabled: !!(durationEnabledEl && durationEnabledEl.checked),
+              durationThreshold: 1,
+              explicitDedup: container.querySelector("#cd-deduplication-explicit").checked
+            };
           }
-          return {
-            durationGroupEnabled: !!(durationEnabledEl && durationEnabledEl.checked),
-            durationThreshold: threshold,
-            explicitDedup: container.querySelector("#cd-deduplication-explicit").checked
-          };
         }
       }).then((result) => {
         if (result.isConfirmed) {
@@ -8002,7 +8315,7 @@ durationThreshold: 1,
             hasMore = content.hasMore;
           }
           addLog(`开始处理数据找重复歌曲`);
-          for (const [md5, songs] of Object.entries(this.cloudSongUniqueMap)) {
+          for (const songs of Object.values(this.cloudSongUniqueMap)) {
             if (songs.length > 1) {
               if (this.config.durationGroupEnabled) {
                 const thresholdMs = Math.round((this.config.durationThreshold || 1) * 1e3);
@@ -8194,10 +8507,16 @@ durationThreshold: 1,
               pageArea.style.cssText = "display:flex;gap:6px;justify-content:center;flex-wrap:wrap;";
               footerEl.insertBefore(pageArea, footerEl.firstChild);
             }
-            createPagination(pageArea, currentPage, pageMax, (page) => {
-              currentPage = page;
-              renderPage();
-            }, this.working);
+            createPagination(
+              pageArea,
+              currentPage,
+              pageMax,
+              (page) => {
+                currentPage = page;
+                renderPage();
+              },
+              this.working
+            );
           };
           renderPage();
           const headerBar = document.createElement("div");
@@ -8411,11 +8730,21 @@ durationThreshold: 1,
       this.songId = songId;
       weapiRequest("/api/batch", {
         data: {
-          "/api/v3/song/detail": JSON.stringify({ c: JSON.stringify([{ "id": this.songId }]) }),
-          "/api/song/music/detail/get": JSON.stringify({ "songId": this.songId, "immerseType": "ste" }),
-          "/api/song/red/count": JSON.stringify({ "songId": this.songId }),
-          "/api/song/lyric/v1": JSON.stringify({ id: this.songId, cp: false, tv: 0, lv: 0, rv: 0, kv: 0, yv: 0, ytv: 0, yrv: 0 }),
-          "/api/song/play/about/block/page": JSON.stringify({ "songId": this.songId })
+          "/api/v3/song/detail": JSON.stringify({ c: JSON.stringify([{ id: this.songId }]) }),
+          "/api/song/music/detail/get": JSON.stringify({ songId: this.songId, immerseType: "ste" }),
+          "/api/song/red/count": JSON.stringify({ songId: this.songId }),
+          "/api/song/lyric/v1": JSON.stringify({
+            id: this.songId,
+            cp: false,
+            tv: 0,
+            lv: 0,
+            rv: 0,
+            kv: 0,
+            yv: 0,
+            ytv: 0,
+            yrv: 0
+          }),
+          "/api/song/play/about/block/page": JSON.stringify({ songId: this.songId })
         },
         onload: (res) => {
           console.log(res);
@@ -8443,7 +8772,6 @@ durationThreshold: 1,
       this.album = getAlbumTextInSongDetail(this.songDetailObj);
       this.artist = getArtistTextInSongDetail(this.songDetailObj);
       this.filename = nameFileWithoutExt(this.title, this.artist, "artist-title");
-      this.songDetailObj = this.songDetailObj;
       if (this.SongRes["/api/v3/song/detail"].privileges[0].plLevel !== "none") {
         this.downLoadTitle = this.createTitle("下载歌曲");
         this.downLoadTableBody = this.createTable().querySelector("tbody");
@@ -8766,7 +9094,7 @@ durationThreshold: 1,
       });
       this.createButtonDescTableRow(this.upLoadTableBody, btn, desc, true);
     }
-    dwonloadSong(channel, level, dlbtn) {
+    dwonloadSong(channel, level, _dlbtn) {
       const url2 = channel === "dl" ? "/api/song/enhance/download/url/v1" : "/api/song/enhance/player/url/v1";
       const data = channel === "dl" ? { id: this.songId, level, encodeType: "mp3" } : { ids: JSON.stringify([this.songId]), level, encodeType: "mp3" };
       const songItem = {
@@ -8778,9 +9106,12 @@ durationThreshold: 1,
         privilege: this.songDetailObj,
         api: { url: url2, data }
       };
-      const config = Object.assign({
-        threadCount: 1
-      }, getDownloadSettings());
+      const config = Object.assign(
+        {
+          threadCount: 1
+        },
+        getDownloadSettings()
+      );
       batchDownloadSongs([songItem], config);
     }
     downloadLyric(lrcKey) {
@@ -8822,12 +9153,18 @@ durationThreshold: 1,
             }
             const showPlayModeRegex = /className\s*:\s*"right draggable"\s*,\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*"([^"]*)"\s*,\s*children\s*:\s*\[\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*&&\s*!\s*([a-zA-Z_][a-zA-Z0-9_.]*)\.isWeb\s*\?\s*Object\s*\(\s*([a-zA-Z_][a-zA-Z0-9_.]*)\.jsx\s*\)/g;
             if (showPlayModeRegex.test(code)) {
-              code = code.replace(showPlayModeRegex, 'className : "right draggable", $1 : "$2", children : [ $3 ? Object( $5 .jsx )');
+              code = code.replace(
+                showPlayModeRegex,
+                'className : "right draggable", $1 : "$2", children : [ $3 ? Object( $5 .jsx )'
+              );
               isChanged = true;
             }
             const showPlayingQuality = /([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=\s*Object\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)\s*\|\|\s*([a-zA-Z_$][a-zA-Z0-9_$.]*)\.isWeb\s*\?\s*null\s*:\s*Object\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$.]*)\.jsx\s*\)\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*\{\s*ignoreClickRef\s*:\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*isDefaultMiniBar\s*:\s*!\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*,\s*_nk\s*:\s*"([^"]*)"\s*\}\s*\)\s*,/g;
             if (showPlayingQuality.test(code)) {
-              code = code.replace(showPlayingQuality, '$1=Object($2.$3)($4)||Object($6.jsx)($7.$8,{ignoreClickRef:$9,isDefaultMiniBar:!$10,_nk:"$11"}),');
+              code = code.replace(
+                showPlayingQuality,
+                '$1=Object($2.$3)($4)||Object($6.jsx)($7.$8,{ignoreClickRef:$9,isDefaultMiniBar:!$10,_nk:"$11"}),'
+              );
               isChanged = true;
             }
             if (isChanged) {
@@ -8863,7 +9200,7 @@ durationThreshold: 1,
     if (webPlayerObserver) {
       webPlayerObserver.disconnect();
     }
-    webPlayerObserver = new MutationObserver((mutations, observer) => {
+    webPlayerObserver = new MutationObserver((mutations, _observer) => {
       mutations.forEach((mutation) => {
         if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
           for (let node of mutation.addedNodes) {
@@ -8931,16 +9268,33 @@ durationThreshold: 1,
             React.createElement(
               "span",
               { className: `cmd-radio-inner ${spanClass}` },
-              React.createElement("input", { type: "radio", "aria-describedby": "", value: levelOptions[key], readOnly: true }),
+              React.createElement("input", {
+                type: "radio",
+                "aria-describedby": "",
+                value: levelOptions[key],
+                readOnly: true
+              }),
               React.createElement(
                 "span",
                 { className: "cmd-radio-inner-display" },
                 checked ? React.createElement(
                   "span",
-                  { role: "img", "aria-label": "radio", className: "cmd-icon cmd-icon-default cmd-icon-radio IconStyle_i7u766h" },
+                  {
+                    role: "img",
+                    "aria-label": "radio",
+                    className: "cmd-icon cmd-icon-default cmd-icon-radio IconStyle_i7u766h"
+                  },
                   React.createElement(
                     "svg",
-                    { viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg", width: "1em", height: "1em", focusable: "false", "aria-hidden": "true" },
+                    {
+                      viewBox: "0 0 24 24",
+                      fill: "none",
+                      xmlns: "http://www.w3.org/2000/svg",
+                      width: "1em",
+                      height: "1em",
+                      focusable: "false",
+                      "aria-hidden": "true"
+                    },
                     React.createElement("circle", { cx: 12, cy: 12, r: 5, fill: "currentColor" })
                   )
                 ) : null
@@ -8958,7 +9312,11 @@ durationThreshold: 1,
           )
         );
       });
-      const grid = React.createElement("div", { className: "ncmextend-quality-grid", style: { display: "flex", flexWrap: "wrap" } }, ...items);
+      const grid = React.createElement(
+        "div",
+        { className: "ncmextend-quality-grid", style: { display: "flex", flexWrap: "wrap" } },
+        ...items
+      );
       return React.createElement("h4", { className: "" }, "音质播放设置", grid);
     };
     ReactDOM.render(React.createElement(RadioList), container);
@@ -9012,7 +9370,10 @@ durationThreshold: 1,
         }).then((res) => {
           if (res && res.isConfirmed) {
             const v = res.value || {};
-            GM_setValue("webPlayerFontSetting", JSON.stringify({ default: v.defaultFont || "", lyric: v.lyricFont || "" }));
+            GM_setValue(
+              "webPlayerFontSetting",
+              JSON.stringify({ default: v.defaultFont || "", lyric: v.lyricFont || "" })
+            );
             showConfirmBox("保存成功，刷新网页生效。");
           }
         });
@@ -9024,11 +9385,17 @@ durationThreshold: 1,
   const HandleCloudButton = (node) => {
     const button = node.querySelector("div > div > button:nth-child(2)");
     if (button && !button.__ncmExtendHasHooked) {
-      button.addEventListener("click", function(event) {
-        event.stopPropagation();
-        event.preventDefault();
-        showConfirmBox("新版网页端没有实现上传功能，估计网易云因此隐藏“我的音乐云盘”的。脚本在原版网页端的个人主页提供了上传功能。欢迎前去使用。");
-      }, true);
+      button.addEventListener(
+        "click",
+        function(event) {
+          event.stopPropagation();
+          event.preventDefault();
+          showConfirmBox(
+            "新版网页端没有实现上传功能，估计网易云因此隐藏“我的音乐云盘”的。脚本在原版网页端的个人主页提供了上传功能。欢迎前去使用。"
+          );
+        },
+        true
+      );
       button.__ncmExtendHasHooked = true;
     }
   };
@@ -9047,7 +9414,12 @@ durationThreshold: 1,
       onWebPlayerStart();
     } else {
       if (_unsafeWindow.self === _unsafeWindow.top) {
-        GM_addStyle(GM_getResourceText("fa").replaceAll("../webfonts/", "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/"));
+        GM_addStyle(
+          GM_getResourceText("fa").replaceAll(
+            "../webfonts/",
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/webfonts/"
+          )
+        );
         _unsafeWindow.GUserScriptObjects = {
           Swal
         };
@@ -9073,8 +9445,7 @@ durationThreshold: 1,
     if (_unsafeWindow === _unsafeWindow.top) {
       WarningOldHeaderSetting();
     }
-    if (isWebPlayer) ;
-    else {
+    if (!isWebPlayer) {
       if (paramId > 0) {
         if (url.includes("/user/home?")) {
           myHomeMain(paramId);
