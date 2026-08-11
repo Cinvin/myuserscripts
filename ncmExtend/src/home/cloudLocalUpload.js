@@ -1,4 +1,4 @@
-import { createBigButton, showTips, showConfirmBox, sleep, getTableStyles } from '../utils/common';
+import { createBigButton, showTips, sleep, getTableStyles } from '../utils/common';
 import { weapiRequest } from '../utils/request';
 import { fileSizeDesc } from '../utils/descHelper';
 import { unsafeWindow } from '$';
@@ -46,6 +46,7 @@ export const cloudLocalUpload = (uiArea) => {
       this.task = [];
       this.currentIndex = 0;
       this.failIndexs = [];
+      this.log = '';
 
       for (let i = 0; i < config.files.length; i++) {
         let file = config.files[i];
@@ -158,20 +159,45 @@ export const cloudLocalUpload = (uiArea) => {
       });
     }
     localUploadPart1(songindex) {
+      if (songindex === 0) {
+        Swal.fire({
+          input: 'textarea',
+          inputLabel: '云盘本地上传',
+          confirmButtonText: '关闭',
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+          showCloseButton: false,
+          showConfirmButton: true,
+          inputAttributes: {
+            readonly: true,
+          },
+          didOpen: () => {
+            this.textarea = Swal.getInput();
+            this.textarea.style = 'height: 300px;';
+            this.comfirmBtn = Swal.getConfirmButton();
+            this.comfirmBtn.style = 'display: none;';
+            this.doUpload(songindex);
+          },
+        });
+        return;
+      }
+      this.doUpload(songindex);
+    }
+    doUpload(songindex) {
       let self = this;
       let song = self.task[songindex];
       let reader = new FileReader();
       let chunkSize = 1024 * 1024;
       let loaded = 0;
       let md5sum = unsafeWindow.CryptoJS.algo.MD5.create();
-      showTips(`(1/5)${song.title} 正在获取文件MD5值`, 1);
+      self.addLog(`(1/5)${song.title} 正在获取文件MD5值`);
       reader.onload = function (e) {
         md5sum.update(unsafeWindow.CryptoJS.enc.Latin1.parse(reader.result));
         loaded += e.loaded;
         if (loaded < song.size) {
           readBlob(loaded);
         } else {
-          showTips(`(1/5)${song.title} 已计算文件MD5值`, 1);
+          self.addLog(`(1/5)${song.title} 已计算文件MD5值`);
           song.md5 = md5sum.finalize().toString();
           try {
             weapiRequest('/api/cloud/upload/check', {
@@ -212,7 +238,7 @@ export const cloudLocalUpload = (uiArea) => {
                     song.resourceId = res2.result.resourceId;
                     song.token = res2.result.token;
                     song.objectKey = res2.result.objectKey;
-                    showTips(`(3/5)${song.title} 开始上传文件`, 1);
+                    self.addLog(`(3/5)${song.title} 开始上传文件`);
                     console.log(song.title, '2.获取令牌', res2);
                     if (res1.needUpload) {
                       self.localUploadFile(songindex, 0);
@@ -264,11 +290,11 @@ export const cloudLocalUpload = (uiArea) => {
             let res = JSON.parse(response3.response);
             if (complete) {
               console.log(song.title, '2.5.上传文件完成', res);
-              showTips(`(3.5/5)${song.title} 上传文件完成`, 1);
+              self.addLog(`(3.5/5)${song.title} 上传文件完成`);
               song.expireTime = Date.now() + 60000;
               self.localUploadPart2(songindex);
             } else {
-              showTips(`(3.4/5)${song.title} 正在上传${fileSizeDesc(res.offset)}/${fileSizeDesc(song.size)}`, 1);
+              self.addLog(`(3.4/5)${song.title} 正在上传${fileSizeDesc(res.offset)}/${fileSizeDesc(song.size)}`);
               self.localUploadFile(songindex, res.offset, res.context);
             }
           },
@@ -304,36 +330,19 @@ export const cloudLocalUpload = (uiArea) => {
                 self.uploadFail();
               } else {
                 console.log(song.title, '3.正在转码', res3);
-                showTips(`(4/5)${song.title} 正在转码...`, 1);
+                self.addLog(`(4/5)${song.title} 正在转码...`);
                 sleep(1000).then(() => {
                   self.localUploadPart2(songindex);
                 });
               }
               return;
             }
-
+            song.pubId = res3.songId;
             console.log(song.title, '3.提交文件', res3);
-            showTips(`(4/5)${song.title} 提交文件完成`, 1);
-            //step4 发布
-            weapiRequest('/api/cloud/pub/v2', {
-              data: {
-                songid: res3.songId,
-              },
-              onload: (res4) => {
-                if (res4.code !== 200 && res4.code !== 201) {
-                  console.error(song.title, '4.发布资源', res4);
-                  self.uploadFail();
-                  return;
-                }
-                //完成
-                showTips(`(5/5)${song.title} 上传完成`, 1);
-                self.uploadSuccess();
-              },
-              onerror: (res) => {
-                console.error(song.title, '4.发布资源', res);
-                self.uploadFail();
-              },
-            });
+            self.addLog(`(4/5)${song.title} 提交文件完成`);
+
+            //step4 等待音乐就绪后发布
+            self.waitForMusicReady(songindex);
           },
           onerror: (res) => {
             console.error(song.title, '3.提交文件', res);
@@ -345,9 +354,68 @@ export const cloudLocalUpload = (uiArea) => {
         self.uploadFail();
       }
     }
+    waitForMusicReady(songindex) {
+      let self = this;
+      let song = self.task[songindex];
+      weapiRequest('/api/v1/cloud/music/status', {
+        data: {
+          songIds: [song.pubId],
+        },
+        onload: (res) => {
+          if (res.code !== 200) {
+            console.error(song.title, '4.5.查询状态失败', res);
+            self.uploadFail();
+            return;
+          }
+          let statusInfo = res.statuses && res.statuses[song.pubId];
+          if (statusInfo && statusInfo.status === 9) {
+            console.log(song.title, '4.5.文件处理完成', res);
+            self.addLog(`(4.5/5)${song.title} 文件处理完成`);
+            self.publishToCloud(songindex);
+          } else if (statusInfo && statusInfo.status === 1) {
+            let waitTime = statusInfo.waitTime || 1;
+            console.log(song.title, `4.5.文件未处理完成，${waitTime}秒后重新查询文件状态`, res);
+            self.addLog(`(4.5/5)${song.title} 文件未处理完成，${waitTime}秒后重新查询文件状态...`);
+            sleep(waitTime * 1000).then(() => {
+              self.waitForMusicReady(songindex);
+            });
+          } else {
+            console.error(song.title, `4.5.文件状态异常`, res);
+            self.uploadFail();
+          }
+        },
+        onerror: (res) => {
+          console.error(song.title, '4.5.查询状态失败', res);
+          self.uploadFail();
+        },
+      });
+    }
+    publishToCloud(songindex) {
+      let self = this;
+      let song = self.task[songindex];
+      weapiRequest('/api/cloud/pub/v2', {
+        data: {
+          songid: song.pubId,
+        },
+        onload: (res4) => {
+          if (res4.code !== 200 && res4.code !== 201) {
+            console.error(song.title, '4.发布资源', res4);
+            self.uploadFail();
+            return;
+          }
+          //完成
+          self.addLog(`(5/5)${song.title} 上传完成`);
+          self.uploadSuccess();
+        },
+        onerror: (res) => {
+          console.error(song.title, '4.发布资源', res);
+          self.uploadFail();
+        },
+      });
+    }
     uploadFail() {
       this.failIndexs.push(this.currentIndex);
-      showTips(`${this.task[this.currentIndex].title}上传失败`, 2);
+      this.addLog(`${this.task[this.currentIndex].title}上传失败`);
       this.uploadNext();
     }
     uploadSuccess() {
@@ -362,12 +430,16 @@ export const cloudLocalUpload = (uiArea) => {
       }
     }
     uploadFinnsh() {
-      let msg = '上传完成';
+      this.addLog('上传完成');
       if (this.failIndexs.length > 0) {
-        msg += ',以下文件上传失败：';
-        msg += this.failIndexs.map((idx) => this.task[idx].fileFullName).join();
+        this.addLog('以下文件上传失败：' + this.failIndexs.map((idx) => this.task[idx].fileFullName).join());
       }
-      showConfirmBox(msg);
+      this.comfirmBtn.style = 'display: inline-block;';
+    }
+    addLog(log) {
+      this.log += log + '\n';
+      this.textarea.value = this.log;
+      this.textarea.scrollTop = this.textarea.scrollHeight;
     }
   }
 };
